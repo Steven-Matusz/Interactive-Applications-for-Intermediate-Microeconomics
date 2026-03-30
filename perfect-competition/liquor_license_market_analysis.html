@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Liquor License Market Analysis</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.18.1/plotly.min.js"></script>
+  <style>
+    /* ── Skip Link ── */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: #18453B;
+      color: white;
+      padding: 8px 16px;
+      z-index: 9999;
+      font-weight: 700;
+      text-decoration: none;
+      border-radius: 0 0 6px 0;
+      transition: top 0.2s;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ── Screen-reader only ── */
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ── Root / Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --msu-green:  #18453B;
+      --msu-green2: #2d5a4f;
+      --bg-page:    #f0f4f0;
+      --bg-white:   #ffffff;
+      --border:     #cdd9d6;
+      --text-dark:  #1a1a1a;
+      --focus-ring: #C89A2A;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg-page);
+      color: var(--text-dark);
+      min-height: 100vh;
+      padding: 16px;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    /* ── Focus visible (WCAG 2.4.11) ── */
+    :focus-visible {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 3px;
+    }
+
+    /* ── Wrapper ── */
+    .wrapper {
+      max-width: 1300px;
+      margin: 0 auto;
+      background: var(--bg-white);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, var(--msu-green), var(--msu-green2));
+      color: white;
+      padding: 24px 32px;
+      text-align: center;
+    }
+    .header h1 { font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 700; margin-bottom: 6px; }
+    .header p  { font-size: 1rem; opacity: 0.9; }
+
+    /* ── Layout ── */
+    .content-wrapper {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      min-height: 620px;
+    }
+
+    /* ── Control Panel ── */
+    .control-panel {
+      background: #f8f9fa;
+      padding: 28px 24px;
+      border-right: 3px solid #e9ecef;
+      overflow-y: auto;
+    }
+    .control-panel h2 {
+      color: var(--msu-green);
+      font-size: 1.15rem;
+      margin-bottom: 18px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    /* ── Toggle buttons ── */
+    .toggle-group {
+      display: flex;
+      gap: 0;
+      border: 2px solid var(--msu-green);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .toggle-btn {
+      flex: 1;
+      padding: 11px 8px;
+      border: none;
+      background: white;
+      color: var(--msu-green);
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .toggle-btn + .toggle-btn { border-left: 2px solid var(--msu-green); }
+    .toggle-btn[aria-pressed="true"],
+    .toggle-btn.active {
+      background: var(--msu-green);
+      color: white;
+    }
+    .toggle-btn:hover:not(.active):not([aria-pressed="true"]) {
+      background: #e8f0ee;
+    }
+
+    /* ── Slider group ── */
+    .slider-group {
+      background: white;
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 18px;
+    }
+    .slider-group label {
+      display: block;
+      font-weight: 600;
+      color: var(--msu-green);
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+    }
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .slider-row input[type=range] {
+      flex: 1;
+      height: 8px;
+      border-radius: 10px;
+      background: #d3d3d3;
+      outline: none;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .slider-row input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--msu-green);
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+    .slider-row input[type=range]:focus-visible {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 3px;
+    }
+    .slider-val {
+      min-width: 36px;
+      text-align: right;
+      font-weight: 700;
+      color: var(--msu-green);
+      font-size: 1rem;
+    }
+    .slider-hint {
+      font-size: 0.78rem;
+      color: #666;
+      margin-top: 6px;
+    }
+
+    /* ── Metric cards ── */
+    .metrics-section { margin-bottom: 18px; }
+    .metrics-section h3 {
+      font-size: 1rem;
+      color: var(--msu-green);
+      margin-bottom: 10px;
+    }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .metric-card {
+      padding: 12px 10px;
+      border-radius: 8px;
+      text-align: center;
+      border: 2px solid;
+    }
+    .metric-card.price    { background: rgba(230,126,34,0.1);  border-color: #e67e22; }
+    .metric-card.firms    { background: rgba(155,89,182,0.1);  border-color: #9b59b6; }
+    .metric-card.license  { background: rgba(243,156,18,0.1);  border-color: #f39c12; }
+    .metric-card.consumer { background: rgba(52,152,219,0.1);  border-color: #3498db; }
+    .metric-card.producer { background: rgba(46,204,113,0.1);  border-color: #27ae60; }
+    .metric-card.dwl      { background: rgba(231,76,60,0.1);   border-color: #e74c3c; }
+    .metric-label { font-size: 0.72rem; color: #555; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+    .metric-value { font-size: 1.1rem; font-weight: 700; color: #1a1a1a; margin-top: 2px; }
+
+    /* ── Insight box ── */
+    .insight-box {
+      background: #e8f4fd;
+      border: 2px solid #bee5eb;
+      border-radius: 10px;
+      padding: 14px;
+      margin-top: 4px;
+    }
+    .insight-box h3 { font-size: 0.95rem; color: #0c5460; margin-bottom: 6px; }
+    .insight-box p  { font-size: 0.88rem; color: #495057; line-height: 1.5; }
+
+    /* ── Graph panel ── */
+    .graph-panel {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .graph-wrapper {
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      overflow: hidden;
+      background: white;
+    }
+
+    /* ── Graph text description (visible to screen readers, also toggle for sighted) ── */
+    .graph-description {
+      background: #f8f9fa;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.88rem;
+      color: #444;
+      line-height: 1.6;
+    }
+    .graph-description h3 { font-size: 0.95rem; color: var(--msu-green); margin-bottom: 6px; }
+
+    /* ── Data table ── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid #e9ecef;
+    }
+    .data-table caption {
+      padding: 8px 12px;
+      font-weight: 700;
+      color: var(--msu-green);
+      text-align: left;
+      background: #f8f9fa;
+      border-bottom: 2px solid #e9ecef;
+      font-size: 0.95rem;
+    }
+    .data-table th,
+    .data-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e9ecef;
+      font-size: 0.9rem;
+    }
+    .data-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: var(--msu-green);
+    }
+    .data-table tr:last-child td,
+    .data-table tr:last-child th { border-bottom: none; }
+    .data-table tr:hover { background: #f0f4f0; }
+
+    /* ── Status / alert box ── */
+    .status-box {
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .status-box.equilibrium { background: #d4edda; border: 2px solid #28a745; color: #155724; }
+    .status-box.restricted  { background: #fff3cd; border: 2px solid #ffc107; color: #856404; }
+
+    /* ── Responsive ── */
+    @media (max-width: 960px) {
+      .content-wrapper { grid-template-columns: 1fr; }
+      .control-panel { border-right: none; border-bottom: 3px solid #e9ecef; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-controls" class="skip-link">Skip to controls</a>
+
+<!-- ARIA live region -->
+<div id="live-region" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+
+<div class="wrapper" role="main">
+
+  <!-- Header -->
+  <header class="header">
+    <h1>🍷 Liquor License Market Analysis</h1>
+    <p>How licensing restrictions create economic rents and deadweight loss</p>
+  </header>
+
+  <!-- Main content -->
+  <div class="content-wrapper">
+
+    <!-- ── Control Panel ── -->
+    <section class="control-panel" id="main-controls" aria-labelledby="controls-heading">
+      <h2 id="controls-heading">Market Settings</h2>
+
+      <!-- License system toggle -->
+      <div role="group" aria-labelledby="license-system-label">
+        <p id="license-system-label" class="sr-only">Choose license system</p>
+        <div class="toggle-group" role="group" aria-label="License system">
+          <button
+            id="btn-unlimited"
+            class="toggle-btn active"
+            aria-pressed="true"
+            onclick="setLicenseSystem('unlimited')"
+          >Free Entry</button>
+          <button
+            id="btn-limited"
+            class="toggle-btn"
+            aria-pressed="false"
+            onclick="setLicenseSystem('limited')"
+          >Limited Licenses</button>
+        </div>
+      </div>
+
+      <!-- Number of licenses slider (shown only in limited mode) -->
+      <div id="license-slider-group" class="slider-group" style="display:none;">
+        <label for="license-slider">
+          Number of Licenses
+          <span class="sr-only">(drag or use arrow keys, range 5 to 15)</span>
+        </label>
+        <div class="slider-row">
+          <input
+            type="range"
+            id="license-slider"
+            min="5" max="15" step="1" value="10"
+            aria-valuemin="5"
+            aria-valuemax="15"
+            aria-valuenow="10"
+            aria-valuetext="10 licenses"
+            aria-describedby="license-hint"
+            oninput="handleLicenseSlider(this)"
+          >
+          <span class="slider-val" id="license-display" aria-hidden="true">10</span>
+        </div>
+        <p id="license-hint" class="slider-hint">
+          Competitive equilibrium supports <span id="max-firms-hint">16</span> firms.
+          Drag left to restrict supply and create economic rents.
+        </p>
+      </div>
+
+      <!-- Market outcome metrics -->
+      <div class="metrics-section" aria-label="Market outcome metrics">
+        <h3>Market Outcomes</h3>
+        <div class="metrics-grid">
+          <div class="metric-card price" role="region" aria-label="Equilibrium price">
+            <div class="metric-label">Price</div>
+            <div class="metric-value" id="metric-price" aria-live="polite">$40</div>
+          </div>
+          <div class="metric-card firms" role="region" aria-label="Number of firms">
+            <div class="metric-label">Firms</div>
+            <div class="metric-value" id="metric-firms" aria-live="polite">16</div>
+          </div>
+          <div class="metric-card license" role="region" aria-label="License rent per firm">
+            <div class="metric-label">License Rent</div>
+            <div class="metric-value" id="metric-rent" aria-live="polite">$0</div>
+          </div>
+          <div class="metric-card consumer" role="region" aria-label="Consumer surplus">
+            <div class="metric-label">Consumer Surplus</div>
+            <div class="metric-value" id="metric-cs" aria-live="polite">$6,400</div>
+          </div>
+          <div class="metric-card producer" role="region" aria-label="Producer surplus">
+            <div class="metric-label">Producer Surplus</div>
+            <div class="metric-value" id="metric-ps" aria-live="polite">$0</div>
+          </div>
+          <div class="metric-card dwl" role="region" aria-label="Deadweight loss">
+            <div class="metric-label">DWL</div>
+            <div class="metric-value" id="metric-dwl" aria-live="polite">$0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status box -->
+      <div id="status-box" class="status-box equilibrium" role="status" aria-live="polite">
+        ✅ Free entry: market at competitive equilibrium. Economic profits = $0.
+      </div>
+
+      <!-- Insight box -->
+      <div class="insight-box" style="margin-top:16px;">
+        <h3>💡 Key Insight</h3>
+        <p id="insight-text">
+          With free entry, restaurants can enter until economic profits reach zero.
+          Price equals minimum average cost and no deadweight loss exists.
+        </p>
+      </div>
+    </section>
+
+    <!-- ── Graph Panel ── -->
+    <section class="graph-panel" aria-labelledby="graph-heading">
+      <h2 id="graph-heading" class="sr-only">Market Graph and Data</h2>
+
+      <!-- Plotly graph -->
+      <div class="graph-wrapper">
+        <div
+          id="market-graph"
+          role="img"
+          aria-label="Supply and demand graph for the restaurant licensing market"
+          aria-describedby="graph-description-text"
+        ></div>
+      </div>
+
+      <!-- Text description of graph (always visible, updated dynamically) -->
+      <div class="graph-description" aria-live="polite">
+        <h3>📊 Graph Description</h3>
+        <p id="graph-description-text">
+          Loading graph description…
+        </p>
+      </div>
+
+      <!-- Accessible data table -->
+      <table class="data-table" aria-label="Detailed market data">
+        <caption>Detailed Market Conditions</caption>
+        <thead>
+          <tr>
+            <th scope="col">Measure</th>
+            <th scope="col">Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">License System</th>
+            <td id="tbl-system">Free Entry (Unlimited)</td>
+          </tr>
+          <tr>
+            <th scope="row">Number of Firms</th>
+            <td id="tbl-firms">16</td>
+          </tr>
+          <tr>
+            <th scope="row">Equilibrium Price</th>
+            <td id="tbl-price">$40 per meal</td>
+          </tr>
+          <tr>
+            <th scope="row">Equilibrium Quantity</th>
+            <td id="tbl-qty">160 meals/week</td>
+          </tr>
+          <tr>
+            <th scope="row">License Rent (per firm)</th>
+            <td id="tbl-rent">$0 (no restriction)</td>
+          </tr>
+          <tr>
+            <th scope="row">Consumer Surplus</th>
+            <td id="tbl-cs">$6,400</td>
+          </tr>
+          <tr>
+            <th scope="row">Producer Surplus</th>
+            <td id="tbl-ps">$0</td>
+          </tr>
+          <tr>
+            <th scope="row">Total Surplus</th>
+            <td id="tbl-ts">$6,400</td>
+          </tr>
+          <tr>
+            <th scope="row">Deadweight Loss</th>
+            <td id="tbl-dwl">$0 (efficient)</td>
+          </tr>
+          <tr>
+            <th scope="row">Market Status</th>
+            <td id="tbl-status">Efficient — no restriction binding</td>
+          </tr>
+        </tbody>
+      </table>
+
+    </section>
+  </div><!-- /content-wrapper -->
+</div><!-- /wrapper -->
+
+<script>
+  /* ── Model parameters ── */
+  const P = {
+    minAC:          40,    // minimum average cost = competitive price
+    efficientScale: 10,    // output per firm at min AC
+    demandInt:     120,    // demand intercept (P = 120 - 0.5Q)
+    demandSlope:    0.5    // demand slope magnitude
+  };
+
+  /* Derived competitive outcome */
+  const compQ  = (P.demandInt - P.minAC) / P.demandSlope;   // 160
+  const compN  = Math.floor(compQ / P.efficientScale);       // 16
+  const compQa = compN * P.efficientScale;                   // 160
+
+  let licenseSystem = 'unlimited';
+  let numLicenses   = 10;
+
+  /* ── announce helper ── */
+  let announceTimer;
+  function announce(msg) {
+    clearTimeout(announceTimer);
+    announceTimer = setTimeout(() => {
+      const el = document.getElementById('live-region');
+      el.textContent = '';
+      setTimeout(() => { el.textContent = msg; }, 50);
+    }, 300);
+  }
+
+  /* ── License system toggle ── */
+  function setLicenseSystem(system) {
+    licenseSystem = system;
+
+    const btnU = document.getElementById('btn-unlimited');
+    const btnL = document.getElementById('btn-limited');
+    const grp  = document.getElementById('license-slider-group');
+
+    if (system === 'unlimited') {
+      btnU.setAttribute('aria-pressed', 'true');  btnU.classList.add('active');
+      btnL.setAttribute('aria-pressed', 'false'); btnL.classList.remove('active');
+      grp.style.display = 'none';
+    } else {
+      btnL.setAttribute('aria-pressed', 'true');  btnL.classList.add('active');
+      btnU.setAttribute('aria-pressed', 'false'); btnU.classList.remove('active');
+      grp.style.display = 'block';
+    }
+    update();
+  }
+
+  /* ── Slider handler ── */
+  function handleLicenseSlider(el) {
+    numLicenses = parseInt(el.value);
+    el.setAttribute('aria-valuenow', numLicenses);
+    el.setAttribute('aria-valuetext', numLicenses + ' licenses');
+    document.getElementById('license-display').textContent = numLicenses;
+    update();
+  }
+
+  /* ── Calculations ── */
+  function calcUnlimited() {
+    const cs = 0.5 * compQa * (P.demandInt - P.minAC);
+    return {
+      type: 'unlimited',
+      price: P.minAC,
+      qty:   compQa,
+      firms: compN,
+      cs,
+      ps:    0,
+      rent:  0,
+      dwl:   0,
+      binding: false
+    };
+  }
+
+  function calcLimited(n) {
+    if (n >= compN) {
+      // Not binding
+      const cs = 0.5 * compQa * (P.demandInt - P.minAC);
+      return { type:'limited', price:P.minAC, qty:compQa, firms:n, cs, ps:0, rent:0, dwl:0, binding:false };
+    }
+
+    // With n licenses the supply curve kinks at Q = n * efficientScale then slopes up.
+    // Each firm's supply above efficientScale: P = minAC + (1/n)*(Q - n*es)
+    // Solve: demand = supply
+    //   120 - 0.5Q = 40 + (1/n)*(Q - n*10)
+    //   80 = 0.5Q + Q/n - 10
+    //   90 = Q*(0.5 + 1/n)
+    const slope = 0.5 + 1/n;
+    const eqQ   = 90 / slope;   // simplifies nicely from the algebra below
+    // More careful derivation:
+    //   demand: P = 120 - 0.5Q
+    //   supply (upward): P = 40 + (Q - n*10)/n = 40 + Q/n - 10 = 30 + Q/n
+    // Wait, let me redo:
+    //   each firm can produce any q, MC = minAC + q/efficientScale (approximately)
+    //   We use the simpler "aggregate supply kink" model:
+    //   For Q > n*es:  P_supply = minAC + (1/n)*(Q - n*es)
+    //   Setting demand = supply:
+    //     120 - 0.5*Q = 40 + (Q - n*10)/n
+    //     80 = 0.5*Q + Q/n - 10
+    //     90 = Q*(0.5 + 1/n)
+    const eqQfinal = 90 / (0.5 + 1/n);
+    const eqP      = 120 - 0.5 * eqQfinal;
+
+    const baseQ = n * P.efficientScale;
+
+    // Consumer surplus: triangle above price, below demand
+    const cs = 0.5 * eqQfinal * (P.demandInt - eqP);
+
+    // Producer surplus: rectangle + triangle
+    const psRect = baseQ * (eqP - P.minAC);
+    const extraQ = eqQfinal - baseQ;
+    const psTri  = 0.5 * extraQ * extraQ / n;
+    const ps     = psRect + psTri;
+
+    const rent = ps / n;
+
+    // DWL triangle
+    const dwl = 0.5 * (compQa - eqQfinal) * (eqP - P.minAC);
+
+    return { type:'limited', price:eqP, qty:eqQfinal, firms:n, cs, ps, rent, dwl, binding:true,
+             baseQ, eqQ:eqQfinal, compQa };
+  }
+
+  /* ── Format helpers ── */
+  function fmt$(v)  { return '$' + Math.round(Math.abs(v)).toLocaleString(); }
+  function fmtP(v)  { return '$' + Math.round(v); }
+
+  /* ── Main update ── */
+  function update() {
+    const r = (licenseSystem === 'unlimited') ? calcUnlimited() : calcLimited(numLicenses);
+    updateMetrics(r);
+    updateGraph(r);
+    updateTable(r);
+    updateInsight(r);
+    updateGraphDescription(r);
+  }
+
+  function updateMetrics(r) {
+    document.getElementById('metric-price').textContent = fmtP(r.price);
+    document.getElementById('metric-firms').textContent = r.firms;
+    document.getElementById('metric-rent').textContent  = fmt$(r.rent);
+    document.getElementById('metric-cs').textContent    = fmt$(r.cs);
+    document.getElementById('metric-ps').textContent    = fmt$(r.ps);
+    document.getElementById('metric-dwl').textContent   = fmt$(r.dwl);
+
+    const sb = document.getElementById('status-box');
+    if (!r.binding) {
+      sb.className = 'status-box equilibrium';
+      sb.textContent = '✅ Market at competitive equilibrium. Economic profits = $0.';
+    } else {
+      sb.className = 'status-box restricted';
+      sb.textContent = `⚠️ Licenses binding (${r.firms} < ${compN}). Restriction raises price and creates DWL of ${fmt$(r.dwl)}.`;
+    }
+  }
+
+  function updateTable(r) {
+    document.getElementById('tbl-system').textContent =
+      r.type === 'unlimited' ? 'Free Entry (Unlimited)' : `Limited to ${r.firms} licenses`;
+    document.getElementById('tbl-firms').textContent  = r.firms;
+    document.getElementById('tbl-price').textContent  = fmtP(r.price) + ' per meal';
+    document.getElementById('tbl-qty').textContent    = Math.round(r.qty) + ' meals/week';
+    document.getElementById('tbl-rent').textContent   =
+      r.binding ? fmt$(r.rent) + ' per license' : '$0 (no restriction)';
+    document.getElementById('tbl-cs').textContent  = fmt$(r.cs);
+    document.getElementById('tbl-ps').textContent  = fmt$(r.ps);
+    document.getElementById('tbl-ts').textContent  = fmt$(r.cs + r.ps);
+    document.getElementById('tbl-dwl').textContent =
+      r.dwl > 0 ? fmt$(r.dwl) + ' lost' : '$0 (efficient)';
+    document.getElementById('tbl-status').textContent =
+      r.binding
+        ? `Restricted — ${r.firms} licenses below competitive ${compN}`
+        : 'Efficient — no restriction binding';
+
+    // Update hint span
+    document.getElementById('max-firms-hint').textContent = compN;
+  }
+
+  function updateInsight(r) {
+    const el = document.getElementById('insight-text');
+    if (!r.binding) {
+      el.textContent = `With free entry, ${r.firms} restaurants operate at minimum average cost ($${P.minAC}/meal). Each firm produces ${P.efficientScale} meals at efficient scale. Economic profits are zero — entry/exit keeps the market competitive.`;
+    } else {
+      el.textContent = `Restricting licenses to ${r.firms} (vs. competitive ${compN}) raises the price to ${fmtP(r.price)}/meal. License holders earn an economic rent of ${fmt$(r.rent)} each. The restriction destroys ${fmt$(r.dwl)} in deadweight loss — mutually beneficial trades that never happen.`;
+    }
+    announce(el.textContent);
+  }
+
+  function updateGraphDescription(r) {
+    const el = document.getElementById('graph-description-text');
+    let desc = `Supply and demand graph. Demand curve runs from $120 at zero quantity to $0 at 240 meals per week. `;
+    if (!r.binding) {
+      desc += `Long-run supply is horizontal at the minimum average cost of $40, then slopes upward. `;
+      desc += `Equilibrium: price $40, quantity ${Math.round(r.qty)} meals/week, with ${r.firms} firms. `;
+      desc += `Consumer surplus of ${fmt$(r.cs)} shown as blue triangle. No producer surplus or deadweight loss.`;
+    } else {
+      desc += `With ${r.firms} licenses, supply is restricted. The market equilibrium moves to price ${fmtP(r.price)}, quantity ${Math.round(r.qty)} meals/week. `;
+      desc += `Consumer surplus: ${fmt$(r.cs)} (blue triangle). Producer surplus / license rents: ${fmt$(r.ps)} (green area). `;
+      desc += `Deadweight loss: ${fmt$(r.dwl)} (red triangle) — output that is no longer produced compared with the competitive outcome at quantity ${Math.round(compQa)}.`;
+    }
+    el.textContent = desc;
+  }
+
+  /* ── Plotly graph ── */
+  function updateGraph(r) {
+    const traces = [];
+
+    /* 1. Demand */
+    const dX = [0, 240], dY = [120, P.demandInt - 0.5*240];
+    traces.push({
+      x: dX, y: dY,
+      mode: 'lines', name: 'Demand',
+      line: { color: '#2980b9', width: 3 }
+    });
+
+    /* 2. Long-run supply */
+    // Always draw unlimited supply as reference (grey dashes if limited mode is active)
+    const supUX = [], supUY = [];
+    for (let q = 0; q <= compQa; q += 2) { supUX.push(q); supUY.push(P.minAC); }
+    // upward sloping part for unlimited
+    let pUp = P.minAC, qUp = compQa;
+    while (pUp < 125) { qUp += 2; pUp = P.minAC + (1/compN)*(qUp - compQa); supUX.push(qUp); supUY.push(pUp); }
+
+    if (r.type === 'unlimited' || !r.binding) {
+      traces.push({ x: supUX, y: supUY, mode:'lines', name:'Long-Run Supply', line:{ color:'#27ae60', width:3 } });
+    } else {
+      // Restricted supply (limited licenses)
+      const baseQ = r.firms * P.efficientScale;
+      const sRX = [], sRY = [];
+      for (let q = 0; q <= baseQ; q += 2) { sRX.push(q); sRY.push(P.minAC); }
+      let pS = P.minAC, qS = baseQ;
+      while (pS < 125) { qS += 2; pS = P.minAC + (1/r.firms)*(qS - baseQ); sRX.push(qS); sRY.push(pS); }
+      traces.push({ x: sRX, y: sRY, mode:'lines', name:'Supply (Restricted)', line:{ color:'#27ae60', width:3 } });
+      // Show competitive supply as dashed reference
+      traces.push({ x: supUX, y: supUY, mode:'lines', name:'Supply (Free Entry)', line:{ color:'#95a5a6', width:2, dash:'dot' } });
+    }
+
+    /* 3. Welfare shading */
+    // Consumer surplus triangle
+    const eqP = r.price, eqQ = r.qty;
+    traces.push({
+      x: [0, eqQ, 0], y: [P.demandInt, eqP, eqP],
+      fill:'toself', fillcolor:'rgba(52,152,219,0.25)',
+      line:{width:0}, name:'Consumer Surplus', showlegend:true,
+      hoverinfo:'name'
+    });
+
+    if (r.binding && r.ps > 0) {
+      const baseQ = r.firms * P.efficientScale;
+      // Rectangle part of producer surplus
+      traces.push({
+        x:[0, baseQ, baseQ, 0], y:[P.minAC, P.minAC, eqP, eqP],
+        fill:'toself', fillcolor:'rgba(46,204,113,0.3)',
+        line:{width:0}, name:'Producer Surplus', showlegend:true, hoverinfo:'name'
+      });
+      // Triangle extension
+      traces.push({
+        x:[baseQ, eqQ, eqQ, baseQ],
+        y:[eqP, eqP, P.minAC + (eqQ - baseQ)/r.firms, P.minAC],
+        fill:'toself', fillcolor:'rgba(46,204,113,0.3)',
+        line:{width:0}, showlegend:false, hoverinfo:'skip'
+      });
+      // DWL triangle
+      traces.push({
+        x:[eqQ, compQa, eqQ], y:[eqP, P.minAC, P.minAC],
+        fill:'toself', fillcolor:'rgba(231,76,60,0.4)',
+        line:{width:0}, name:'Deadweight Loss', showlegend:true, hoverinfo:'name'
+      });
+    }
+
+    /* 4. Equilibrium point */
+    traces.push({
+      x:[eqQ], y:[eqP],
+      mode:'markers',
+      name: r.binding ? 'Restricted Equilibrium' : 'Competitive Equilibrium',
+      marker:{ size:12, color: r.binding ? '#e74c3c' : '#2c3e50', symbol:'circle' }
+    });
+    if (r.binding) {
+      traces.push({
+        x:[compQa], y:[P.minAC],
+        mode:'markers', name:'Competitive Equilibrium',
+        marker:{ size:10, color:'#95a5a6', symbol:'circle-open', line:{width:2} }
+      });
+    }
+
+    /* ── Layout ── */
+    const layout = {
+      xaxis: {
+        title:{ text:'Quantity (Restaurant Meals per Week)', font:{size:13} },
+        range:[0, 220], fixedrange:true, gridcolor:'#ecf0f1'
+      },
+      yaxis: {
+        title:{ text:'Price per Meal ($)', font:{size:13} },
+        range:[0, 130], fixedrange:true, gridcolor:'#ecf0f1'
+      },
+      legend: { x:0.62, y:0.98, bgcolor:'rgba(255,255,255,0.85)', bordercolor:'#ccc', borderwidth:1 },
+      margin:{ l:60, r:30, t:20, b:60 },
+      autosize: false,
+      width:  660,
+      height: 460,
+      plot_bgcolor:'#ffffff',
+      paper_bgcolor:'#ffffff',
+      showlegend: true
+    };
+
+    const config = { responsive:false, displayModeBar:false, staticPlot:false };
+
+    Plotly.newPlot('market-graph', traces, layout, config);
+  }
+
+  /* ── Init ── */
+  document.addEventListener('DOMContentLoaded', function() {
+    update();
+    // Belt-and-suspenders resize
+    setTimeout(() => Plotly.Plots.resize('market-graph'), 150);
+    setTimeout(() => Plotly.Plots.resize('market-graph'), 500);
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profit Maximization with Perfect Competition</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.24.1/plotly.min.js"></script>
+    <style>
+        /* ── Skip Link ── */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: #18453B;
+            color: white;
+            padding: 8px 16px;
+            z-index: 9999;
+            font-weight: 700;
+            text-decoration: none;
+            border-radius: 0 0 6px 0;
+            transition: top 0.2s;
+        }
+        .skip-link:focus { top: 0; }
+
+        /* ── Screen-reader only ── */
+        .sr-only {
+            position: absolute;
+            width: 1px; height: 1px;
+            padding: 0; margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* ── Live region ── */
+        .live-region {
+            position: absolute;
+            left: -10000px;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+        }
+
+        /* ── Root / Reset ── */
+        :root {
+            --msu-green:   #18453B;
+            --msu-green2:  #2d5a4f;
+            --msu-gold:    #C89A2A;
+            --bg-page:     #f0f4f0;
+            --bg-white:    #ffffff;
+            --border:      #cdd9d6;
+            --text-dark:   #1a1a1a;
+            --text-mid:    #444444;
+            --focus-ring:  #C89A2A;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-page);
+            color: var(--text-dark);
+            min-height: 100vh;
+            padding: 16px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        /* ── Focus visible (WCAG 2.4.11) ── */
+        :focus-visible {
+            outline: 3px solid var(--focus-ring);
+            outline-offset: 3px;
+        }
+
+        /* ── Wrapper ── */
+        .wrapper {
+            max-width: 1300px;
+            margin: 0 auto;
+            background: var(--bg-white);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            overflow: hidden;
+        }
+
+        /* ── Header ── */
+        .header {
+            background: linear-gradient(135deg, var(--msu-green), var(--msu-green2));
+            color: white;
+            padding: 24px 32px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: clamp(1.4rem, 3vw, 2rem);
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .header p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        /* ── Main layout ── */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            min-height: 600px;
+        }
+
+        /* ── Control panel ── */
+        .control-panel {
+            background: #f8f9fa;
+            padding: 28px;
+            border-right: 3px solid #e9ecef;
+            overflow-y: auto;
+        }
+
+        .control-panel h2 {
+            color: var(--msu-green);
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        /* ── Scenario buttons ── */
+        .scenario-group {
+            margin-bottom: 24px;
+        }
+        .scenario-group legend {
+            font-weight: 700;
+            color: var(--msu-green);
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+        .scenario-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .scenario-btn {
+            padding: 10px 16px;
+            border: 2px solid var(--msu-green);
+            background: white;
+            color: var(--msu-green);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-align: left;
+            transition: all 0.2s ease;
+        }
+        .scenario-btn:hover {
+            background: #e8f0ee;
+        }
+        .scenario-btn.active,
+        .scenario-btn[aria-pressed="true"] {
+            background: var(--msu-green);
+            color: white;
+        }
+        .scenario-btn:focus-visible {
+            outline: 3px solid var(--focus-ring);
+            outline-offset: 2px;
+        }
+
+        /* ── Sliders ── */
+        .slider-group {
+            margin-bottom: 22px;
+        }
+        .slider-label {
+            display: block;
+            font-weight: 600;
+            color: var(--msu-green);
+            margin-bottom: 6px;
+            font-size: 0.95rem;
+        }
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .slider-row input[type="range"] {
+            flex: 1;
+            height: 6px;
+            border-radius: 4px;
+            accent-color: var(--msu-green);
+            cursor: pointer;
+        }
+        .slider-value {
+            font-weight: 700;
+            color: var(--msu-green);
+            min-width: 52px;
+            text-align: right;
+            font-size: 1rem;
+        }
+        .slider-bounds {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.78rem;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        /* ── Find optimal button ── */
+        .find-optimal-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--msu-gold);
+            color: #1a1a1a;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.2s ease;
+        }
+        .find-optimal-btn:hover {
+            background: #b8891a;
+            color: white;
+        }
+        .find-optimal-btn:focus-visible {
+            outline: 3px solid var(--msu-green);
+            outline-offset: 2px;
+        }
+
+        /* ── Decision indicator ── */
+        .decision-box {
+            padding: 14px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border: 2px solid;
+        }
+        .decision-box.profit {
+            background: rgba(39,174,96,0.12);
+            border-color: #27ae60;
+            color: #155724;
+        }
+        .decision-box.loss-continue {
+            background: rgba(243,156,18,0.12);
+            border-color: #e67e22;
+            color: #7d4e00;
+        }
+        .decision-box.loss-shutdown {
+            background: rgba(231,76,60,0.12);
+            border-color: #e74c3c;
+            color: #721c24;
+        }
+        .decision-box.breakeven {
+            background: rgba(52,152,219,0.12);
+            border-color: #3498db;
+            color: #004085;
+        }
+
+        /* ── Metric cards ── */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+        .metric-card {
+            background: white;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 10px;
+            text-align: center;
+        }
+        .metric-card .m-label {
+            font-size: 0.8rem;
+            color: #555;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .metric-card .m-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--msu-green);
+        }
+        .metric-card.profit-positive .m-value { color: #27ae60; }
+        .metric-card.profit-negative .m-value { color: #e74c3c; }
+
+        /* ── Graph panel ── */
+        .graph-panel {
+            padding: 24px 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .graph-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--msu-green);
+        }
+
+        .graph-wrapper {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            background: white;
+        }
+
+        /* ── Data table ── */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #e9ecef;
+            font-size: 0.92rem;
+        }
+        .data-table caption {
+            padding: 10px 14px;
+            font-weight: 700;
+            color: var(--msu-green);
+            text-align: left;
+            background: #f0f4f0;
+            border-bottom: 2px solid #e9ecef;
+            caption-side: top;
+        }
+        .data-table th, .data-table td {
+            padding: 10px 14px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 700;
+            color: var(--msu-green);
+        }
+        .data-table tr:last-child td { border-bottom: none; }
+        .data-table tr:hover td { background: #f8f9fa; }
+
+        /* ── Concept box ── */
+        .concept-box {
+            background: #e7f3ff;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            padding: 14px 16px;
+        }
+        .concept-box h3 {
+            color: #004085;
+            font-size: 0.95rem;
+            margin-bottom: 8px;
+        }
+        .concept-box ul {
+            padding-left: 18px;
+            color: #1a1a1a;
+            font-size: 0.9rem;
+        }
+        .concept-box li { margin-bottom: 4px; }
+
+        /* ── Graph text description (accessible) ── */
+        .graph-description {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 12px 14px;
+            font-size: 0.88rem;
+            color: #444;
+        }
+        .graph-description summary {
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--msu-green);
+        }
+        .graph-description p {
+            margin-top: 8px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 1024px) {
+            .main-layout { grid-template-columns: 1fr; }
+            .control-panel { border-right: none; border-bottom: 3px solid #e9ecef; }
+        }
+    </style>
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Live region for screen reader announcements -->
+<div id="live-updates" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+<div class="wrapper">
+    <!-- Header -->
+    <header class="header">
+        <h1>Profit Maximization with Perfect Competition</h1>
+        <p>Explore how a price-taking firm chooses its optimal output level</p>
+    </header>
+
+    <!-- Main content -->
+    <main id="main-content">
+        <div class="main-layout">
+
+            <!-- ── Control Panel ── -->
+            <aside class="control-panel" aria-label="Controls">
+                <h2>Adjust Parameters</h2>
+
+                <!-- Scenario selector -->
+                <fieldset class="scenario-group">
+                    <legend>Cost Scenario</legend>
+                    <div class="scenario-buttons" role="group" aria-label="Select cost scenario">
+                        <button class="scenario-btn active" id="btn-manufacturing"
+                                aria-pressed="true"
+                                onclick="setScenario('manufacturing', this)">
+                            Manufacturing
+                            <span class="sr-only"> – moderate fixed costs ($50)</span>
+                        </button>
+                        <button class="scenario-btn" id="btn-service"
+                                aria-pressed="false"
+                                onclick="setScenario('service', this)">
+                            Service
+                            <span class="sr-only"> – low fixed costs ($30)</span>
+                        </button>
+                        <button class="scenario-btn" id="btn-hightech"
+                                aria-pressed="false"
+                                onclick="setScenario('hightech', this)">
+                            High-Tech
+                            <span class="sr-only"> – high fixed costs ($80)</span>
+                        </button>
+                    </div>
+                </fieldset>
+
+                <!-- Market Price slider -->
+                <div class="slider-group">
+                    <label class="slider-label" for="price-slider">
+                        Market Price: <span id="price-label-value">$10.00</span>
+                    </label>
+                    <div class="slider-row">
+                        <input type="range" id="price-slider"
+                               min="2" max="20" value="10" step="0.5"
+                               aria-valuemin="2" aria-valuemax="20" aria-valuenow="10"
+                               aria-label="Market price in dollars"
+                               oninput="onPriceChange(this)">
+                        <span class="slider-value" aria-hidden="true" id="price-slider-display">$10.00</span>
+                    </div>
+                    <div class="slider-bounds" aria-hidden="true">
+                        <span>$2</span><span>$20</span>
+                    </div>
+                </div>
+
+                <!-- Quantity slider -->
+                <div class="slider-group">
+                    <label class="slider-label" for="quantity-slider">
+                        Quantity: <span id="qty-label-value">15 units</span>
+                    </label>
+                    <div class="slider-row">
+                        <input type="range" id="quantity-slider"
+                               min="0" max="50" value="15" step="0.5"
+                               aria-valuemin="0" aria-valuemax="50" aria-valuenow="15"
+                               aria-label="Quantity produced in units"
+                               oninput="onQuantityChange(this)">
+                        <span class="slider-value" aria-hidden="true" id="qty-slider-display">15</span>
+                    </div>
+                    <div class="slider-bounds" aria-hidden="true">
+                        <span>0</span><span>50</span>
+                    </div>
+                </div>
+
+                <!-- Find optimal button -->
+                <button class="find-optimal-btn" onclick="findOptimal()"
+                        aria-label="Set quantity to profit-maximizing level where price equals marginal cost">
+                    🎯 Find Profit-Maximizing Quantity
+                </button>
+
+                <!-- Decision indicator -->
+                <div id="decision-box" class="decision-box profit" role="status" aria-live="polite">
+                    Loading…
+                </div>
+
+                <!-- Metric cards -->
+                <div class="metrics-grid" role="region" aria-label="Current values">
+                    <div class="metric-card">
+                        <div class="m-label">Price (P)</div>
+                        <div class="m-value" id="m-price" aria-label="Market price">$10.00</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="m-label">Quantity (Q)</div>
+                        <div class="m-value" id="m-qty" aria-label="Current quantity">15.0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="m-label">MC at Q</div>
+                        <div class="m-value" id="m-mc" aria-label="Marginal cost">—</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="m-label">ATC at Q</div>
+                        <div class="m-value" id="m-atc" aria-label="Average total cost">—</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="m-label">AVC at Q</div>
+                        <div class="m-value" id="m-avc" aria-label="Average variable cost">—</div>
+                    </div>
+                    <div class="metric-card" id="profit-card">
+                        <div class="m-label">Economic Profit</div>
+                        <div class="m-value" id="m-profit" aria-label="Economic profit">—</div>
+                    </div>
+                </div>
+
+            </aside>
+
+            <!-- ── Graph Panel ── -->
+            <section class="graph-panel" aria-label="Graph and analysis">
+                <div class="graph-title" id="graph-title">Manufacturing — Cost Curves &amp; Profit Analysis</div>
+
+                <!-- Graph -->
+                <div class="graph-wrapper">
+                    <div id="main-graph"
+                         role="img"
+                         aria-label="Cost curve graph showing MC, ATC, and AVC curves with market price line and profit/loss shading"
+                         aria-describedby="graph-text-desc">
+                    </div>
+                </div>
+
+                <!-- Accessible text description -->
+                <details class="graph-description" id="graph-text-desc">
+                    <summary>📋 Text description of graph (for screen readers)</summary>
+                    <p id="graph-desc-text">Graph is loading…</p>
+                </details>
+
+                <!-- Data table -->
+                <table class="data-table" aria-label="Cost and profit data at current quantity">
+                    <caption>Current Values Summary</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Variable</th>
+                            <th scope="col">Value</th>
+                            <th scope="col">Interpretation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Market Price (P)</td>
+                            <td id="t-price">—</td>
+                            <td>Given by the market; firm is a price taker</td>
+                        </tr>
+                        <tr>
+                            <td>Quantity (Q)</td>
+                            <td id="t-qty">—</td>
+                            <td>Chosen by the firm</td>
+                        </tr>
+                        <tr>
+                            <td>Marginal Cost (MC)</td>
+                            <td id="t-mc">—</td>
+                            <td id="t-mc-interp">Cost of last unit produced</td>
+                        </tr>
+                        <tr>
+                            <td>Avg. Total Cost (ATC)</td>
+                            <td id="t-atc">—</td>
+                            <td id="t-atc-interp">Total cost per unit</td>
+                        </tr>
+                        <tr>
+                            <td>Avg. Variable Cost (AVC)</td>
+                            <td id="t-avc">—</td>
+                            <td id="t-avc-interp">Variable cost per unit</td>
+                        </tr>
+                        <tr>
+                            <td>Economic Profit</td>
+                            <td id="t-profit">—</td>
+                            <td id="t-profit-interp">= (P − ATC) × Q</td>
+                        </tr>
+                        <tr>
+                            <td>Optimal Q (P = MC)</td>
+                            <td id="t-qstar">—</td>
+                            <td>Profit-maximizing quantity</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Concept reminder -->
+                <div class="concept-box" role="note" aria-label="Key concepts">
+                    <h3>📚 Key Decision Rules</h3>
+                    <ul>
+                        <li><strong>Profit maximization:</strong> Set Q where P = MC (and MC is rising)</li>
+                        <li><strong>Short-run operation:</strong> Produce if P ≥ min AVC</li>
+                        <li><strong>Short-run shutdown:</strong> Stop if P &lt; min AVC (losses exceed fixed costs)</li>
+                        <li><strong>Long-run exit:</strong> Exit if P &lt; min ATC (persistent economic losses)</li>
+                    </ul>
+                </div>
+
+            </section>
+        </div>
+    </main>
+</div>
+
+<script>
+    // ── State ──────────────────────────────────────────────────────────────
+    let currentPrice    = 10;
+    let currentQuantity = 15;
+    let currentScenario = 'manufacturing';
+
+    const scenarios = {
+        manufacturing: { F: 50,  b: 3.0,  c: -0.05,  d: 0.002,  name: "Manufacturing",  fixedLabel: "Fixed costs = $50" },
+        service:       { F: 30,  b: 4.0,  c: -0.08,  d: 0.003,  name: "Service",         fixedLabel: "Fixed costs = $30" },
+        hightech:      { F: 80,  b: 2.0,  c: -0.03,  d: 0.001,  name: "High-Tech",       fixedLabel: "Fixed costs = $80" }
+    };
+
+    // ── Cost functions ─────────────────────────────────────────────────────
+    function mc(q) {
+        const s = scenarios[currentScenario];
+        return s.b + 2*s.c*q + 3*s.d*q*q;
+    }
+    function atc(q) {
+        if (q <= 0) return Infinity;
+        const s = scenarios[currentScenario];
+        return s.F/q + s.b + s.c*q + s.d*q*q;
+    }
+    function avc(q) {
+        const s = scenarios[currentScenario];
+        return s.b + s.c*q + s.d*q*q;
+    }
+    function tc(q) {
+        const s = scenarios[currentScenario];
+        return s.F + s.b*q + s.c*q*q + s.d*q*q*q;
+    }
+
+    // ── Find min AVC ───────────────────────────────────────────────────────
+    function minAVC() {
+        let minVal = Infinity, minQ = 0;
+        for (let q = 0.5; q <= 50; q += 0.1) {
+            const v = avc(q);
+            if (v < minVal) { minVal = v; minQ = q; }
+        }
+        return { minVal, minQ };
+    }
+
+    // ── Find Q* where P = MC (analytical solve) ────────────────────────────
+    function findQstar(price) {
+        const s = scenarios[currentScenario];
+        // MC = b + 2c*q + 3d*q^2 = price  →  3d*q^2 + 2c*q + (b-price) = 0
+        const A = 3*s.d, B = 2*s.c, C = s.b - price;
+        const disc = B*B - 4*A*C;
+        if (disc < 0) return null;
+        const q1 = (-B + Math.sqrt(disc)) / (2*A);
+        const q2 = (-B - Math.sqrt(disc)) / (2*A);
+        // Pick the positive root where MC is rising (second root typically)
+        const candidates = [q1, q2].filter(q => q > 0 && q <= 50);
+        if (candidates.length === 0) return null;
+        // The profit-maximizing one has positive slope of MC at that point
+        // MC slope = 2c + 6d*q, want >0
+        const valid = candidates.filter(q => (2*s.c + 6*s.d*q) > 0);
+        if (valid.length === 0) return candidates[0];
+        return Math.max(...valid);  // take the higher q where MC is rising
+    }
+
+    // ── Slider handlers ────────────────────────────────────────────────────
+    function onPriceChange(el) {
+        currentPrice = parseFloat(el.value);
+        el.setAttribute('aria-valuenow', currentPrice);
+        document.getElementById('price-label-value').textContent = `$${currentPrice.toFixed(2)}`;
+        document.getElementById('price-slider-display').textContent = `$${currentPrice.toFixed(2)}`;
+        updateAll();
+    }
+
+    function onQuantityChange(el) {
+        currentQuantity = parseFloat(el.value);
+        el.setAttribute('aria-valuenow', currentQuantity);
+        document.getElementById('qty-label-value').textContent = `${currentQuantity} units`;
+        document.getElementById('qty-slider-display').textContent = currentQuantity;
+        updateAll();
+    }
+
+    function setScenario(key, btn) {
+        currentScenario = key;
+        document.querySelectorAll('.scenario-btn').forEach(b => {
+            b.classList.remove('active');
+            b.setAttribute('aria-pressed', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
+        updateAll();
+        announce(`Scenario changed to ${scenarios[key].name}. ${scenarios[key].fixedLabel}.`);
+    }
+
+    function findOptimal() {
+        const qstar = findQstar(currentPrice);
+        if (qstar === null || qstar <= 0) {
+            announce('No valid profit-maximizing quantity found for this price.');
+            return;
+        }
+        const qRounded = Math.round(qstar * 2) / 2; // round to nearest 0.5
+        currentQuantity = Math.min(Math.max(qRounded, 0), 50);
+        document.getElementById('quantity-slider').value = currentQuantity;
+        document.getElementById('quantity-slider').setAttribute('aria-valuenow', currentQuantity);
+        document.getElementById('qty-label-value').textContent = `${currentQuantity} units`;
+        document.getElementById('qty-slider-display').textContent = currentQuantity;
+        updateAll();
+        const profitVal = (currentPrice - atc(currentQuantity)) * currentQuantity;
+        announce(`Optimal quantity set to ${currentQuantity} units. At this point P ≈ MC. Economic profit is $${profitVal.toFixed(2)}.`);
+    }
+
+    // ── Announce to screen reader ──────────────────────────────────────────
+    function announce(msg) {
+        const el = document.getElementById('live-updates');
+        el.textContent = '';
+        setTimeout(() => { el.textContent = msg; }, 50);
+    }
+
+    // ── Main update ────────────────────────────────────────────────────────
+    function updateAll() {
+        const Q = currentQuantity;
+        const P = currentPrice;
+        const s = scenarios[currentScenario];
+
+        const mcAtQ  = mc(Q);
+        const atcAtQ = Q > 0 ? atc(Q) : null;
+        const avcAtQ = Q > 0 ? avc(Q) : null;
+        const profit = Q > 0 ? (P - atcAtQ) * Q : -s.F;
+        const { minVal: minAVCval } = minAVC();
+        const qstar = findQstar(P);
+
+        // Update metric cards
+        document.getElementById('m-price').textContent = `$${P.toFixed(2)}`;
+        document.getElementById('m-qty').textContent   = Q.toFixed(1);
+        document.getElementById('m-mc').textContent    = `$${mcAtQ.toFixed(2)}`;
+        document.getElementById('m-atc').textContent   = atcAtQ !== null ? `$${atcAtQ.toFixed(2)}` : '—';
+        document.getElementById('m-avc').textContent   = avcAtQ !== null ? `$${avcAtQ.toFixed(2)}` : '—';
+        document.getElementById('m-profit').textContent = `$${profit.toFixed(2)}`;
+
+        // Profit card color
+        const profitCard = document.getElementById('profit-card');
+        profitCard.classList.remove('profit-positive','profit-negative');
+        if (profit > 0.01)  profitCard.classList.add('profit-positive');
+        if (profit < -0.01) profitCard.classList.add('profit-negative');
+
+        // Decision box
+        let decisionClass, decisionText;
+        if (Q === 0) {
+            decisionClass = 'loss-shutdown';
+            decisionText = '⛔ Firm has shut down. Producing Q = 0.';
+        } else if (P < minAVCval - 0.01) {
+            decisionClass = 'loss-shutdown';
+            decisionText = `⛔ Shut down: P ($${P.toFixed(2)}) < min AVC ($${minAVCval.toFixed(2)}). Better to produce nothing.`;
+        } else if (profit < -0.01 && P >= minAVCval - 0.01) {
+            decisionClass = 'loss-continue';
+            decisionText = `⚠️ Economic loss ($${profit.toFixed(2)}), but P ≥ AVC — keep operating short-run to cover fixed costs.`;
+        } else if (Math.abs(profit) <= 0.01) {
+            decisionClass = 'breakeven';
+            decisionText = `◎ Break-even: P = ATC. Zero economic profit. Normal profit is earned.`;
+        } else {
+            decisionClass = 'profit';
+            decisionText = `✅ Economic profit: $${profit.toFixed(2)}. Firm earns above-normal returns.`;
+        }
+        const db = document.getElementById('decision-box');
+        db.className = `decision-box ${decisionClass}`;
+        db.textContent = decisionText;
+
+        // Update table
+        document.getElementById('t-price').textContent = `$${P.toFixed(2)}`;
+        document.getElementById('t-qty').textContent   = Q.toFixed(1);
+        document.getElementById('t-mc').textContent    = `$${mcAtQ.toFixed(2)}`;
+        document.getElementById('t-atc').textContent   = atcAtQ !== null ? `$${atcAtQ.toFixed(2)}` : 'N/A';
+        document.getElementById('t-avc').textContent   = avcAtQ !== null ? `$${avcAtQ.toFixed(2)}` : 'N/A';
+        document.getElementById('t-profit').textContent = `$${profit.toFixed(2)}`;
+        document.getElementById('t-qstar').textContent = qstar !== null ? qstar.toFixed(1) : 'N/A';
+
+        // MC vs P interpretation
+        const mcInterp = mcAtQ < P - 0.05
+            ? 'MC < P: increase Q to raise profit'
+            : mcAtQ > P + 0.05
+            ? 'MC > P: decrease Q to raise profit'
+            : 'MC ≈ P: near profit maximum';
+        document.getElementById('t-mc-interp').textContent = mcInterp;
+        document.getElementById('t-atc-interp').textContent =
+            atcAtQ !== null ? (P >= atcAtQ ? 'P ≥ ATC: making money per unit' : 'P < ATC: losing money per unit') : '—';
+        document.getElementById('t-avc-interp').textContent =
+            avcAtQ !== null ? (P >= avcAtQ ? 'P ≥ AVC: covers variable costs' : 'P < AVC: shut down!') : '—';
+        document.getElementById('t-profit-interp').textContent =
+            `= ($${P.toFixed(2)} − $${atcAtQ !== null ? atcAtQ.toFixed(2) : '?'}) × ${Q.toFixed(1)}`;
+
+        // Graph title
+        document.getElementById('graph-title').textContent =
+            `${s.name} — Cost Curves & Profit Analysis`;
+
+        // Update text description
+        updateGraphDescription(P, Q, mcAtQ, atcAtQ, avcAtQ, profit, qstar, minAVCval);
+
+        // Draw graph
+        drawGraph(P, Q, qstar);
+    }
+
+    // ── Text description for accessibility ────────────────────────────────
+    function updateGraphDescription(P, Q, mcVal, atcVal, avcVal, profit, qstar, minAVCval) {
+        const s = scenarios[currentScenario];
+        let desc = `The graph shows three cost curves for the ${s.name} scenario. `;
+        desc += `The MC (marginal cost) curve is U-shaped, rising steeply at high output. `;
+        desc += `The ATC (average total cost) curve is U-shaped, reaching its minimum around the point where MC crosses ATC. `;
+        desc += `The AVC (average variable cost) curve lies below ATC by the amount of average fixed cost. `;
+        desc += `The horizontal line represents the market price of $${P.toFixed(2)}. `;
+
+        if (Q > 0) {
+            desc += `At the current quantity of ${Q.toFixed(1)} units: `;
+            desc += `MC = $${mcVal.toFixed(2)}, ATC = $${atcVal ? atcVal.toFixed(2) : 'N/A'}, AVC = $${avcVal ? avcVal.toFixed(2) : 'N/A'}. `;
+            if (profit > 0.01) {
+                desc += `The shaded green rectangle shows economic profit of $${profit.toFixed(2)}, equal to (P − ATC) × Q. `;
+            } else if (profit < -0.01) {
+                desc += `The shaded red rectangle shows economic loss of $${Math.abs(profit).toFixed(2)}. `;
+            } else {
+                desc += `The firm is breaking even; P ≈ ATC. `;
+            }
+        }
+
+        if (qstar !== null) {
+            desc += `The profit-maximizing quantity is approximately ${qstar.toFixed(1)} units, where P = MC. `;
+        }
+        desc += `Minimum AVC is approximately $${minAVCval.toFixed(2)}.`;
+
+        document.getElementById('graph-desc-text').textContent = desc;
+    }
+
+    // ── Draw Plotly graph ──────────────────────────────────────────────────
+    function drawGraph(P, Q, qstar) {
+        const qVals = [], mcVals = [], atcVals = [], avcVals = [], pVals = [];
+        for (let q = 0.2; q <= 50; q += 0.3) {
+            const atcV = atc(q);
+            if (atcV > 30) continue; // clip high values
+            qVals.push(q);
+            mcVals.push(Math.min(mc(q), 30));
+            atcVals.push(Math.min(atcV, 30));
+            avcVals.push(Math.min(avc(q), 30));
+            pVals.push(P);
+        }
+
+        const traces = [
+            {
+                x: qVals, y: mcVals,
+                mode: 'lines', name: 'MC',
+                line: { color: '#e74c3c', width: 3 },
+                showlegend: true, type: 'scatter',
+                hovertemplate: 'Q=%{x:.1f}<br>MC=$%{y:.2f}<extra>MC</extra>'
+            },
+            {
+                x: qVals, y: atcVals,
+                mode: 'lines', name: 'ATC',
+                line: { color: '#2980b9', width: 3 },
+                showlegend: true, type: 'scatter',
+                hovertemplate: 'Q=%{x:.1f}<br>ATC=$%{y:.2f}<extra>ATC</extra>'
+            },
+            {
+                x: qVals, y: avcVals,
+                mode: 'lines', name: 'AVC',
+                line: { color: '#f39c12', width: 2.5, dash: 'dash' },
+                showlegend: true, type: 'scatter',
+                hovertemplate: 'Q=%{x:.1f}<br>AVC=$%{y:.2f}<extra>AVC</extra>'
+            },
+            {
+                x: [0, 50], y: [P, P],
+                mode: 'lines', name: `P = $${P.toFixed(2)}`,
+                line: { color: '#18453B', width: 2.5, dash: 'dot' },
+                showlegend: true, type: 'scatter',
+                hovertemplate: `Market Price = $${P.toFixed(2)}<extra>Price</extra>`
+            }
+        ];
+
+        // Vertical line at current Q
+        if (Q > 0) {
+            traces.push({
+                x: [Q, Q], y: [0, 30],
+                mode: 'lines', name: 'Current Q',
+                line: { color: '#8e44ad', width: 2, dash: 'dashdot' },
+                showlegend: false, type: 'scatter',
+                hoverinfo: 'skip'
+            });
+        }
+
+        // Profit / loss rectangle
+        if (Q > 0) {
+            const atcV = atc(Q);
+            const profit = (P - atcV) * Q;
+            const yLow  = Math.min(P, atcV);
+            const yHigh = Math.max(P, atcV);
+            if (Math.abs(profit) > 0.01) {
+                traces.push({
+                    x: [0, Q, Q, 0, 0],
+                    y: [yLow, yLow, yHigh, yHigh, yLow],
+                    mode: 'lines', fill: 'toself',
+                    fillcolor: profit > 0 ? 'rgba(39,174,96,0.25)' : 'rgba(231,76,60,0.25)',
+                    line: { color: profit > 0 ? '#27ae60' : '#e74c3c', width: 1 },
+                    name: profit > 0 ? 'Economic Profit' : 'Economic Loss',
+                    showlegend: true, type: 'scatter',
+                    hovertemplate: `${profit > 0 ? 'Profit' : 'Loss'} = $${Math.abs(profit).toFixed(2)}<extra></extra>`
+                });
+            }
+        }
+
+        // Marker at optimal Q
+        if (qstar !== null && qstar > 0 && qstar <= 50) {
+            traces.push({
+                x: [qstar], y: [P],
+                mode: 'markers', name: 'Optimal Q*',
+                marker: { color: '#18453B', size: 10, symbol: 'circle' },
+                showlegend: true, type: 'scatter',
+                hovertemplate: `Q* = ${qstar.toFixed(1)}<br>P = MC = $${P.toFixed(2)}<extra>Optimal Q*</extra>`
+            });
+        }
+
+        // Curve labels as annotations
+        const annotations = [];
+        const labelQ = 44;
+        const mcLabelY  = Math.min(mc(labelQ), 28);
+        const atcLabelY = Math.min(atc(labelQ), 28);
+        const avcLabelY = Math.min(avc(labelQ), 28);
+        if (mcLabelY  <= 28) annotations.push({ x: labelQ, y: mcLabelY,  text: 'MC',  showarrow: false, font: { color: '#e74c3c', size: 13, weight: 700 }, bgcolor: 'rgba(255,255,255,0.85)' });
+        if (atcLabelY <= 28) annotations.push({ x: labelQ-4, y: atcLabelY, text: 'ATC', showarrow: false, font: { color: '#2980b9', size: 13, weight: 700 }, bgcolor: 'rgba(255,255,255,0.85)' });
+        if (avcLabelY <= 28) annotations.push({ x: labelQ-8, y: avcLabelY, text: 'AVC', showarrow: false, font: { color: '#f39c12', size: 13, weight: 700 }, bgcolor: 'rgba(255,255,255,0.85)' });
+
+        const layout = {
+            xaxis: {
+                title: { text: 'Quantity (units)', font: { size: 13 } },
+                range: [0, 50], fixedrange: true,
+                showgrid: true, gridcolor: '#eee'
+            },
+            yaxis: {
+                title: { text: 'Price / Cost ($)', font: { size: 13 } },
+                range: [0, 28], fixedrange: true,
+                showgrid: true, gridcolor: '#eee',
+                tickprefix: '$'
+            },
+            legend: { x: 0.02, y: 0.98, bgcolor: 'rgba(255,255,255,0.85)', bordercolor: '#ccc', borderwidth: 1 },
+            annotations: annotations,
+            margin: { l: 65, r: 30, t: 20, b: 55 },
+            autosize: false,
+            width: 700,
+            height: 470,
+            plot_bgcolor: '#fafafa',
+            paper_bgcolor: 'white'
+        };
+
+        const config = { responsive: false, displayModeBar: false, staticPlot: false };
+
+        const graphDiv = document.getElementById('main-graph');
+        if (graphDiv.data) {
+            Plotly.react('main-graph', traces, layout, config);
+        } else {
+            Plotly.newPlot('main-graph', traces, layout, config);
+        }
+    }
+
+    // ── Keyboard navigation for sliders ───────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function() {
+        // Fine-grained keyboard control (Shift + arrow = larger step)
+        document.getElementById('price-slider').addEventListener('keydown', function(e) {
+            if (e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+                e.preventDefault();
+                const delta = e.key === 'ArrowRight' ? 2 : -2;
+                const newVal = Math.min(20, Math.max(2, currentPrice + delta));
+                this.value = newVal;
+                onPriceChange(this);
+            }
+        });
+        document.getElementById('quantity-slider').addEventListener('keydown', function(e) {
+            if (e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+                e.preventDefault();
+                const delta = e.key === 'ArrowRight' ? 5 : -5;
+                const newVal = Math.min(50, Math.max(0, currentQuantity + delta));
+                this.value = newVal;
+                onQuantityChange(this);
+            }
+        });
+
+        // Initial render
+        updateAll();
+    });
+</script>
+</body>
+</html>

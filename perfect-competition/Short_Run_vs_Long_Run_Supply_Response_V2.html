@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Short-Run vs Long-Run Supply Response</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --msu-green:  #18453B;
+      --msu-green2: #2d5a4f;
+      --msu-gold:   #C89A2A;
+      --bg-page:    #f0f4f0;
+      --bg-white:   #ffffff;
+      --border:     #cdd9d6;
+      --text-dark:  #1a1a1a;
+      --text-mid:   #444444;
+      --focus-ring: #C89A2A;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, var(--bg-page) 0%, #c3cfe2 100%);
+      padding: 16px;
+      font-size: 16px;
+      line-height: 1.5;
+      color: var(--text-dark);
+      min-height: 100vh;
+    }
+
+    /* ── Skip link ── */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: var(--msu-green);
+      color: #fff;
+      padding: 8px 16px;
+      z-index: 9999;
+      font-weight: 700;
+      text-decoration: none;
+      border-radius: 0 0 6px 0;
+      transition: top 0.2s;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ── Screen-reader only ── */
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ── Focus ── */
+    :focus-visible {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 3px;
+    }
+
+    /* ── Wrapper ── */
+    .wrapper {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: var(--bg-white);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, var(--msu-green), var(--msu-green2));
+      color: white;
+      padding: 28px 32px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .header p {
+      font-size: 1.05em;
+      opacity: 0.92;
+    }
+
+    /* ── Scenario selector ── */
+    .scenario-selector {
+      background: #f8f9fa;
+      padding: 18px 24px;
+      border-bottom: 3px solid var(--msu-green);
+    }
+    .scenario-selector h2 {
+      color: var(--msu-green);
+      font-size: 1.1em;
+      margin-bottom: 12px;
+    }
+    .scenario-buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .scenario-btn {
+      flex: 1;
+      min-width: 180px;
+      padding: 12px 18px;
+      font-size: 1em;
+      border: 3px solid var(--msu-green);
+      background: white;
+      color: var(--msu-green);
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .scenario-btn:hover {
+      background: var(--msu-green);
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(24,69,59,0.25);
+    }
+    .scenario-btn:focus-visible {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 3px;
+    }
+    .scenario-btn[aria-pressed="true"],
+    .scenario-btn.active {
+      background: var(--msu-green);
+      color: white;
+    }
+
+    /* ── Main layout ── */
+    .content-wrapper {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 0;
+      min-height: 600px;
+    }
+
+    /* ── Control panel ── */
+    .control-panel {
+      background: #f8f9fa;
+      padding: 28px 24px;
+      border-right: 3px solid #e9ecef;
+      overflow-y: auto;
+    }
+
+    .control-section {
+      background: white;
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+    .control-section h3 {
+      color: var(--msu-green);
+      font-size: 1.05em;
+      margin-bottom: 16px;
+    }
+
+    /* ── Slider ── */
+    .slider-group {
+      margin-bottom: 18px;
+    }
+    .slider-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .slider-label-row label {
+      font-weight: 600;
+      color: var(--text-mid);
+      font-size: 0.95em;
+    }
+    .slider-value-badge {
+      background: var(--msu-green);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.9em;
+      font-weight: 700;
+      min-width: 60px;
+      text-align: center;
+    }
+    input[type="range"] {
+      width: 100%;
+      height: 8px;
+      border-radius: 5px;
+      background: #d3d3d3;
+      outline: none;
+      cursor: pointer;
+      -webkit-appearance: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--msu-green);
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--msu-green);
+      cursor: pointer;
+      border: none;
+    }
+    input[type="range"]:focus-visible {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 3px;
+    }
+    .slider-hint {
+      font-size: 0.8em;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    /* ── Metrics panel ── */
+    .metrics-section {
+      background: white;
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+    .metrics-section h3 {
+      color: var(--msu-green);
+      font-size: 1.05em;
+      margin-bottom: 14px;
+    }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .metric-card {
+      background: #f8f9fa;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+    .metric-label {
+      font-size: 0.82em;
+      color: #555;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    .metric-value {
+      font-size: 1.2em;
+      font-weight: 700;
+      color: var(--msu-green);
+    }
+    .metric-value.profit-positive { color: #155724; }
+    .metric-value.profit-negative { color: #721c24; }
+    .metric-value.profit-zero     { color: #856404; }
+
+    /* ── Insight box ── */
+    .insight-box {
+      padding: 14px 16px;
+      border-radius: 8px;
+      border-left: 4px solid;
+      font-size: 0.92em;
+      line-height: 1.55;
+    }
+    .insight-box.profit  { background: #d4edda; border-color: #28a745; color: #155724; }
+    .insight-box.loss    { background: #f8d7da; border-color: #dc3545; color: #721c24; }
+    .insight-box.zero    { background: #fff3cd; border-color: #ffc107; color: #856404; }
+    .insight-box.neutral { background: #e7f3ff; border-color: #1565C0; color: #004085; }
+
+    /* ── Graph panel ── */
+    .graph-panel {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .graphs-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .graph-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .graph-section h3 {
+      color: var(--msu-green);
+      font-size: 1em;
+      font-weight: 700;
+    }
+
+    .graph-wrapper {
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      overflow: hidden;
+      background: white;
+    }
+
+    /* ── Data table ── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid #e9ecef;
+      font-size: 0.9em;
+    }
+    .data-table caption {
+      padding: 10px 12px;
+      font-weight: 700;
+      color: var(--msu-green);
+      text-align: left;
+      background: #f8f9fa;
+      border-bottom: 2px solid #e9ecef;
+      caption-side: top;
+    }
+    .data-table th,
+    .data-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e9ecef;
+    }
+    .data-table th {
+      background: #f8f9fa;
+      font-weight: 700;
+      color: var(--msu-green);
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: #f0f4f0; }
+
+    /* ── Live region ── */
+    .live-region {
+      position: absolute;
+      left: -10000px;
+      width: 1px; height: 1px;
+      overflow: hidden;
+    }
+
+    /* ── Key concepts ── */
+    .concepts-bar {
+      background: #f8f9fa;
+      border-top: 3px solid var(--msu-green);
+      padding: 18px 24px;
+    }
+    .concepts-bar h3 {
+      color: var(--msu-green);
+      font-size: 1em;
+      margin-bottom: 10px;
+    }
+    .concepts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    .concept-item {
+      background: white;
+      border: 2px solid #e9ecef;
+      border-left: 4px solid var(--msu-green);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 0.88em;
+      line-height: 1.5;
+    }
+    .concept-item strong {
+      color: var(--msu-green);
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    @media (max-width: 1024px) {
+      .content-wrapper { grid-template-columns: 1fr; }
+      .graphs-row { grid-template-columns: 1fr; }
+      .control-panel { border-right: none; border-bottom: 3px solid #e9ecef; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Skip navigation -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Live region for screen reader announcements -->
+<div id="live-updates" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+<div class="wrapper">
+
+  <!-- Header -->
+  <header class="header">
+    <h1>📈 Short-Run vs Long-Run Supply Response</h1>
+    <p>Explore how firm entry and exit drive markets toward long-run equilibrium</p>
+  </header>
+
+  <!-- Scenario selector -->
+  <nav class="scenario-selector" aria-label="Market scenarios">
+    <h2 id="scenario-heading">Choose a Starting Scenario</h2>
+    <div class="scenario-buttons" role="group" aria-labelledby="scenario-heading">
+      <button class="scenario-btn active"
+              id="btn-profits"
+              aria-pressed="true"
+              onclick="applyScenario('profits', this)">
+        📈 Short-Run Profits
+      </button>
+      <button class="scenario-btn"
+              id="btn-losses"
+              aria-pressed="false"
+              onclick="applyScenario('losses', this)">
+        📉 Short-Run Losses
+      </button>
+      <button class="scenario-btn"
+              id="btn-equilibrium"
+              aria-pressed="false"
+              onclick="applyScenario('equilibrium', this)">
+        ⚖️ Long-Run Equilibrium
+      </button>
+      <button class="scenario-btn"
+              id="btn-demand-shock"
+              aria-pressed="false"
+              onclick="applyScenario('demand-shock', this)">
+        💥 Demand Shock
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main id="main-content">
+    <div class="content-wrapper">
+
+      <!-- ── Control Panel ── -->
+      <aside class="control-panel" aria-label="Market controls">
+
+        <!-- Sliders -->
+        <section class="control-section" aria-labelledby="controls-heading">
+          <h3 id="controls-heading">🎛️ Adjust the Market</h3>
+
+          <div class="slider-group">
+            <div class="slider-label-row">
+              <label for="firms-slider">Number of Firms</label>
+              <span class="slider-value-badge" id="firms-display" aria-live="polite">70</span>
+            </div>
+            <input type="range"
+                   id="firms-slider"
+                   min="20" max="150" step="1" value="70"
+                   aria-label="Number of firms in the market"
+                   aria-valuemin="20" aria-valuemax="150" aria-valuenow="70"
+                   oninput="updateFromSlider()">
+            <p class="slider-hint">More firms → supply shifts right → lower price</p>
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-label-row">
+              <label for="demand-slider">Demand Intercept ($)</label>
+              <span class="slider-value-badge" id="demand-display" aria-live="polite">$30</span>
+            </div>
+            <input type="range"
+                   id="demand-slider"
+                   min="20" max="40" step="0.5" value="30"
+                   aria-label="Demand intercept, controls how much consumers are willing to pay"
+                   aria-valuemin="20" aria-valuemax="40" aria-valuenow="30"
+                   oninput="updateFromSlider()">
+            <p class="slider-hint">Higher intercept → stronger demand → higher price</p>
+          </div>
+        </section>
+
+        <!-- Metrics -->
+        <section class="metrics-section" aria-labelledby="metrics-heading">
+          <h3 id="metrics-heading">📊 Current Market Outcome</h3>
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-label">Market Price</div>
+              <div class="metric-value" id="price-display">$0.00</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Firm Output</div>
+              <div class="metric-value" id="firm-output-display">0 units</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Market Output</div>
+              <div class="metric-value" id="market-output-display">0</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Economic Profit</div>
+              <div class="metric-value" id="profit-display">$0</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Dynamic insight -->
+        <div id="insight-box" class="insight-box neutral" role="status" aria-live="polite">
+          Adjust the sliders to explore market dynamics.
+        </div>
+
+        <!-- Key reference prices -->
+        <section class="control-section" aria-labelledby="reference-heading" style="margin-top:14px;">
+          <h3 id="reference-heading">🔑 Key Threshold Prices</h3>
+          <table class="data-table" aria-label="Key price thresholds for this cost structure">
+            <caption>Cost-Based Decision Rules</caption>
+            <thead>
+              <tr>
+                <th scope="col">Threshold</th>
+                <th scope="col">Price</th>
+                <th scope="col">Meaning</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Shutdown</td>
+                <td>$2.00</td>
+                <td>P &lt; AVC<sub>min</sub>: cease production</td>
+              </tr>
+              <tr>
+                <td>Break-Even</td>
+                <td id="break-even-price">$12.00</td>
+                <td>P = ATC<sub>min</sub>: zero profit</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+      </aside>
+
+      <!-- ── Graph Panel ── -->
+      <section class="graph-panel" aria-labelledby="graphs-heading">
+        <h2 id="graphs-heading" class="sr-only">Supply and demand graphs</h2>
+
+        <div class="graphs-row">
+
+          <!-- Market graph -->
+          <div class="graph-section">
+            <h3 id="market-graph-title">📈 Market (Industry Level)</h3>
+            <div class="graph-wrapper">
+              <div id="market-graph"
+                   role="img"
+                   aria-labelledby="market-graph-title"
+                   aria-describedby="market-graph-desc"></div>
+            </div>
+            <p id="market-graph-desc" class="sr-only" aria-live="polite">Market graph loading…</p>
+          </div>
+
+          <!-- Firm graph -->
+          <div class="graph-section">
+            <h3 id="firm-graph-title">🏢 Individual Firm</h3>
+            <div class="graph-wrapper">
+              <div id="firm-graph"
+                   role="img"
+                   aria-labelledby="firm-graph-title"
+                   aria-describedby="firm-graph-desc"></div>
+            </div>
+            <p id="firm-graph-desc" class="sr-only" aria-live="polite">Firm graph loading…</p>
+          </div>
+
+        </div>
+
+        <!-- Data table – accessible alternative to the graphs -->
+        <table class="data-table" id="results-table" aria-label="Detailed market equilibrium results">
+          <caption>Market Equilibrium Details</caption>
+          <thead>
+            <tr>
+              <th scope="col">Variable</th>
+              <th scope="col">Value</th>
+              <th scope="col">Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Market Price (P*)</td>
+              <td id="tbl-price">—</td>
+              <td>Equilibrium price at intersection of supply &amp; demand</td>
+            </tr>
+            <tr>
+              <td>Firm Output (q*)</td>
+              <td id="tbl-firm-q">—</td>
+              <td>Each firm produces where P = MC</td>
+            </tr>
+            <tr>
+              <td>Market Output (Q*)</td>
+              <td id="tbl-market-q">—</td>
+              <td>Total = (number of firms) × (firm output)</td>
+            </tr>
+            <tr>
+              <td>Marginal Cost (MC)</td>
+              <td id="tbl-mc">—</td>
+              <td>Should equal price at optimum</td>
+            </tr>
+            <tr>
+              <td>Average Total Cost (ATC)</td>
+              <td id="tbl-atc">—</td>
+              <td>P vs ATC determines profit/loss</td>
+            </tr>
+            <tr>
+              <td>Average Variable Cost (AVC)</td>
+              <td id="tbl-avc">—</td>
+              <td>P vs AVC determines shutdown decision</td>
+            </tr>
+            <tr>
+              <td>Economic Profit per Firm</td>
+              <td id="tbl-profit">—</td>
+              <td>(P − ATC) × q*</td>
+            </tr>
+            <tr>
+              <td>Long-Run Expectation</td>
+              <td id="tbl-lr">—</td>
+              <td>Entry/exit pressure in long run</td>
+            </tr>
+          </tbody>
+        </table>
+
+      </section>
+    </div><!-- end content-wrapper -->
+
+    <!-- Key concepts bar -->
+    <section class="concepts-bar" aria-labelledby="concepts-heading">
+      <h3 id="concepts-heading">📚 Key Concepts</h3>
+      <div class="concepts-grid">
+        <div class="concept-item">
+          <strong>Short-Run Supply Curve</strong>
+          Each firm's MC curve above AVC. Adding up all firms gives market supply.
+        </div>
+        <div class="concept-item">
+          <strong>Entry &amp; Exit Rule</strong>
+          Profit > 0 → firms enter → supply shifts right → price falls.
+          Loss &lt; 0 → firms exit → supply shifts left → price rises.
+        </div>
+        <div class="concept-item">
+          <strong>Long-Run Equilibrium</strong>
+          Economic profit = 0. Price equals minimum ATC. No incentive to enter or exit.
+        </div>
+        <div class="concept-item">
+          <strong>Shutdown Rule</strong>
+          A firm shuts down when P &lt; min AVC (it cannot cover variable costs).
+          Fixed costs are sunk in the short run.
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div><!-- end wrapper -->
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// Economic model parameters — TC = F + a·q + b·q²
+// ─────────────────────────────────────────────────────────────────────────────
+const params = {
+  F: 100,       // Fixed cost
+  a: 2,         // MC linear coefficient (= min AVC)
+  b: 0.01,      // MC slope
+  demandB: 200  // Demand slope parameter: P = demandA - Q/demandB
+};
+
+// Cost helpers
+function getMC(q)  { return params.a + 2 * params.b * q; }
+function getAVC(q) { return params.a + params.b * q; }
+function getATC(q) { return q <= 0 ? Infinity : params.F / q + params.a + params.b * q; }
+
+function getBreakEvenPrice() {
+  // min ATC = a + 2√(b·F)
+  return params.a + 2 * Math.sqrt(params.b * params.F);
+}
+function getOptimalQuantity() { return Math.sqrt(params.F / params.b); }  // q at min ATC
+function getFirmQuantity(price) {
+  if (price < params.a) return 0;
+  return (price - params.a) / (2 * params.b);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Scenarios
+// ─────────────────────────────────────────────────────────────────────────────
+const scenarios = {
+  'profits':      { firms: 50,  demand: 30, label: 'Short-Run Profits' },
+  'losses':       { firms: 130, demand: 30, label: 'Short-Run Losses' },
+  'equilibrium':  { firms: 70,  demand: 30, label: 'Long-Run Equilibrium' },
+  'demand-shock': { firms: 70,  demand: 38, label: 'Demand Shock' }
+};
+
+function applyScenario(key, btn) {
+  const s = scenarios[key];
+  document.getElementById('firms-slider').value  = s.firms;
+  document.getElementById('demand-slider').value = s.demand;
+  // Update ARIA pressed
+  document.querySelectorAll('.scenario-btn').forEach(b => {
+    b.setAttribute('aria-pressed', 'false');
+    b.classList.remove('active');
+  });
+  btn.setAttribute('aria-pressed', 'true');
+  btn.classList.add('active');
+  updateCalculations();
+  announceChange(`Scenario changed to ${s.label}. Use sliders to explore further.`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Equilibrium calculation
+// ─────────────────────────────────────────────────────────────────────────────
+function calculateEquilibrium(numFirms, demandIntercept) {
+  // Market supply: P = a + (2b·Q)/n → Q_s = n(P-a)/(2b)
+  // Market demand: P = demandA - Q/demandB → Q_d = demandB(demandA - P)
+  // Solve: demandIntercept - Q/demandB = a + (2b·Q)/n
+  // Q = (demandIntercept - a) / (1/demandB + 2b/n)
+  const Q = (demandIntercept - params.a) / (1 / params.demandB + (2 * params.b) / numFirms);
+  const P = demandIntercept - Q / params.demandB;
+  const q = getFirmQuantity(P);
+  const mc  = getMC(q);
+  const atc = getATC(q);
+  const avc = getAVC(q);
+  const profit = q * (P - atc);
+  const breakEven = getBreakEvenPrice();
+  const qOpt = getOptimalQuantity();
+  return { P, Q, q, mc, atc, avc, profit, breakEven, qOpt, minATC: getATC(qOpt) };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Live region helper
+// ─────────────────────────────────────────────────────────────────────────────
+function announceChange(msg) {
+  const el = document.getElementById('live-updates');
+  el.textContent = '';
+  setTimeout(() => { el.textContent = msg; }, 50);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Update metrics display
+// ─────────────────────────────────────────────────────────────────────────────
+function updateMetrics(eq) {
+  document.getElementById('price-display').textContent        = `$${eq.P.toFixed(2)}`;
+  document.getElementById('firm-output-display').textContent  = `${eq.q.toFixed(1)} units`;
+  document.getElementById('market-output-display').textContent = Math.round(eq.Q).toLocaleString();
+
+  const profitEl = document.getElementById('profit-display');
+  profitEl.textContent = eq.profit >= 0
+    ? `+$${eq.profit.toFixed(0)}`
+    : `-$${Math.abs(eq.profit).toFixed(0)}`;
+  profitEl.className = 'metric-value ' + (eq.profit > 1 ? 'profit-positive' : eq.profit < -1 ? 'profit-negative' : 'profit-zero');
+
+  // Insight box
+  const box = document.getElementById('insight-box');
+  if (eq.profit > 50) {
+    box.className = 'insight-box profit';
+    box.textContent = `✅ Firms earn positive economic profit ($${eq.profit.toFixed(0)} each). In the long run, new firms will enter, supply shifts right, and price will fall toward $${eq.breakEven.toFixed(2)}.`;
+  } else if (eq.profit < -50) {
+    box.className = 'insight-box loss';
+    box.textContent = `⚠️ Firms suffer economic losses ($${Math.abs(eq.profit).toFixed(0)} each). In the long run, firms will exit, supply shifts left, and price will rise toward $${eq.breakEven.toFixed(2)}.`;
+  } else if (Math.abs(eq.profit) <= 50 && eq.P > params.a) {
+    box.className = 'insight-box zero';
+    box.textContent = `⚖️ Market is near long-run equilibrium. Economic profit ≈ $0. No entry or exit pressure. Price ≈ minimum ATC ($${eq.breakEven.toFixed(2)}).`;
+  } else {
+    box.className = 'insight-box neutral';
+    box.textContent = `ℹ️ Price ($${eq.P.toFixed(2)}) is below the break-even price. Adjust sliders to explore.`;
+  }
+
+  // Table
+  document.getElementById('tbl-price').textContent    = `$${eq.P.toFixed(2)}`;
+  document.getElementById('tbl-firm-q').textContent   = `${eq.q.toFixed(1)} units`;
+  document.getElementById('tbl-market-q').textContent = Math.round(eq.Q).toLocaleString() + ' units';
+  document.getElementById('tbl-mc').textContent       = `$${eq.mc.toFixed(2)}`;
+  document.getElementById('tbl-atc').textContent      = `$${eq.atc.toFixed(2)}`;
+  document.getElementById('tbl-avc').textContent      = `$${eq.avc.toFixed(2)}`;
+  document.getElementById('tbl-profit').textContent   = (eq.profit >= 0 ? '+$' : '-$') + Math.abs(eq.profit).toFixed(0);
+  document.getElementById('tbl-lr').textContent       = eq.profit > 50
+    ? 'Firms will enter (profits attract entry)'
+    : eq.profit < -50
+    ? 'Firms will exit (losses drive exit)'
+    : 'Stable — no entry or exit pressure';
+
+  // Screen-reader graph descriptions
+  document.getElementById('market-graph-desc').textContent =
+    `Market graph: ${Math.round(document.getElementById('firms-slider').value)} firms, ` +
+    `equilibrium price $${eq.P.toFixed(2)}, market quantity ${Math.round(eq.Q).toLocaleString()} units.`;
+  document.getElementById('firm-graph-desc').textContent =
+    `Firm graph: each firm produces ${eq.q.toFixed(1)} units where price equals marginal cost. ` +
+    `ATC at this output is $${eq.atc.toFixed(2)}, yielding ` +
+    (eq.profit >= 0 ? `profit of $${eq.profit.toFixed(0)}.` : `loss of $${Math.abs(eq.profit).toFixed(0)}.`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Market graph
+// ─────────────────────────────────────────────────────────────────────────────
+function plotMarketGraph(eq, numFirms, demandIntercept) {
+  const qArr = [], demArr = [], supArr = [];
+  for (let i = 0; i <= 200; i++) {
+    const Q = i * 30;
+    qArr.push(Q);
+    demArr.push(Math.max(0, demandIntercept - Q / params.demandB));
+    supArr.push(Math.max(params.a, params.a + (2 * params.b * Q) / numFirms));
+  }
+
+  const traces = [
+    { x: qArr, y: demArr, mode: 'lines', name: 'Market Demand',
+      line: { color: '#1565C0', width: 3 } },
+    { x: qArr, y: supArr, mode: 'lines', name: 'Market Supply (SR)',
+      line: { color: '#C62828', width: 3 } },
+    { x: [eq.Q], y: [eq.P], mode: 'markers', name: 'Equilibrium',
+      marker: { color: '#2E7D32', size: 12, symbol: 'circle' } }
+  ];
+
+  const layout = {
+    title: { text: `Market — ${numFirms} Firms`, font: { size: 13 } },
+    xaxis: { title: 'Quantity (Market)', range: [0, 6000], fixedrange: true },
+    yaxis: { title: 'Price ($)',         range: [0, 45],   fixedrange: true },
+    margin: { l: 55, r: 30, t: 50, b: 70 },
+    autosize: false, width: 530, height: 390,
+    showlegend: true,
+    legend: { x: 0.55, y: 0.95, bgcolor: 'rgba(255,255,255,0.8)' }
+  };
+
+  Plotly.newPlot('market-graph', traces, layout, { responsive: false, displayModeBar: false });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Firm graph
+// ─────────────────────────────────────────────────────────────────────────────
+function plotFirmGraph(eq) {
+  const qArr = [], mcArr = [], atcArr = [], avcArr = [];
+  for (let i = 1; i <= 200; i++) {
+    qArr.push(i);
+    mcArr.push(getMC(i));
+    atcArr.push(getATC(i));
+    avcArr.push(getAVC(i));
+  }
+
+  const profitColor = eq.profit > 10 ? 'rgba(46,125,50,0.25)' : 'rgba(198,40,40,0.25)';
+  const profitLabel = eq.profit > 10 ? 'Economic Profit' : 'Economic Loss';
+
+  const traces = [
+    { x: qArr, y: mcArr,  mode: 'lines', name: 'MC',  line: { color: '#C62828', width: 3 } },
+    { x: qArr, y: atcArr, mode: 'lines', name: 'ATC', line: { color: '#F57C00', width: 3 } },
+    { x: qArr, y: avcArr, mode: 'lines', name: 'AVC', line: { color: '#0288D1', width: 3 } },
+    { x: [0, 200], y: [eq.P, eq.P], mode: 'lines', name: `P = $${eq.P.toFixed(2)}`,
+      line: { color: '#1565C0', width: 3, dash: 'dash' } },
+    { x: [eq.qOpt], y: [eq.minATC], mode: 'markers', name: 'Min ATC',
+      marker: { color: '#2E7D32', size: 9, symbol: 'circle' } }
+  ];
+
+  // Profit/loss shading
+  if (Math.abs(eq.profit) > 5 && eq.q > 0) {
+    traces.push({
+      x: [0, eq.q, eq.q, 0, 0],
+      y: [eq.P, eq.P, eq.atc, eq.atc, eq.P],
+      fill: 'toself', fillcolor: profitColor,
+      line: { color: 'transparent' },
+      name: profitLabel, showlegend: true
+    });
+  }
+
+  const status = eq.profit > 10 ? 'Profit' : eq.profit < -10 ? 'Loss' : 'Break-Even';
+  const layout = {
+    title: { text: `Individual Firm (${status})`, font: { size: 13 } },
+    xaxis: { title: 'Quantity (Firm)', range: [0, 200], fixedrange: true },
+    yaxis: { title: 'Price / Cost ($)', range: [0, 45], fixedrange: true },
+    margin: { l: 55, r: 30, t: 50, b: 70 },
+    autosize: false, width: 530, height: 390,
+    showlegend: true,
+    legend: { x: 0.02, y: 0.95, bgcolor: 'rgba(255,255,255,0.8)' }
+  };
+
+  Plotly.newPlot('firm-graph', traces, layout, { responsive: false, displayModeBar: false });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Master update
+// ─────────────────────────────────────────────────────────────────────────────
+function updateCalculations() {
+  const numFirms       = parseFloat(document.getElementById('firms-slider').value);
+  const demandIntercept = parseFloat(document.getElementById('demand-slider').value);
+
+  // Update badge displays and ARIA
+  const firmsSlider = document.getElementById('firms-slider');
+  const demandSlider = document.getElementById('demand-slider');
+  document.getElementById('firms-display').textContent  = numFirms;
+  document.getElementById('demand-display').textContent = `$${demandIntercept}`;
+  firmsSlider.setAttribute('aria-valuenow', numFirms);
+  demandSlider.setAttribute('aria-valuenow', demandIntercept);
+
+  const eq = calculateEquilibrium(numFirms, demandIntercept);
+
+  // Update break-even display
+  document.getElementById('break-even-price').textContent = `$${eq.breakEven.toFixed(2)}`;
+
+  updateMetrics(eq);
+  plotMarketGraph(eq, numFirms, demandIntercept);
+  plotFirmGraph(eq);
+}
+
+function updateFromSlider() {
+  updateCalculations();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Init
+// ─────────────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function () {
+  updateCalculations();
+});
+</script>
+</body>
+</html>

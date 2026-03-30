@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welfare Effects of Taxation</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Skip link ── */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: #18453B;
+      color: white;
+      padding: 8px 16px;
+      text-decoration: none;
+      border-radius: 0 0 4px 0;
+      z-index: 9999;
+      font-weight: 700;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ── Screen-reader only ── */
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ── Live region ── */
+    .live-region {
+      position: absolute;
+      left: -10000px;
+      width: 1px; height: 1px;
+      overflow: hidden;
+    }
+
+    /* ── Focus visible ── */
+    :focus-visible {
+      outline: 3px solid #C89A2A;
+      outline-offset: 3px;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #18453B 0%, #2d5a4f 100%);
+      padding: 20px;
+      line-height: 1.6;
+      color: #1a1a1a;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #18453B 0%, #2d5a4f 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 { font-size: 2em; margin-bottom: 8px; }
+    .header p  { font-size: 1.1em; opacity: 0.9; }
+
+    /* ── Two-column layout ── */
+    .content-wrapper {
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      min-height: 620px;
+    }
+
+    /* ── Control panel ── */
+    .control-panel {
+      background: #f8f9fa;
+      padding: 28px;
+      border-right: 3px solid #e9ecef;
+      overflow-y: auto;
+    }
+
+    .control-panel h2 {
+      color: #18453B;
+      font-size: 1.2em;
+      margin-bottom: 16px;
+    }
+
+    /* Slider block */
+    .slider-block {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      border: 2px solid #e9ecef;
+      margin-bottom: 20px;
+    }
+    .slider-block h3 {
+      color: #18453B;
+      font-size: 1.05em;
+      margin-bottom: 12px;
+    }
+
+    .form-label {
+      display: block;
+      font-weight: 600;
+      color: #495057;
+      margin-bottom: 8px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 8px;
+      border-radius: 5px;
+      background: #d3d3d3;
+      outline: none;
+      cursor: pointer;
+      accent-color: #18453B;
+      margin: 10px 0;
+    }
+
+    .slider-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85em;
+      color: #6c757d;
+    }
+
+    /* Reset button */
+    .reset-btn {
+      display: block;
+      width: 100%;
+      margin-top: 12px;
+      padding: 10px;
+      background: white;
+      border: 2px solid #18453B;
+      color: #18453B;
+      font-weight: 700;
+      font-size: 0.95em;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .reset-btn:hover, .reset-btn:focus {
+      background: #18453B;
+      color: white;
+    }
+
+    /* Equilibrium alert */
+    .eq-alert {
+      background: #d4edda;
+      border: 2px solid #28a745;
+      color: #155724;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-weight: 600;
+      font-size: 0.9em;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .eq-alert.visible { display: block; }
+
+    /* Tax wedge display */
+    .wedge-display {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: white;
+      border: 2px solid #18453B;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 20px;
+      gap: 6px;
+    }
+    .wedge-item { text-align: center; flex: 1; }
+    .wedge-label {
+      font-size: 0.72em;
+      font-weight: 700;
+      color: #6c757d;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .wedge-value {
+      font-size: 1.1em;
+      font-weight: 700;
+      color: #18453B;
+    }
+    .wedge-arrow {
+      font-size: 1.3em;
+      color: #dc3545;
+      font-weight: 900;
+    }
+
+    /* Metrics */
+    .metrics-section h3 {
+      color: #18453B;
+      font-size: 1em;
+      margin-bottom: 10px;
+    }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .metric-card {
+      padding: 12px;
+      border-radius: 8px;
+      border: 2px solid;
+      text-align: center;
+    }
+    .metric-card.consumer { background: rgba(40,167,69,0.1); border-color: #28a745; }
+    .metric-card.producer { background: rgba(0,123,255,0.1); border-color: #007bff; }
+    .metric-card.tax      { background: rgba(255,193,7,0.15); border-color: #ffc107; }
+    .metric-card.dwl      { background: rgba(220,53,69,0.1); border-color: #dc3545; }
+    .metric-card.total    { background: rgba(24,69,59,0.1); border-color: #18453B; }
+
+    .metric-label {
+      font-size: 0.75em;
+      font-weight: 700;
+      color: #495057;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 4px;
+    }
+    .metric-value {
+      font-size: 1.25em;
+      font-weight: 700;
+    }
+    .metric-card.consumer .metric-value { color: #28a745; }
+    .metric-card.producer .metric-value { color: #007bff; }
+    .metric-card.tax      .metric-value { color: #856404; }
+    .metric-card.dwl      .metric-value { color: #dc3545; }
+    .metric-card.total    .metric-value { color: #18453B; }
+
+    /* Full-width metric */
+    .metrics-full { margin-bottom: 16px; }
+
+    /* Data table */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid #e9ecef;
+      margin-bottom: 16px;
+      font-size: 0.88em;
+    }
+    .data-table caption {
+      padding: 8px 12px;
+      font-weight: 700;
+      color: #18453B;
+      text-align: left;
+      background: #f8f9fa;
+      border-bottom: 2px solid #e9ecef;
+    }
+    .data-table th, .data-table td {
+      padding: 9px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e9ecef;
+    }
+    .data-table th { background: #f8f9fa; font-weight: 600; color: #18453B; }
+    .data-table tr:last-child td,
+    .data-table tr:last-child th { border-bottom: none; }
+    .data-table tr:hover { background: #f8f9fa; }
+
+    /* Insight box */
+    .insight-box {
+      background: #fff3cd;
+      border: 2px solid #ffc107;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 14px;
+      font-size: 0.88em;
+    }
+    .insight-box strong { color: #856404; }
+
+    /* Key concept */
+    .concept-box {
+      background: #e7f3ff;
+      border: 2px solid #007bff;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 0.85em;
+    }
+    .concept-box h4 { color: #004085; margin-bottom: 6px; font-size: 0.95em; }
+    .concept-box p { color: #004085; margin: 0; }
+
+    /* ── Graph panel ── */
+    .graph-panel {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .graph-wrapper {
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      overflow: hidden;
+      background: white;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 1024px) {
+      .content-wrapper { grid-template-columns: 1fr; }
+      .control-panel { border-right: none; border-bottom: 3px solid #e9ecef; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Skip link -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Live region for screen-reader announcements -->
+<div id="live-updates" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+<div class="container">
+
+  <header class="header">
+    <h1>📊 Welfare Effects of Taxation</h1>
+    <p>Explore how a per-unit tax affects consumer surplus, producer surplus, tax revenue, and deadweight loss</p>
+  </header>
+
+  <main id="main-content">
+    <div class="content-wrapper">
+
+      <!-- ══ Control Panel ══ -->
+      <aside class="control-panel" aria-label="Tax controls and market metrics">
+
+        <!-- Slider -->
+        <div class="slider-block">
+          <h2>🎯 Set Per-Unit Tax</h2>
+          <label for="tax-slider" class="form-label" id="tax-label">
+            <strong>Tax Amount: <span id="tax-display">$0.00</span></strong>
+          </label>
+          <input
+            type="range"
+            id="tax-slider"
+            min="0" max="8" step="0.25" value="0"
+            aria-label="Per-unit tax amount"
+            aria-describedby="slider-desc"
+            aria-valuemin="0"
+            aria-valuemax="8"
+            aria-valuenow="0"
+            aria-valuetext="Tax: $0.00 per unit"
+            oninput="onSliderChange()"
+          >
+          <div class="slider-labels">
+            <span>$0</span>
+            <span id="slider-mid">$4</span>
+            <span>$8</span>
+          </div>
+          <div id="slider-desc" class="sr-only">
+            Adjust this slider to set the per-unit tax. At $0 the market is at competitive equilibrium.
+            As the tax rises, a wedge opens between the consumer price and the producer price,
+            creating deadweight loss. Use arrow keys for fine adjustment; hold Shift for larger steps.
+          </div>
+          <button class="reset-btn" aria-label="Reset tax to zero (competitive equilibrium)" onclick="resetToEquilibrium()">
+            Reset to No Tax
+          </button>
+        </div>
+
+        <!-- Equilibrium alert -->
+        <div id="eq-alert" class="eq-alert" role="status" aria-live="polite">
+          ✅ <strong>No Tax — Competitive Equilibrium.</strong> Total surplus maximized!
+        </div>
+
+        <!-- Tax wedge -->
+        <div class="wedge-display" aria-label="Price wedge showing consumer price, tax, and producer price">
+          <div class="wedge-item">
+            <div class="wedge-label">Consumer Pays</div>
+            <div class="wedge-value" id="consumer-price">$10.00</div>
+          </div>
+          <div class="wedge-arrow" aria-hidden="true">⟶</div>
+          <div class="wedge-item">
+            <div class="wedge-label">Tax Wedge</div>
+            <div class="wedge-value" id="tax-wedge">$0.00</div>
+          </div>
+          <div class="wedge-arrow" aria-hidden="true">⟶</div>
+          <div class="wedge-item">
+            <div class="wedge-label">Producer Receives</div>
+            <div class="wedge-value" id="producer-price">$10.00</div>
+          </div>
+        </div>
+
+        <!-- Metrics -->
+        <section class="metrics-section" aria-label="Welfare metrics">
+          <h3>Market Outcomes:</h3>
+          <div class="metrics-grid">
+            <div class="metric-card consumer" role="region" aria-label="Consumer surplus">
+              <div class="metric-label">Consumer Surplus</div>
+              <div class="metric-value" id="consumer-surplus" aria-live="polite">$50.00</div>
+            </div>
+            <div class="metric-card producer" role="region" aria-label="Producer surplus">
+              <div class="metric-label">Producer Surplus</div>
+              <div class="metric-value" id="producer-surplus" aria-live="polite">$50.00</div>
+            </div>
+            <div class="metric-card tax" role="region" aria-label="Tax revenue">
+              <div class="metric-label">Tax Revenue</div>
+              <div class="metric-value" id="tax-revenue" aria-live="polite">$0.00</div>
+            </div>
+            <div class="metric-card dwl" role="region" aria-label="Deadweight loss">
+              <div class="metric-label">Deadweight Loss</div>
+              <div class="metric-value" id="deadweight-loss" aria-live="polite">$0.00</div>
+            </div>
+          </div>
+          <div class="metrics-full">
+            <div class="metric-card total" role="region" aria-label="Total surplus">
+              <div class="metric-label">Total Surplus (CS + PS + Tax Revenue)</div>
+              <div class="metric-value" id="total-surplus" aria-live="polite">$100.00</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Accessible data table -->
+        <table class="data-table" aria-label="Detailed market conditions under current tax">
+          <caption>Detailed Market Conditions</caption>
+          <thead>
+            <tr><th scope="col">Measure</th><th scope="col">Value</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">Per-Unit Tax</th><td id="tbl-tax">$0.00</td></tr>
+            <tr><th scope="row">Equilibrium Price (no tax)</th><td id="tbl-eq-p">$10.00</td></tr>
+            <tr><th scope="row">Equilibrium Quantity (no tax)</th><td id="tbl-eq-q">10 units</td></tr>
+            <tr><th scope="row">Price Paid by Consumer</th><td id="tbl-pc">$10.00</td></tr>
+            <tr><th scope="row">Price Received by Producer</th><td id="tbl-pp">$10.00</td></tr>
+            <tr><th scope="row">Quantity Traded with Tax</th><td id="tbl-q-tax">10 units</td></tr>
+            <tr><th scope="row">Reduction in Quantity</th><td id="tbl-dq">0 units</td></tr>
+          </tbody>
+        </table>
+
+        <!-- Insight -->
+        <div class="insight-box" role="status" aria-live="polite">
+          <div id="insight-text">
+            <strong>💡 Key Insight:</strong> The market is at competitive equilibrium.
+            Total surplus ($100) is maximized with no deadweight loss.
+          </div>
+        </div>
+
+        <!-- Concept box -->
+        <div class="concept-box">
+          <h4>📘 Concept:</h4>
+          <p>A per-unit tax drives a <strong>wedge</strong> between what consumers pay and what producers receive.
+             The resulting <strong>deadweight loss</strong> (DWL = ½ × tax × ΔQ) measures the trades that
+             no longer occur — society's net loss from the tax.</p>
+        </div>
+
+      </aside>
+
+      <!-- ══ Graph Panel ══ -->
+      <section class="graph-panel" aria-label="Supply and demand visualization">
+        <div class="graph-wrapper">
+          <div
+            id="tax-graph"
+            role="img"
+            aria-label="Supply and demand graph showing consumer surplus, producer surplus, tax revenue rectangle, and deadweight loss triangle"
+          ></div>
+          <!-- Hidden text description for screen readers -->
+          <div id="graph-description" class="sr-only" aria-live="polite"></div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  // ── Market parameters ──────────────────────────────────────────
+  // Demand: P = 20 − Q   (demandIntercept=20, slope=−1)
+  // Supply: P = Q         (supplyIntercept=0, slope=1)
+  // No-tax equilibrium: Q*=10, P*=10
+  const D_INT = 20, S_INT = 0;
+  const EQ_Q = 10, EQ_P = 10;
+
+  // ── Utility ────────────────────────────────────────────────────
+  function fmt(n) { return '$' + n.toFixed(2); }
+
+  function calcOutcomes(tax) {
+    if (tax === 0) {
+      return {
+        tax, q: EQ_Q, pc: EQ_P, pp: EQ_P,
+        cs: 50, ps: 50, tr: 0, dwl: 0, totalSurplus: 100
+      };
+    }
+    const q  = (D_INT - tax) / 2;   // (20 − tax) / 2
+    const pc = D_INT - q;            // 20 − q
+    const pp = pc - tax;             // = q
+    const cs  = 0.5 * (D_INT - pc) * q;
+    const ps  = 0.5 * pp * q;
+    const tr  = tax * q;
+    const dwl = 0.5 * tax * (EQ_Q - q);
+    return { tax, q, pc, pp, cs, ps, tr, dwl, totalSurplus: cs + ps + tr };
+  }
+
+  // ── Announcement helper ────────────────────────────────────────
+  function announce(msg) {
+    const el = document.getElementById('live-updates');
+    el.textContent = '';
+    setTimeout(() => { el.textContent = msg; }, 50);
+  }
+
+  // ── Slider handler ─────────────────────────────────────────────
+  function onSliderChange() {
+    const tax = parseFloat(document.getElementById('tax-slider').value);
+    const outcomes = calcOutcomes(tax);
+
+    updateMetrics(outcomes);
+    updateTable(outcomes);
+    updateInsight(outcomes);
+    plotGraph(outcomes);
+    updateEquilibriumAlert(tax);
+
+    // Update ARIA value text
+    const slider = document.getElementById('tax-slider');
+    slider.setAttribute('aria-valuenow', tax);
+    slider.setAttribute('aria-valuetext', `Tax: ${fmt(tax)} per unit`);
+
+    // Announce to screen readers every 0.5 increments
+    if (tax === 0) {
+      announce('No tax. Competitive equilibrium. Total surplus: $100. No deadweight loss.');
+    } else {
+      announce(`Tax ${fmt(tax)}. Consumer pays ${fmt(outcomes.pc)}, producer receives ${fmt(outcomes.pp)}. ` +
+               `Deadweight loss ${fmt(outcomes.dwl)}. Total surplus ${fmt(outcomes.totalSurplus)}.`);
+    }
+  }
+
+  function resetToEquilibrium() {
+    document.getElementById('tax-slider').value = 0;
+    onSliderChange();
+    announce('Reset to no-tax competitive equilibrium.');
+  }
+
+  // ── Update display elements ────────────────────────────────────
+  function updateMetrics(o) {
+    document.getElementById('tax-display').textContent     = fmt(o.tax);
+    document.getElementById('consumer-price').textContent  = fmt(o.pc);
+    document.getElementById('producer-price').textContent  = fmt(o.pp);
+    document.getElementById('tax-wedge').textContent       = fmt(o.tax);
+    document.getElementById('consumer-surplus').textContent = fmt(o.cs);
+    document.getElementById('producer-surplus').textContent = fmt(o.ps);
+    document.getElementById('tax-revenue').textContent     = fmt(o.tr);
+    document.getElementById('deadweight-loss').textContent = fmt(o.dwl);
+    document.getElementById('total-surplus').textContent   = fmt(o.totalSurplus);
+  }
+
+  function updateTable(o) {
+    document.getElementById('tbl-tax').textContent   = fmt(o.tax);
+    document.getElementById('tbl-eq-p').textContent  = '$10.00';
+    document.getElementById('tbl-eq-q').textContent  = '10 units';
+    document.getElementById('tbl-pc').textContent    = fmt(o.pc);
+    document.getElementById('tbl-pp').textContent    = fmt(o.pp);
+    document.getElementById('tbl-q-tax').textContent = o.q.toFixed(2) + ' units';
+    document.getElementById('tbl-dq').textContent    = (EQ_Q - o.q).toFixed(2) + ' units';
+  }
+
+  function updateEquilibriumAlert(tax) {
+    const el = document.getElementById('eq-alert');
+    el.classList.toggle('visible', tax === 0);
+  }
+
+  function updateInsight(o) {
+    let msg;
+    if (o.tax === 0) {
+      msg = '<strong>💡 No Tax — Competitive Equilibrium:</strong> ' +
+            'Total surplus ($100) is maximized. Consumer surplus = $50, Producer surplus = $50. ' +
+            'No deadweight loss.';
+    } else {
+      const pctDWL = ((o.dwl / 100) * 100).toFixed(1);
+      if (o.tax <= 2) {
+        msg = `<strong>💡 Small Tax (${fmt(o.tax)}):</strong> Consumers and producers share the burden. ` +
+              `Tax revenue = ${fmt(o.tr)}, but society loses ${fmt(o.dwl)} in deadweight loss (${pctDWL}% of original surplus).`;
+      } else if (o.tax <= 5) {
+        msg = `<strong>💡 Moderate Tax (${fmt(o.tax)}):</strong> Deadweight loss (${fmt(o.dwl)}) is becoming substantial ` +
+              `relative to tax revenue (${fmt(o.tr)}). The tax wedge reduces market efficiency.`;
+      } else {
+        msg = `<strong>💡 Large Tax (${fmt(o.tax)}):</strong> Deadweight loss (${fmt(o.dwl)}) is very large. ` +
+              `Quantity traded falls to ${o.q.toFixed(1)} — only ${(o.q / EQ_Q * 100).toFixed(0)}% of the no-tax quantity. ` +
+              `Tax revenue (${fmt(o.tr)}) may be shrinking as output collapses.`;
+      }
+    }
+    document.getElementById('insight-text').innerHTML = msg;
+
+    // Update text description for screen readers
+    const desc = `Graph shows supply and demand for a market with demand P = 20 minus Q and supply P = Q. ` +
+      (o.tax === 0
+        ? `At equilibrium, price is $10 and quantity is 10. Consumer surplus (green triangle) = $50. Producer surplus (blue triangle) = $50. No tax revenue or deadweight loss.`
+        : `With a ${fmt(o.tax)} per-unit tax, consumers pay ${fmt(o.pc)} and producers receive ${fmt(o.pp)}. ` +
+          `Quantity traded falls to ${o.q.toFixed(2)}. ` +
+          `Consumer surplus (green) = ${fmt(o.cs)}. Producer surplus (blue) = ${fmt(o.ps)}. ` +
+          `Tax revenue (yellow rectangle) = ${fmt(o.tr)}. Deadweight loss (red triangle) = ${fmt(o.dwl)}.`
+      );
+    document.getElementById('graph-description').textContent = desc;
+  }
+
+  // ── Plotly graph ───────────────────────────────────────────────
+  function plotGraph(o) {
+    const { tax, q, pc, pp, cs, ps, tr, dwl } = o;
+    const traces = [];
+
+    // ── Filled regions ──
+
+    // Consumer surplus (green triangle): (0,D_INT), (0,pc), (q,pc)
+    if (cs > 0) {
+      traces.push({
+        x: [0, 0, q, 0], y: [D_INT, pc, pc, D_INT],
+        fill: 'toself', fillcolor: 'rgba(40,167,69,0.35)',
+        line: { color: 'rgba(40,167,69,0.6)', width: 1 },
+        name: `Consumer Surplus (${fmt(cs)})`,
+        hoverinfo: 'name', mode: 'none', showlegend: true
+      });
+    }
+
+    // Producer surplus (blue triangle): (0,0), (0,pp), (q,pp)
+    if (ps > 0) {
+      traces.push({
+        x: [0, 0, q, 0], y: [0, pp, pp, 0],
+        fill: 'toself', fillcolor: 'rgba(0,123,255,0.35)',
+        line: { color: 'rgba(0,123,255,0.6)', width: 1 },
+        name: `Producer Surplus (${fmt(ps)})`,
+        hoverinfo: 'name', mode: 'none', showlegend: true
+      });
+    }
+
+    // Tax revenue (yellow rectangle): corners (0,pp),(q,pp),(q,pc),(0,pc)
+    if (tr > 0) {
+      traces.push({
+        x: [0, q, q, 0, 0], y: [pp, pp, pc, pc, pp],
+        fill: 'toself', fillcolor: 'rgba(255,193,7,0.45)',
+        line: { color: 'rgba(200,154,42,0.8)', width: 1 },
+        name: `Tax Revenue (${fmt(tr)})`,
+        hoverinfo: 'name', mode: 'none', showlegend: true
+      });
+    }
+
+    // Deadweight loss (red triangle): (q,pp),(q,pc),(EQ_Q,EQ_P)
+    if (dwl > 0) {
+      traces.push({
+        x: [q, q, EQ_Q, q], y: [pp, pc, EQ_P, pp],
+        fill: 'toself', fillcolor: 'rgba(220,53,69,0.45)',
+        line: { color: 'rgba(220,53,69,0.7)', width: 1 },
+        name: `Deadweight Loss (${fmt(dwl)})`,
+        hoverinfo: 'name', mode: 'none', showlegend: true
+      });
+    }
+
+    // ── Demand line: P = 20 − Q ──
+    traces.push({
+      x: [0, 20], y: [20, 0],
+      mode: 'lines', name: 'Demand (P = 20 − Q)',
+      line: { color: '#1565C0', width: 3 },
+      hovertemplate: 'Demand<br>Q=%{x:.1f}, P=$%{y:.1f}<extra></extra>'
+    });
+
+    // ── Supply line: P = Q ──
+    traces.push({
+      x: [0, 20], y: [0, 20],
+      mode: 'lines', name: 'Supply (P = Q)',
+      line: { color: '#C62828', width: 3 },
+      hovertemplate: 'Supply<br>Q=%{x:.1f}, P=$%{y:.1f}<extra></extra>'
+    });
+
+    // ── Horizontal price lines ──
+    if (tax > 0) {
+      // Consumer price (dashed blue)
+      traces.push({
+        x: [0, q], y: [pc, pc],
+        mode: 'lines', name: `P_consumer = ${fmt(pc)}`,
+        line: { color: '#1565C0', width: 2, dash: 'dash' },
+        hoverinfo: 'name', showlegend: false
+      });
+      // Producer price (dashed red)
+      traces.push({
+        x: [0, q], y: [pp, pp],
+        mode: 'lines', name: `P_producer = ${fmt(pp)}`,
+        line: { color: '#C62828', width: 2, dash: 'dash' },
+        hoverinfo: 'name', showlegend: false
+      });
+      // Vertical quantity line
+      traces.push({
+        x: [q, q], y: [0, pc],
+        mode: 'lines', name: `Q_tax = ${o.q.toFixed(1)}`,
+        line: { color: '#666', width: 1.5, dash: 'dot' },
+        hoverinfo: 'name', showlegend: false
+      });
+    } else {
+      // No-tax equilibrium lines
+      traces.push({
+        x: [0, EQ_Q], y: [EQ_P, EQ_P],
+        mode: 'lines', name: 'Equilibrium Price ($10)',
+        line: { color: '#18453B', width: 2, dash: 'dash' },
+        hoverinfo: 'name', showlegend: false
+      });
+      traces.push({
+        x: [EQ_Q, EQ_Q], y: [0, EQ_P],
+        mode: 'lines', name: 'Equilibrium Quantity (10)',
+        line: { color: '#18453B', width: 2, dash: 'dot' },
+        hoverinfo: 'name', showlegend: false
+      });
+    }
+
+    // ── Annotation markers ──
+    const annotations = [];
+    if (tax > 0) {
+      annotations.push(
+        { x: q + 0.3, y: pc + 0.3, text: `P<sub>c</sub>=${fmt(pc)}`, showarrow: false, font: { size: 11, color: '#1565C0' }, xanchor: 'left' },
+        { x: q + 0.3, y: pp - 0.3, text: `P<sub>p</sub>=${fmt(pp)}`, showarrow: false, font: { size: 11, color: '#C62828' }, xanchor: 'left', yanchor: 'top' }
+      );
+    } else {
+      annotations.push(
+        { x: EQ_Q + 0.3, y: EQ_P + 0.4, text: `E* (${EQ_Q}, $${EQ_P})`, showarrow: false, font: { size: 12, color: '#18453B' }, xanchor: 'left' }
+      );
+    }
+
+    const title = tax === 0
+      ? 'Competitive Market — No Tax'
+      : `Market with Per-Unit Tax of ${fmt(tax)}`;
+
+    const layout = {
+      title: { text: title, font: { size: 15, color: '#18453B' } },
+      xaxis: {
+        title: { text: 'Quantity', font: { size: 13 } },
+        range: [0, 21], fixedrange: true,
+        gridcolor: '#f1f3f4', zeroline: true, zerolinecolor: '#999'
+      },
+      yaxis: {
+        title: { text: 'Price ($)', font: { size: 13 } },
+        range: [0, 21], fixedrange: true,
+        gridcolor: '#f1f3f4', zeroline: true, zerolinecolor: '#999'
+      },
+      autosize: false,
+      width: 680,
+      height: 520,
+      margin: { l: 60, r: 40, t: 60, b: 60 },
+      plot_bgcolor: 'white',
+      paper_bgcolor: 'white',
+      showlegend: true,
+      legend: {
+        x: 0.98, y: 0.98,
+        xanchor: 'right', yanchor: 'top',
+        bgcolor: 'rgba(255,255,255,0.92)',
+        bordercolor: '#dee2e6', borderwidth: 1,
+        font: { size: 10.5 }
+      },
+      annotations
+    };
+
+    const config = { responsive: false, displayModeBar: false, staticPlot: false };
+
+    Plotly.react('tax-graph', traces, layout, config);
+  }
+
+  // ── Keyboard enhancement for slider ───────────────────────────
+  document.addEventListener('DOMContentLoaded', function () {
+    const slider = document.getElementById('tax-slider');
+
+    slider.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        if (e.shiftKey) {
+          e.preventDefault();
+          const step = 1.0;   // coarser with Shift
+          const cur = parseFloat(slider.value);
+          const next = e.key === 'ArrowRight'
+            ? Math.min(8, cur + step)
+            : Math.max(0, cur - step);
+          slider.value = next;
+          onSliderChange();
+        }
+        // Normal arrow key already moves by step=0.25 natively
+      }
+    });
+
+    // Initial render
+    onSliderChange();
+  });
+</script>
+</body>
+</html>

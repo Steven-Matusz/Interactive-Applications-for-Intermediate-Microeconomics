@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Import Tariff Analysis</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      line-height: 1.6;
+    }
+
+    /* ── Skip link ── */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: #18453B;
+      color: white;
+      padding: 8px 16px;
+      text-decoration: none;
+      border-radius: 0 0 4px 0;
+      z-index: 100;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ── Screen-reader only ── */
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border-width: 0;
+    }
+
+    /* ── Live region ── */
+    .live-region {
+      position: absolute;
+      left: -10000px;
+      width: 1px; height: 1px;
+      overflow: hidden;
+    }
+
+    /* ── Focus visible ── */
+    *:focus-visible {
+      outline: 3px solid #667eea;
+      outline-offset: 2px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+
+    header.header {
+      background: linear-gradient(135deg, #18453B 0%, #2d5a4f 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    header.header h1 { font-size: 2em; margin-bottom: 10px; }
+    header.header p  { font-size: 1.1em; opacity: 0.9; }
+
+    /* ── Scenario selector ── */
+    .scenario-selector {
+      background: #f8f9fa;
+      padding: 20px;
+      border-bottom: 3px solid #18453B;
+    }
+    .scenario-selector h2 { color: #18453B; margin-bottom: 15px; font-size: 1.3em; }
+    .scenario-buttons { display: flex; gap: 15px; flex-wrap: wrap; }
+
+    .scenario-btn {
+      flex: 1;
+      min-width: 180px;
+      padding: 14px 18px;
+      font-size: 1.05em;
+      border: 3px solid #18453B;
+      background: white;
+      color: #18453B;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 600;
+    }
+    .scenario-btn:hover,
+    .scenario-btn:focus {
+      background: #18453B;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(24,69,59,0.3);
+      outline: 3px solid #667eea;
+      outline-offset: 2px;
+    }
+    .scenario-btn.active { background: #18453B; color: white; }
+
+    .scenario-info {
+      margin-top: 15px;
+      padding: 15px;
+      background: white;
+      border-left: 4px solid #18453B;
+      border-radius: 5px;
+      font-size: 0.95em;
+    }
+
+    /* ── Layout ── */
+    .content-wrapper {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      min-height: 600px;
+    }
+
+    aside.control-panel {
+      background: #f8f9fa;
+      padding: 30px;
+      border-right: 3px solid #e9ecef;
+      overflow-y: auto;
+      max-height: 860px;
+    }
+
+    section.graph-panel {
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ── Slider card ── */
+    .price-control {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      border: 2px solid #e9ecef;
+    }
+    .price-control h3 { color: #18453B; margin-bottom: 15px; font-size: 1.2em; }
+
+    .form-label {
+      display: block;
+      margin-bottom: 8px;
+      color: #495057;
+      font-weight: 600;
+    }
+
+    .price-slider {
+      width: 100%;
+      height: 8px;
+      border-radius: 5px;
+      background: #d3d3d3;
+      outline: none;
+      margin: 15px 0;
+      cursor: pointer;
+    }
+    .price-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: #18453B;
+      cursor: pointer;
+      border: 3px solid white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .price-slider::-moz-range-thumb {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: #18453B;
+      cursor: pointer;
+      border: 3px solid white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .price-slider:focus {
+      outline: 3px solid #667eea;
+      outline-offset: 3px;
+    }
+
+    .slider-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 5px;
+      font-size: 0.9em;
+      color: #6c757d;
+    }
+    #current-world-price, #current-tariff { font-weight: bold; color: #18453B; font-size: 1.05em; }
+
+    .reset-btn {
+      width: 100%;
+      padding: 12px;
+      margin-top: 12px;
+      background: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .reset-btn:hover, .reset-btn:focus {
+      background: #5a6268;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      outline: 3px solid #667eea;
+      outline-offset: 2px;
+    }
+
+    /* ── Metrics ── */
+    .metrics-container {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      border: 2px solid #e9ecef;
+      margin-bottom: 15px;
+    }
+    .metrics-container h4 { color: #18453B; margin-bottom: 15px; font-size: 1.05em; }
+
+    .metrics-row { display: flex; gap: 10px; margin-bottom: 10px; }
+    .metrics-row.single { display: block; }
+
+    .metric-card {
+      flex: 1;
+      padding: 14px;
+      border-radius: 8px;
+      text-align: center;
+      border: 2px solid;
+    }
+    .metric-card.consumer  { background: rgba(40,167,69,0.1);  border-color: #28a745; }
+    .metric-card.producer  { background: rgba(0,123,255,0.1);  border-color: #007bff; }
+    .metric-card.govt      { background: rgba(255,193,7,0.1);  border-color: #ffc107; }
+    .metric-card.dwl       { background: rgba(220,53,69,0.1);  border-color: #dc3545; }
+    .metric-card.total     { background: rgba(24,69,59,0.08);  border-color: #18453B; }
+
+    .metric-label { font-size: 0.85em; color: #495057; margin-bottom: 4px; font-weight: 600; }
+    .metric-value { font-size: 1.4em; font-weight: bold; color: #18453B; }
+
+    /* ── Free-trade alert ── */
+    .freetrade-alert {
+      background: #d4edda;
+      border: 2px solid #28a745;
+      color: #155724;
+      padding: 14px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      display: none;
+    }
+    .freetrade-alert.show { display: block; }
+
+    /* ── Data table ── */
+    .data-table {
+      width: 100%;
+      margin-top: 15px;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid #e9ecef;
+    }
+    .data-table caption {
+      padding: 10px;
+      font-weight: bold;
+      color: #18453B;
+      text-align: left;
+      background: #f8f9fa;
+      border-bottom: 2px solid #e9ecef;
+    }
+    .data-table th, .data-table td {
+      padding: 11px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e9ecef;
+      font-size: 0.92em;
+    }
+    .data-table th { background: #f8f9fa; font-weight: 600; color: #18453B; }
+    .data-table tr:last-child td, .data-table tr:last-child th { border-bottom: none; }
+    .data-table tr:hover { background: #f8f9fa; }
+
+    /* ── Insight box ── */
+    .market-insight {
+      background: #fff3cd;
+      border: 2px solid #ffc107;
+      padding: 14px;
+      border-radius: 8px;
+      margin-top: 15px;
+    }
+    .market-insight strong { color: #856404; }
+
+    .concept-box {
+      background: #e7f3ff;
+      border: 2px solid #007bff;
+      padding: 14px;
+      border-radius: 8px;
+      margin-top: 12px;
+    }
+    .concept-box h5 { color: #004085; margin-bottom: 6px; }
+    .concept-box p  { margin: 0; font-size: 0.88em; }
+
+    /* ── Graph ── */
+    .graph-wrapper {
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      overflow: hidden;
+      background: white;
+    }
+
+    @media (max-width: 1024px) {
+      .content-wrapper { grid-template-columns: 1fr; }
+      aside.control-panel { border-right: none; border-bottom: 3px solid #e9ecef; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<div id="live-updates" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+<div class="container">
+
+  <header class="header">
+    <h1>🌍 Import Tariff Analysis</h1>
+    <p>Explore how import tariffs affect consumer surplus, producer surplus, government revenue, and deadweight loss</p>
+  </header>
+
+  <!-- Scenario Selector -->
+  <section class="scenario-selector" aria-label="Market scenario selection">
+    <h2 id="scenario-heading">Choose a Market Scenario:</h2>
+    <div class="scenario-buttons" role="group" aria-labelledby="scenario-heading">
+      <button class="scenario-btn active"
+              aria-pressed="true"
+              aria-describedby="desc-steel"
+              onclick="selectScenario('steel')">
+        🏭 Steel Market
+      </button>
+      <button class="scenario-btn"
+              aria-pressed="false"
+              aria-describedby="desc-solar"
+              onclick="selectScenario('solar')">
+        ☀️ Solar Panels
+      </button>
+      <button class="scenario-btn"
+              aria-pressed="false"
+              aria-describedby="desc-wheat"
+              onclick="selectScenario('wheat')">
+        🌾 Wheat Market
+      </button>
+    </div>
+    <span id="desc-steel" class="sr-only">Steel manufacturing market with import tariff analysis</span>
+    <span id="desc-solar" class="sr-only">Solar panel market with import tariff analysis</span>
+    <span id="desc-wheat" class="sr-only">Agricultural wheat market with import tariff analysis</span>
+
+    <div id="scenario-info" class="scenario-info" aria-live="polite">
+      <strong>Steel Market</strong> — 
+      Demand: P = 800 − 4Q &nbsp;|&nbsp; Domestic Supply: P = 200 + 2Q &nbsp;|&nbsp; World Price: $350/ton
+    </div>
+  </section>
+
+  <main id="main-content">
+    <div class="content-wrapper">
+
+      <!-- ── Control Panel ── -->
+      <aside class="control-panel" aria-label="Tariff controls and market metrics">
+
+        <!-- World Price slider -->
+        <div class="price-control">
+          <h3 id="wp-heading">🌐 World Price</h3>
+          <label for="world-price-slider" class="form-label" id="wp-label">
+            <strong>World Price (Pw):</strong>
+          </label>
+          <input type="range"
+                 class="price-slider"
+                 id="world-price-slider"
+                 aria-labelledby="wp-label"
+                 aria-describedby="wp-description"
+                 aria-valuetext="World price: $350 per ton">
+          <div id="wp-description" class="sr-only">
+            Adjust the world price that this small country faces as a price taker. At free trade the domestic price equals the world price, so imports fill the gap between domestic supply and demand. Use arrow keys for fine adjustment.
+          </div>
+          <div class="slider-labels">
+            <span id="wp-min">—</span>
+            <span id="current-world-price">$350</span>
+            <span id="wp-max">—</span>
+          </div>
+        </div>
+
+        <!-- Tariff slider -->
+        <div class="price-control">
+          <h3 id="tariff-heading">📦 Import Tariff</h3>
+          <label for="tariff-slider" class="form-label" id="tariff-label">
+            <strong>Per-Unit Tariff (t):</strong>
+          </label>
+          <input type="range"
+                 class="price-slider"
+                 id="tariff-slider"
+                 aria-labelledby="tariff-label"
+                 aria-describedby="tariff-description"
+                 aria-valuetext="Tariff: $0 per ton">
+          <div id="tariff-description" class="sr-only">
+            Set the per-unit import tariff. This raises the domestic price above the world price, benefiting domestic producers but harming consumers and creating deadweight loss. A tariff equal to the autarky gap eliminates all imports. Use arrow keys for fine adjustment.
+          </div>
+          <div class="slider-labels">
+            <span id="tariff-min">$0</span>
+            <span id="current-tariff">$0</span>
+            <span id="tariff-max">—</span>
+          </div>
+          <button class="reset-btn"
+                  aria-label="Reset tariff to zero (free trade)"
+                  onclick="resetTariff()">
+            Reset to Free Trade
+          </button>
+        </div>
+
+        <!-- Free-trade alert -->
+        <div id="freetrade-alert" class="freetrade-alert" role="status" aria-live="polite">
+          ✅ <strong>Free Trade (No Tariff):</strong> Consumer surplus is maximized. Domestic price equals world price.
+        </div>
+
+        <!-- Metrics -->
+        <div class="metrics-container" aria-label="Market welfare metrics">
+          <h4>Welfare Effects:</h4>
+          <div class="metrics-row">
+            <div class="metric-card consumer" role="region" aria-label="Change in consumer surplus">
+              <div class="metric-label">Consumer Surplus</div>
+              <div class="metric-value" id="consumer-surplus" aria-live="polite">—</div>
+            </div>
+            <div class="metric-card producer" role="region" aria-label="Change in producer surplus">
+              <div class="metric-label">Producer Surplus</div>
+              <div class="metric-value" id="producer-surplus" aria-live="polite">—</div>
+            </div>
+          </div>
+          <div class="metrics-row">
+            <div class="metric-card govt" role="region" aria-label="Government tariff revenue">
+              <div class="metric-label">Tariff Revenue</div>
+              <div class="metric-value" id="tariff-revenue" aria-live="polite">—</div>
+            </div>
+            <div class="metric-card dwl" role="region" aria-label="Deadweight loss from tariff">
+              <div class="metric-label">Deadweight Loss</div>
+              <div class="metric-value" id="deadweight-loss" aria-live="polite">—</div>
+            </div>
+          </div>
+          <div class="metrics-row single">
+            <div class="metric-card total" role="region" aria-label="Total surplus">
+              <div class="metric-label">Total Surplus (CS + PS + TR)</div>
+              <div class="metric-value" id="total-surplus" aria-live="polite">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Accessible Data Table -->
+        <table class="data-table" aria-label="Detailed market data">
+          <caption>Market Quantities &amp; Prices</caption>
+          <thead>
+            <tr>
+              <th scope="col">Measure</th>
+              <th scope="col">Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">World Price (Pw)</th>      <td id="tbl-pw">—</td></tr>
+            <tr><th scope="row">Domestic Price (Pw + t)</th><td id="tbl-pd">—</td></tr>
+            <tr><th scope="row">Autarky Price</th>         <td id="tbl-pa">—</td></tr>
+            <tr><th scope="row">Tariff</th>                <td id="tbl-tariff">$0</td></tr>
+            <tr><th scope="row">Qty Demanded (Qd)</th>     <td id="tbl-qd">—</td></tr>
+            <tr><th scope="row">Domestic Qty Supplied (Qs)</th><td id="tbl-qs">—</td></tr>
+            <tr><th scope="row">Volume of Imports</th>     <td id="tbl-imports">—</td></tr>
+          </tbody>
+        </table>
+
+        <!-- Insight -->
+        <div class="market-insight" role="status" aria-live="polite">
+          <div id="market-insight-text"></div>
+        </div>
+
+        <!-- Key Concept -->
+        <div class="concept-box">
+          <h5>💡 Key Concept:</h5>
+          <p>A small importing country takes the <strong>world price</strong> as given. A tariff raises the domestic price, creating <strong>two DWL triangles</strong>: one from reduced consumption and one from inefficient domestic production. Tariff revenue is a transfer from consumers to government — not a welfare gain for society.</p>
+        </div>
+
+      </aside><!-- /control-panel -->
+
+      <!-- ── Graph Panel ── -->
+      <section class="graph-panel" aria-label="Import tariff market visualization">
+        <div class="graph-wrapper">
+          <div id="tariff-graph"
+               role="img"
+               aria-label="Supply and demand graph showing import tariff welfare effects"></div>
+          <div id="graph-description" class="sr-only"></div>
+        </div>
+      </section>
+
+    </div><!-- /content-wrapper -->
+  </main>
+</div><!-- /container -->
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  SCENARIOS
+// ═══════════════════════════════════════════════════════
+const scenarios = {
+  steel: {
+    name: 'Steel Market',
+    unit: 'tons',
+    priceUnit: '$/ton',
+    // Demand: P = 800 - 4Q  →  Q = (800 - P) / 4
+    demandIntercept: 800,
+    demandSlope: -4,
+    // Domestic Supply: P = 200 + 2Q  →  Q = (P - 200) / 2
+    supplyIntercept: 200,
+    supplySlope: 2,
+    // World price range
+    wpDefault: 350, wpMin: 250, wpMax: 500, wpStep: 10,
+    tariffMax: 200, tariffStep: 10,
+    graphQMax: 120, graphPMax: 850,
+    infoLabel: 'Demand: P = 800 − 4Q &nbsp;|&nbsp; Domestic Supply: P = 200 + 2Q &nbsp;|&nbsp; World Price: $350/ton'
+  },
+  solar: {
+    name: 'Solar Panel Market',
+    unit: 'units (thousands)',
+    priceUnit: '$/unit',
+    // Demand: P = 600 - 3Q
+    demandIntercept: 600,
+    demandSlope: -3,
+    // Domestic Supply: P = 100 + 2Q
+    supplyIntercept: 100,
+    supplySlope: 2,
+    wpDefault: 200, wpMin: 100, wpMax: 320, wpStep: 10,
+    tariffMax: 150, tariffStep: 10,
+    graphQMax: 140, graphPMax: 650,
+    infoLabel: 'Demand: P = 600 − 3Q &nbsp;|&nbsp; Domestic Supply: P = 100 + 2Q &nbsp;|&nbsp; World Price: $200/unit'
+  },
+  wheat: {
+    name: 'Wheat Market',
+    unit: 'bushels (millions)',
+    priceUnit: '$/bushel',
+    // Demand: P = 20 - 0.5Q
+    demandIntercept: 20,
+    demandSlope: -0.5,
+    // Domestic Supply: P = 5 + 0.25Q
+    supplyIntercept: 5,
+    supplySlope: 0.25,
+    wpDefault: 10, wpMin: 6, wpMax: 14, wpStep: 0.25,
+    tariffMax: 6, tariffStep: 0.25,
+    graphQMax: 35, graphPMax: 22,
+    infoLabel: 'Demand: P = 20 − 0.5Q &nbsp;|&nbsp; Domestic Supply: P = 5 + 0.25Q &nbsp;|&nbsp; World Price: $10/bushel'
+  }
+};
+
+let currentScenario = 'steel';
+let currentWP   = 350;  // world price
+let currentTariff = 0;
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function () {
+  selectScenario('steel');
+
+  // Keyboard fine-control on sliders
+  ['world-price-slider', 'tariff-slider'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', function (e) {
+      if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && e.shiftKey) {
+        e.preventDefault();
+        const step = parseFloat(this.step) / 5;
+        const dir  = e.key === 'ArrowRight' ? 1 : -1;
+        const nv   = parseFloat(this.value) + step * dir;
+        this.value = Math.max(parseFloat(this.min), Math.min(parseFloat(this.max), nv));
+        this.dispatchEvent(new Event('input'));
+      }
+    });
+  });
+
+  document.getElementById('world-price-slider').addEventListener('input', onWPChange);
+  document.getElementById('tariff-slider').addEventListener('input', onTariffChange);
+});
+
+// ═══════════════════════════════════════════════════════
+//  SCENARIO SELECTION
+// ═══════════════════════════════════════════════════════
+function selectScenario(key) {
+  currentScenario = key;
+  const sc = scenarios[key];
+
+  // Button states
+  document.querySelectorAll('.scenario-btn').forEach((btn, i) => {
+    const keys = ['steel', 'solar', 'wheat'];
+    const active = keys[i] === key;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', active);
+  });
+
+  // Info text
+  document.getElementById('scenario-info').innerHTML =
+    `<strong>${sc.name}</strong> — ${sc.infoLabel}`;
+
+  // World price slider
+  const wpSlider = document.getElementById('world-price-slider');
+  wpSlider.min   = sc.wpMin;
+  wpSlider.max   = sc.wpMax;
+  wpSlider.step  = sc.wpStep;
+  wpSlider.value = sc.wpDefault;
+  wpSlider.setAttribute('aria-valuemin', sc.wpMin);
+  wpSlider.setAttribute('aria-valuemax', sc.wpMax);
+  wpSlider.setAttribute('aria-valuenow', sc.wpDefault);
+  document.getElementById('wp-min').textContent = fmt(sc.wpMin);
+  document.getElementById('wp-max').textContent = fmt(sc.wpMax);
+  document.getElementById('current-world-price').textContent = fmt(sc.wpDefault);
+
+  // Tariff slider
+  const tSlider = document.getElementById('tariff-slider');
+  tSlider.min   = 0;
+  tSlider.max   = sc.tariffMax;
+  tSlider.step  = sc.tariffStep;
+  tSlider.value = 0;
+  tSlider.setAttribute('aria-valuemin', 0);
+  tSlider.setAttribute('aria-valuemax', sc.tariffMax);
+  tSlider.setAttribute('aria-valuenow', 0);
+  document.getElementById('tariff-min').textContent = '$0';
+  document.getElementById('tariff-max').textContent = fmt(sc.tariffMax);
+  document.getElementById('current-tariff').textContent = '$0';
+
+  currentWP     = sc.wpDefault;
+  currentTariff = 0;
+
+  const pa = autarkyPrice(sc);
+  announceChange(`Switched to ${sc.name}. Autarky price ${fmt(pa)}. World price ${fmt(currentWP)}. Free trade imports fill the gap.`);
+  updateAll();
+}
+
+// ═══════════════════════════════════════════════════════
+//  SLIDER HANDLERS
+// ═══════════════════════════════════════════════════════
+function onWPChange() {
+  const sc = scenarios[currentScenario];
+  currentWP = parseFloat(document.getElementById('world-price-slider').value);
+  document.getElementById('current-world-price').textContent = fmt(currentWP);
+  const wpSlider = document.getElementById('world-price-slider');
+  wpSlider.setAttribute('aria-valuenow', currentWP);
+  wpSlider.setAttribute('aria-valuetext', `World price: ${fmt(currentWP)}`);
+
+  // Clamp tariff so domestic price can't exceed autarky price
+  const pa = autarkyPrice(sc);
+  const maxT = Math.max(0, pa - currentWP);
+  const tSlider = document.getElementById('tariff-slider');
+  tSlider.max = maxT;
+  tSlider.setAttribute('aria-valuemax', maxT);
+  document.getElementById('tariff-max').textContent = fmt(maxT);
+  if (currentTariff > maxT) {
+    currentTariff = maxT;
+    tSlider.value = maxT;
+    document.getElementById('current-tariff').textContent = fmt(maxT);
+  }
+  updateAll();
+}
+
+function onTariffChange() {
+  currentTariff = parseFloat(document.getElementById('tariff-slider').value);
+  document.getElementById('current-tariff').textContent = fmt(currentTariff);
+  const tSlider = document.getElementById('tariff-slider');
+  tSlider.setAttribute('aria-valuenow', currentTariff);
+  tSlider.setAttribute('aria-valuetext', `Tariff: ${fmt(currentTariff)}`);
+  updateAll();
+}
+
+function resetTariff() {
+  currentTariff = 0;
+  const tSlider = document.getElementById('tariff-slider');
+  tSlider.value = 0;
+  tSlider.setAttribute('aria-valuenow', 0);
+  tSlider.setAttribute('aria-valuetext', 'Tariff: $0 — free trade');
+  document.getElementById('current-tariff').textContent = '$0';
+  announceChange('Reset to free trade. Tariff set to zero. Consumer surplus maximized.');
+  updateAll();
+}
+
+// ═══════════════════════════════════════════════════════
+//  ECONOMICS
+// ═══════════════════════════════════════════════════════
+function autarkyPrice(sc) {
+  // Qd = Qs  →  (demandIntercept - P)/|demandSlope| = (P - supplyIntercept)/supplySlope
+  // Rearranged:
+  return (sc.demandIntercept * sc.supplySlope + sc.supplyIntercept * Math.abs(sc.demandSlope))
+       / (sc.supplySlope + Math.abs(sc.demandSlope));
+}
+
+function qDemand(sc, p) {
+  return Math.max(0, (sc.demandIntercept - p) / Math.abs(sc.demandSlope));
+}
+
+function qSupply(sc, p) {
+  return Math.max(0, (p - sc.supplyIntercept) / sc.supplySlope);
+}
+
+function calcWelfare(sc, pw, tariff) {
+  const pd      = pw + tariff;                // domestic price
+  const pa      = autarkyPrice(sc);
+
+  // Clamp pd at autarky (no imports beyond that)
+  const pdClamped = Math.min(pd, pa);
+
+  const qd      = qDemand(sc, pdClamped);
+  const qs      = qSupply(sc, pdClamped);
+  const imports = Math.max(0, qd - qs);
+
+  // Free-trade (t=0) quantities for DWL reference
+  const qdFT    = qDemand(sc, pw);
+  const qsFT    = qSupply(sc, pw);
+
+  // Welfare areas
+  const cs = 0.5 * Math.abs(sc.demandSlope) * qd * qd;          // triangle from demand intercept to pd
+  // Equivalently: 0.5 * (demandIntercept - pd) * qd
+  const csCalc = 0.5 * (sc.demandIntercept - pdClamped) * qd;
+  const ps = 0.5 * (pdClamped - sc.supplyIntercept) * qs;        // triangle above supply intercept to pd
+  const tr = tariff * imports;
+
+  // DWL = two triangles
+  const dwlConsumption = 0.5 * tariff * Math.max(0, qdFT - qd);
+  const dwlProduction  = 0.5 * tariff * Math.max(0, qs - qsFT);
+  const dwl = dwlConsumption + dwlProduction;
+
+  return { pd: pdClamped, pa, qd, qs, imports, cs: csCalc, ps, tr, dwl,
+           qdFT, qsFT, total: csCalc + ps + tr };
+}
+
+// ═══════════════════════════════════════════════════════
+//  UPDATE ALL
+// ═══════════════════════════════════════════════════════
+function updateAll() {
+  const sc = scenarios[currentScenario];
+  const w  = calcWelfare(sc, currentWP, currentTariff);
+
+  // ── Metrics ──
+  document.getElementById('consumer-surplus').textContent = fmt(w.cs);
+  document.getElementById('producer-surplus').textContent = fmt(w.ps);
+  document.getElementById('tariff-revenue').textContent   = fmt(w.tr);
+  document.getElementById('deadweight-loss').textContent  = fmt(w.dwl);
+  document.getElementById('total-surplus').textContent    = fmt(w.total);
+
+  // ── Table ──
+  document.getElementById('tbl-pw').textContent      = fmt(currentWP);
+  document.getElementById('tbl-pd').textContent      = fmt(w.pd);
+  document.getElementById('tbl-pa').textContent      = fmt(w.pa);
+  document.getElementById('tbl-tariff').textContent  = fmt(currentTariff);
+  document.getElementById('tbl-qd').textContent      = `${w.qd.toFixed(1)} ${sc.unit}`;
+  document.getElementById('tbl-qs').textContent      = `${w.qs.toFixed(1)} ${sc.unit}`;
+  document.getElementById('tbl-imports').textContent = `${w.imports.toFixed(1)} ${sc.unit}`;
+
+  // ── Free-trade alert ──
+  const ftAlert = document.getElementById('freetrade-alert');
+  if (currentTariff === 0) {
+    ftAlert.classList.add('show');
+  } else {
+    ftAlert.classList.remove('show');
+  }
+
+  // ── Insight text ──
+  let insight = '';
+  if (currentTariff === 0) {
+    insight = `<strong>Free Trade:</strong> The domestic price equals the world price of ${fmt(currentWP)}. 
+      Consumers buy ${w.qd.toFixed(1)} ${sc.unit}; domestic producers supply ${w.qs.toFixed(1)} ${sc.unit}; 
+      imports of ${w.imports.toFixed(1)} ${sc.unit} fill the gap. Consumer surplus is maximized. No deadweight loss.`;
+  } else if (w.imports <= 0.01) {
+    insight = `<strong>Prohibitive Tariff:</strong> The tariff of ${fmt(currentTariff)} brings the domestic price to the autarky level 
+      (${fmt(w.pa)}). Imports have been eliminated entirely. The market behaves as if closed. 
+      Deadweight loss: ${fmt(w.dwl)}.`;
+  } else {
+    const pctDWL = w.total > 0 ? (w.dwl / (w.total + w.dwl) * 100).toFixed(1) : 0;
+    insight = `<strong>Tariff of ${fmt(currentTariff)}:</strong> Domestic price rises to ${fmt(w.pd)}, 
+      ${fmt(currentTariff)} above the world price. Imports fall from ${w.qdFT.toFixed(1) }−${ w.qsFT.toFixed(1)} 
+      to ${w.imports.toFixed(1)} ${sc.unit}. 
+      Consumers lose surplus; domestic producers and government gain — but the two <strong>DWL triangles</strong> 
+      (${fmt(w.dwl)}) represent efficiency lost to society (${pctDWL}% of maximum surplus).`;
+  }
+  document.getElementById('market-insight-text').innerHTML = insight;
+
+  // ── Graph ──
+  plotGraph(sc, w);
+
+  // ── Screen-reader graph description ──
+  updateGraphDescription(sc, w);
+
+  // ── Live announcement ──
+  if (currentTariff === 0) {
+    announceChange(`Free trade. Consumer surplus ${fmt(w.cs)}, producer surplus ${fmt(w.ps)}. No deadweight loss.`);
+  } else {
+    announceChange(`Tariff ${fmt(currentTariff)}. Consumer surplus ${fmt(w.cs)}, producer surplus ${fmt(w.ps)}, 
+      tariff revenue ${fmt(w.tr)}, deadweight loss ${fmt(w.dwl)}.`);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  PLOTLY GRAPH
+// ═══════════════════════════════════════════════════════
+function plotGraph(sc, w) {
+  const QMAX = sc.graphQMax;
+  const PMAX = sc.graphPMax;
+
+  // Generate curve points
+  const qArr = Array.from({length: 201}, (_, i) => i * QMAX / 200);
+
+  const demandP = qArr.map(q => Math.max(0, sc.demandIntercept + sc.demandSlope * q));
+  const supplyP = qArr.map(q => sc.supplyIntercept + sc.supplySlope * q);
+
+  const traces = [];
+
+  // ── Demand curve ──
+  traces.push({
+    x: qArr, y: demandP,
+    mode: 'lines', name: 'Demand',
+    line: { color: '#007bff', width: 3 },
+    hovertemplate: 'Demand: P = %{y:.2f}<extra></extra>'
+  });
+
+  // ── Domestic supply curve ──
+  traces.push({
+    x: qArr, y: supplyP,
+    mode: 'lines', name: 'Domestic Supply',
+    line: { color: '#dc3545', width: 3 },
+    hovertemplate: 'Domestic Supply: P = %{y:.2f}<extra></extra>'
+  });
+
+  // ── World price horizontal line ──
+  traces.push({
+    x: [0, QMAX], y: [currentWP, currentWP],
+    mode: 'lines', name: 'World Price (Pw)',
+    line: { color: '#28a745', width: 2, dash: 'dash' },
+    hovertemplate: `World Price: ${fmt(currentWP)}<extra></extra>`
+  });
+
+  // ── Domestic price line (if tariff > 0) ──
+  if (currentTariff > 0.001) {
+    traces.push({
+      x: [0, QMAX], y: [w.pd, w.pd],
+      mode: 'lines', name: `Domestic Price (Pw + t = ${fmt(w.pd)})`,
+      line: { color: '#ffc107', width: 2, dash: 'dot' },
+      hovertemplate: `Domestic Price: ${fmt(w.pd)}<extra></extra>`
+    });
+  }
+
+  // ── Welfare shading ──
+  // Consumer Surplus triangle
+  if (w.qd > 0.001) {
+    traces.push({
+      x: [0, w.qd, 0],
+      y: [sc.demandIntercept, w.pd, w.pd],
+      fill: 'toself',
+      fillcolor: 'rgba(40,167,69,0.25)',
+      line: { color: 'rgba(40,167,69,0.5)', width: 1 },
+      mode: 'lines', name: 'Consumer Surplus',
+      hoverinfo: 'name'
+    });
+  }
+
+  // Producer Surplus triangle
+  if (w.qs > 0.001) {
+    traces.push({
+      x: [0, w.qs, 0],
+      y: [sc.supplyIntercept, w.pd, w.pd],
+      fill: 'toself',
+      fillcolor: 'rgba(0,123,255,0.25)',
+      line: { color: 'rgba(0,123,255,0.5)', width: 1 },
+      mode: 'lines', name: 'Producer Surplus',
+      hoverinfo: 'name'
+    });
+  }
+
+  // Tariff Revenue rectangle
+  if (currentTariff > 0.001 && w.imports > 0.001) {
+    traces.push({
+      x: [w.qs, w.qd, w.qd, w.qs],
+      y: [currentWP, currentWP, w.pd, w.pd],
+      fill: 'toself',
+      fillcolor: 'rgba(255,193,7,0.40)',
+      line: { color: 'rgba(255,193,7,0.7)', width: 1 },
+      mode: 'lines', name: 'Tariff Revenue',
+      hoverinfo: 'name'
+    });
+  }
+
+  // DWL triangles
+  if (currentTariff > 0.001) {
+    // Production DWL (triangle between qsFT and qs, UNDER the supply curve)
+    // Vertices: (qsFT, Pw)  →  (qs, Pw)  →  (qs, Pd)
+    // The supply curve runs from (qsFT, Pw) up to (qs, Pd), closing the triangle.
+    if (w.qs > w.qsFT + 0.01) {
+      traces.push({
+        x: [w.qsFT, w.qs, w.qs],
+        y: [currentWP, currentWP, w.pd],
+        fill: 'toself',
+        fillcolor: 'rgba(220,53,69,0.40)',
+        line: { color: 'rgba(220,53,69,0.6)', width: 1 },
+        mode: 'lines', name: 'DWL (Production)',
+        hoverinfo: 'name'
+      });
+    }
+    // Consumption DWL (right triangle, between qd and qdFT)
+    if (w.qdFT > w.qd + 0.01) {
+      traces.push({
+        x: [w.qd, w.qdFT, w.qd],
+        y: [w.pd, currentWP, currentWP],
+        fill: 'toself',
+        fillcolor: 'rgba(220,53,69,0.40)',
+        line: { color: 'rgba(220,53,69,0.6)', width: 1 },
+        mode: 'lines', name: 'DWL (Consumption)',
+        hoverinfo: 'name'
+      });
+    }
+  }
+
+  // ── Key points ──
+  // Free-trade equilibrium points on world price line
+  traces.push({
+    x: [w.qsFT, w.qdFT],
+    y: [currentWP, currentWP],
+    mode: 'markers',
+    name: 'Free-trade Qs / Qd',
+    marker: { size: 9, color: '#28a745', symbol: 'circle' },
+    hovertemplate: 'Q = %{x:.1f}<extra></extra>'
+  });
+
+  if (currentTariff > 0.001) {
+    traces.push({
+      x: [w.qs, w.qd],
+      y: [w.pd, w.pd],
+      mode: 'markers',
+      name: 'Tariff Qs / Qd',
+      marker: { size: 9, color: '#ffc107', symbol: 'circle' },
+      hovertemplate: 'Q = %{x:.1f}<extra></extra>'
+    });
+  }
+
+  // ── Layout (fixed size, no overflow) ──
+  const layout = {
+    title: {
+      text: sc.name + ' — Import Tariff Analysis',
+      font: { size: 16, color: '#18453B', family: 'Segoe UI' }
+    },
+    xaxis: {
+      title: `Quantity (${sc.unit})`,
+      range: [0, QMAX],
+      gridcolor: '#e9ecef', showgrid: true, zeroline: true
+    },
+    yaxis: {
+      title: sc.priceUnit,
+      range: [0, PMAX],
+      gridcolor: '#e9ecef', showgrid: true, zeroline: true
+    },
+    showlegend: true,
+    legend: {
+      x: 0.60, y: 0.98,
+      bgcolor: 'rgba(255,255,255,0.9)',
+      bordercolor: '#e9ecef', borderwidth: 1,
+      font: { size: 11 }
+    },
+    margin: { l: 65, r: 30, t: 60, b: 65 },
+    autosize: false,
+    width: 700,
+    height: 520,
+    hovermode: 'closest',
+    paper_bgcolor: 'white',
+    plot_bgcolor: 'white'
+  };
+
+  const config = {
+    responsive: false,
+    displayModeBar: false,
+    staticPlot: false
+  };
+
+  Plotly.newPlot('tariff-graph', traces, layout, config);
+}
+
+// ═══════════════════════════════════════════════════════
+//  SCREEN-READER GRAPH DESCRIPTION
+// ═══════════════════════════════════════════════════════
+function updateGraphDescription(sc, w) {
+  let d = `Supply and demand graph for the ${sc.name}. `;
+  d += `Autarky equilibrium at price ${fmt(w.pa)}, where domestic supply equals domestic demand. `;
+  d += `World price is ${fmt(currentWP)}, so this country imports. `;
+  if (currentTariff === 0) {
+    d += `Free trade: domestic price equals world price ${fmt(currentWP)}. `;
+    d += `Quantity demanded ${w.qd.toFixed(1)} ${sc.unit}, domestic supply ${w.qs.toFixed(1)} ${sc.unit}, imports ${w.imports.toFixed(1)} ${sc.unit}. `;
+    d += `Consumer surplus ${fmt(w.cs)}, producer surplus ${fmt(w.ps)}. No deadweight loss.`;
+  } else {
+    d += `Tariff of ${fmt(currentTariff)} raises domestic price to ${fmt(w.pd)}. `;
+    d += `Quantity demanded falls to ${w.qd.toFixed(1)} ${sc.unit}; domestic supply rises to ${w.qs.toFixed(1)} ${sc.unit}; imports ${w.imports.toFixed(1)} ${sc.unit}. `;
+    d += `Consumer surplus ${fmt(w.cs)}, producer surplus ${fmt(w.ps)}, tariff revenue ${fmt(w.tr)}, deadweight loss ${fmt(w.dwl)}.`;
+  }
+  document.getElementById('graph-description').textContent = d;
+}
+
+// ═══════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════
+function fmt(v) {
+  if (Math.abs(v) >= 100) return '$' + v.toLocaleString(undefined, {maximumFractionDigits: 0});
+  return '$' + v.toFixed(2);
+}
+
+function announceChange(msg) {
+  const el = document.getElementById('live-updates');
+  el.textContent = '';
+  setTimeout(() => { el.textContent = msg; }, 100);
+}
+</script>
+</body>
+</html>
