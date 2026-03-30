@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cost-Minimizing Input Mix – EC 301</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.25.2/plotly.min.js"></script>
+    <style>
+        /* ============================================================
+           BASE / RESET
+        ============================================================ */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #212529;
+        }
+
+        /* ============================================================
+           SKIP LINK
+        ============================================================ */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 6px;
+            background: #18453B;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: 700;
+            text-decoration: none;
+            z-index: 10000;
+            transition: top 0.2s;
+        }
+        .skip-link:focus { top: 6px; }
+
+        /* ============================================================
+           SR-ONLY  /  LIVE REGION
+        ============================================================ */
+        .sr-only {
+            position: absolute;
+            width: 1px; height: 1px;
+            padding: 0; margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+        .live-region {
+            position: absolute;
+            left: -10000px;
+            width: 1px; height: 1px;
+            overflow: hidden;
+        }
+
+        /* ============================================================
+           FOCUS VISIBLE
+        ============================================================ */
+        *:focus-visible {
+            outline: 3px solid #667eea;
+            outline-offset: 2px;
+        }
+
+        /* ============================================================
+           LAYOUT
+        ============================================================ */
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+            overflow: hidden;
+        }
+
+        header.page-header {
+            background: linear-gradient(135deg, #18453B 0%, #2e7d5e 100%);
+            color: white;
+            padding: 28px 30px;
+            text-align: center;
+        }
+        header.page-header h1 { font-size: 2.1em; font-weight: 700; margin-bottom: 8px; }
+        header.page-header p  { font-size: 1.05em; opacity: 0.92; }
+
+        .content-wrapper {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            min-height: 600px;
+        }
+
+        /* ============================================================
+           CONTROL PANEL
+        ============================================================ */
+        .control-panel {
+            background: #f8f9fa;
+            padding: 28px 24px;
+            border-right: 3px solid #e9ecef;
+            overflow-y: auto;
+        }
+
+        .control-panel h2 {
+            color: #18453B;
+            font-size: 1.1em;
+            margin-bottom: 18px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #18453B;
+        }
+
+        /* ---- Function Tabs ---- */
+        .function-tabs {
+            display: flex;
+            margin-bottom: 16px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #18453B;
+        }
+        .function-tab {
+            flex: 1;
+            background: white;
+            border: none;
+            padding: 10px 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            color: #18453B;
+            transition: background 0.2s, color 0.2s;
+        }
+        .function-tab + .function-tab { border-left: 2px solid #18453B; }
+        .function-tab[aria-pressed="true"],
+        .function-tab.active {
+            background: #18453B;
+            color: white;
+        }
+        .function-tab:hover:not([aria-pressed="true"]) { background: #e8f4f0; }
+
+        /* ---- Function Display ---- */
+        .function-display {
+            background: #f0f7f4;
+            border: 2px solid #18453B;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            font-size: 15px;
+            font-weight: 700;
+            color: #18453B;
+            margin-bottom: 16px;
+        }
+
+        /* ---- Control Groups ---- */
+        .control-group {
+            background: white;
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 18px;
+            border-left: 4px solid #18453B;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .control-group h3 {
+            color: #212529;
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 14px;
+        }
+
+        /* ---- Slider groups ---- */
+        .slider-group { margin-bottom: 14px; }
+        .slider-group label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 6px;
+        }
+        .slider-group label span.val {
+            color: #18453B;
+            font-weight: 700;
+        }
+        .slider-group input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #d3d3d3;
+            outline: none;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .slider-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            background: #18453B;
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .slider-group input[type="range"]::-moz-range-thumb {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            background: #18453B;
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .slider-group input[type="range"]:focus {
+            outline: 3px solid #667eea;
+            outline-offset: 3px;
+        }
+        .slider-range-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #6c757d;
+            margin-top: 2px;
+        }
+
+        /* ---- Feedback box ---- */
+        .feedback-box {
+            background: #e3f2fd;
+            border: 2px solid #1565c0;
+            border-radius: 10px;
+            padding: 14px;
+            margin-top: 4px;
+        }
+        .feedback-box.optimal {
+            background: #d4edda;
+            border-color: #18453B;
+        }
+        .feedback-box h4 {
+            font-size: 14px;
+            margin-bottom: 6px;
+            color: #0d3b66;
+        }
+        .feedback-box.optimal h4 { color: #155724; }
+        .feedback-box p {
+            font-size: 13px;
+            color: #0d3b66;
+            margin: 0;
+            line-height: 1.45;
+        }
+        .feedback-box.optimal p { color: #155724; }
+
+        /* ---- Metrics Grid ---- */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 16px;
+        }
+        .metric-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+        }
+        .metric-label { font-size: 11px; color: #6c757d; font-weight: 600; margin-bottom: 4px; }
+        .metric-value { font-size: 18px; font-weight: 700; color: #18453B; }
+
+        /* ---- Condition box ---- */
+        .condition-box {
+            background: #fff8e1;
+            border: 2px solid #f9a825;
+            border-radius: 10px;
+            padding: 14px;
+            margin-top: 16px;
+            font-size: 13px;
+            color: #5d4037;
+            line-height: 1.55;
+        }
+        .condition-box strong { color: #18453B; }
+
+        /* ---- Hint / info box ---- */
+        .hint-box {
+            background: #e8f5e9;
+            border: 2px solid #18453B;
+            border-radius: 10px;
+            padding: 14px;
+            margin-top: 16px;
+            font-size: 13px;
+            color: #1b5e20;
+            line-height: 1.55;
+        }
+
+        /* ---- Reset button ---- */
+        .reset-btn {
+            width: 100%;
+            padding: 11px;
+            margin-top: 14px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .reset-btn:hover, .reset-btn:focus {
+            background: #495057;
+            outline: 3px solid #667eea;
+            outline-offset: 2px;
+        }
+
+        /* ---- Hidden ---- */
+        .hidden { display: none !important; }
+
+        /* ============================================================
+           GRAPH PANEL
+        ============================================================ */
+        .graph-panel {
+            padding: 28px 24px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .graph-wrapper {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            background: white;
+        }
+
+        /* ============================================================
+           DATA TABLE (accessibility alternative)
+        ============================================================ */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #e9ecef;
+        }
+        .data-table caption {
+            padding: 10px 14px;
+            font-weight: 700;
+            color: #18453B;
+            text-align: left;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+            caption-side: top;
+        }
+        .data-table th, .data-table td {
+            padding: 10px 14px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 13px;
+        }
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 700;
+            color: #18453B;
+        }
+        .data-table tr:last-child td { border-bottom: none; }
+        .data-table tr:hover td { background: #f0f7f4; }
+        .data-table td.highlight { font-weight: 700; color: #18453B; }
+
+        /* ============================================================
+           CONCEPT BOX
+        ============================================================ */
+        .concept-box {
+            background: #e7f3ff;
+            border: 2px solid #1565c0;
+            border-radius: 10px;
+            padding: 16px;
+            font-size: 13px;
+            color: #0d3b66;
+            line-height: 1.6;
+        }
+        .concept-box h3 {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #0d3b66;
+        }
+
+        /* ============================================================
+           RESPONSIVE
+        ============================================================ */
+        @media (max-width: 900px) {
+            .content-wrapper { grid-template-columns: 1fr; }
+            .control-panel { border-right: none; border-bottom: 3px solid #e9ecef; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Skip navigation -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Live region for screen-reader announcements -->
+<div id="live-updates" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+<div class="container">
+
+    <!-- ── Header ── -->
+    <header class="page-header">
+        <h1>Cost-Minimizing Input Mix</h1>
+        <p>Explore how firms choose the least-cost combination of labor and capital</p>
+    </header>
+
+    <!-- ── Main content ── -->
+    <div class="content-wrapper">
+
+        <!-- ===== CONTROL PANEL ===== -->
+        <aside class="control-panel" aria-label="Input controls and results">
+            <h2 id="controls-heading">Controls</h2>
+
+            <!-- Production Function Selector -->
+            <section aria-labelledby="prod-fn-heading">
+                <h3 id="prod-fn-heading" class="sr-only">Select Production Function</h3>
+
+                <div role="group" aria-labelledby="prod-fn-heading" class="function-tabs">
+                    <button class="function-tab"
+                            id="tab-cd"
+                            aria-pressed="true"
+                            onclick="selectFunction('cobb-douglas', this)">
+                        Cobb-Douglas
+                    </button>
+                    <button class="function-tab"
+                            id="tab-lt"
+                            aria-pressed="false"
+                            onclick="selectFunction('leontief', this)">
+                        Leontief
+                    </button>
+                </div>
+
+                <div id="function-display"
+                     class="function-display"
+                     role="math"
+                     aria-label="Q equals L to the alpha times K to the (1 minus alpha)">
+                    Q = L<sup>α</sup> × K<sup>(1−α)</sup>
+                </div>
+            </section>
+
+            <!-- Production Parameters -->
+            <section class="control-group" aria-labelledby="prod-params-heading">
+                <h3 id="prod-params-heading">⚙ Production Parameters</h3>
+
+                <!-- Target Output -->
+                <div class="slider-group" role="group" aria-labelledby="output-label">
+                    <label for="output-slider" id="output-label">
+                        Target Output (Q)
+                        <span class="val" id="output-display" aria-hidden="true">10</span>
+                    </label>
+                    <input type="range" id="output-slider"
+                           min="5" max="50" step="1" value="10"
+                           aria-valuemin="5" aria-valuemax="50" aria-valuenow="10"
+                           aria-valuetext="Target output: 10 units"
+                           aria-describedby="output-desc"
+                           oninput="handleSlider(this)">
+                    <div class="slider-range-labels" aria-hidden="true"><span>5</span><span>50</span></div>
+                    <span id="output-desc" class="sr-only">Range 5 to 50 units. Use arrow keys to adjust.</span>
+                </div>
+
+                <!-- Cobb-Douglas: alpha -->
+                <div id="cd-controls">
+                    <div class="slider-group" role="group" aria-labelledby="alpha-label">
+                        <label for="alpha-slider" id="alpha-label">
+                            Labor Share (α)
+                            <span class="val" id="alpha-display" aria-hidden="true">0.50</span>
+                        </label>
+                        <input type="range" id="alpha-slider"
+                               min="0.1" max="0.9" step="0.1" value="0.5"
+                               aria-valuemin="0.1" aria-valuemax="0.9" aria-valuenow="0.5"
+                               aria-valuetext="Labor share alpha: 0.5"
+                               aria-describedby="alpha-desc"
+                               oninput="handleSlider(this)">
+                        <div class="slider-range-labels" aria-hidden="true"><span>0.1</span><span>0.9</span></div>
+                        <span id="alpha-desc" class="sr-only">Range 0.1 to 0.9. Higher α means production is more labor-intensive.</span>
+                    </div>
+                </div>
+
+                <!-- Leontief: fixed proportion -->
+                <div id="lt-controls" class="hidden">
+                    <div class="slider-group" role="group" aria-labelledby="prop-label">
+                        <label for="prop-slider" id="prop-label">
+                            Fixed Proportion (a)
+                            <span class="val" id="prop-display" aria-hidden="true">1.0</span>
+                        </label>
+                        <input type="range" id="prop-slider"
+                               min="0.5" max="3" step="0.1" value="1"
+                               aria-valuemin="0.5" aria-valuemax="3.0" aria-valuenow="1"
+                               aria-valuetext="Fixed proportion a: 1"
+                               aria-describedby="prop-desc"
+                               oninput="handleSlider(this)">
+                        <div class="slider-range-labels" aria-hidden="true"><span>0.5</span><span>3.0</span></div>
+                        <span id="prop-desc" class="sr-only">Range 0.5 to 3. Determines the capital-to-labor ratio at the isoquant corner.</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Input Prices -->
+            <section class="control-group" aria-labelledby="prices-heading">
+                <h3 id="prices-heading">💰 Input Prices</h3>
+
+                <div class="slider-group" role="group" aria-labelledby="wage-label">
+                    <label for="wage-slider" id="wage-label">
+                        Wage Rate (w)
+                        <span class="val" id="wage-display" aria-hidden="true">$10</span>
+                    </label>
+                    <input type="range" id="wage-slider"
+                           min="5" max="30" step="1" value="10"
+                           aria-valuemin="5" aria-valuemax="30" aria-valuenow="10"
+                           aria-valuetext="Wage rate: $10 per unit"
+                           aria-describedby="wage-desc"
+                           oninput="handleSlider(this)">
+                    <div class="slider-range-labels" aria-hidden="true"><span>$5</span><span>$30</span></div>
+                    <span id="wage-desc" class="sr-only">Range $5 to $30. Higher wages shift the optimal mix toward capital.</span>
+                </div>
+
+                <div class="slider-group" role="group" aria-labelledby="rental-label">
+                    <label for="rental-slider" id="rental-label">
+                        Rental Rate (r)
+                        <span class="val" id="rental-display" aria-hidden="true">$10</span>
+                    </label>
+                    <input type="range" id="rental-slider"
+                           min="5" max="30" step="1" value="10"
+                           aria-valuemin="5" aria-valuemax="30" aria-valuenow="10"
+                           aria-valuetext="Rental rate: $10 per unit"
+                           aria-describedby="rental-desc"
+                           oninput="handleSlider(this)">
+                    <div class="slider-range-labels" aria-hidden="true"><span>$5</span><span>$30</span></div>
+                    <span id="rental-desc" class="sr-only">Range $5 to $30. Higher rental cost shifts the optimal mix toward labor.</span>
+                </div>
+            </section>
+
+            <!-- Find Minimum Cost -->
+            <section class="control-group" aria-labelledby="budget-heading">
+                <h3 id="budget-heading">🎯 Find the Minimum Cost</h3>
+                <p style="font-size:13px;color:#495057;margin-bottom:12px;">
+                    Drag the isocost line until it just touches the isoquant. That tangency is the cost-minimizing input mix.
+                </p>
+
+                <div class="slider-group" role="group" aria-labelledby="budget-label">
+                    <label for="budget-slider" id="budget-label">
+                        Total Cost Budget (C)
+                        <span class="val" id="budget-display" aria-hidden="true">$150</span>
+                    </label>
+                    <input type="range" id="budget-slider"
+                           min="50" max="400" step="5" value="150"
+                           aria-valuemin="50" aria-valuemax="400" aria-valuenow="150"
+                           aria-valuetext="Cost budget: $150"
+                           aria-describedby="budget-desc"
+                           oninput="handleSlider(this)">
+                    <div class="slider-range-labels" aria-hidden="true"><span>$50</span><span>$400</span></div>
+                    <span id="budget-desc" class="sr-only">Adjust to move the isocost line on the graph. Find the value where it is tangent to the isoquant.</span>
+                </div>
+
+                <!-- Feedback -->
+                <div id="feedback-box"
+                     class="feedback-box"
+                     role="status"
+                     aria-live="polite"
+                     aria-atomic="true">
+                    <h4 id="feedback-title">🎯 Keep Trying!</h4>
+                    <p id="feedback-text">Slide the budget to find where the isocost line is tangent to the isoquant.</p>
+                </div>
+            </section>
+
+            <!-- Metrics -->
+            <div class="metrics-grid" aria-label="Current solution metrics">
+                <div class="metric-card">
+                    <div class="metric-label">Optimal Labor</div>
+                    <div class="metric-value" id="metric-labor" aria-live="polite">--</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Optimal Capital</div>
+                    <div class="metric-value" id="metric-capital" aria-live="polite">--</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Min Cost</div>
+                    <div class="metric-value" id="metric-cost" aria-live="polite">--</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Cost per Unit</div>
+                    <div class="metric-value" id="metric-unitcost" aria-live="polite">--</div>
+                </div>
+            </div>
+
+            <!-- Optimality condition explanation -->
+            <div class="condition-box" id="condition-box" aria-live="polite">
+                <strong>Optimality condition:</strong> Cost is minimized where the isocost line is <em>tangent</em> to the isoquant — the slopes are equal: <strong>w/r = MP<sub>L</sub>/MP<sub>K</sub></strong>
+            </div>
+
+            <!-- Reset -->
+            <button class="reset-btn"
+                    onclick="resetDefaults()"
+                    aria-label="Reset all sliders to default values">
+                ↺ Reset to Defaults
+            </button>
+        </aside>
+
+        <!-- ===== GRAPH PANEL ===== -->
+        <main id="main-content" class="graph-panel" aria-label="Isoquant and isocost diagram">
+
+            <div class="graph-wrapper">
+                <div id="cost-graph"
+                     role="img"
+                     aria-label="Isoquant and isocost graph. See the data table below for accessible values.">
+                </div>
+            </div>
+
+            <!-- Accessible data table -->
+            <div>
+                <table class="data-table" id="data-table">
+                    <caption>Current Solution Values</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Parameter</th>
+                            <th scope="col">Value</th>
+                            <th scope="col">Meaning</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <!-- populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Concept box -->
+            <div class="concept-box" id="concept-box" aria-live="polite">
+                <h3>📘 Economic Interpretation</h3>
+                <p id="concept-text">
+                    For a <strong>Cobb-Douglas</strong> production function Q = L<sup>α</sup> K<sup>1−α</sup>, 
+                    the optimal input ratio is <strong>L/K = (α/1−α) × (r/w)</strong>. 
+                    When wages rise relative to rental rates, firms substitute capital for labor along the isoquant.
+                </p>
+            </div>
+
+        </main>
+    </div><!-- end content-wrapper -->
+</div><!-- end container -->
+
+<script>
+// ================================================================
+//  STATE
+// ================================================================
+let currentFunction = 'cobb-douglas';
+let lastOptimalCost = null;
+
+// ================================================================
+//  ANNOUNCE (screen-reader live region)
+// ================================================================
+function announce(msg) {
+    const region = document.getElementById('live-updates');
+    region.textContent = '';
+    // Small timeout ensures re-trigger for identical messages
+    setTimeout(() => { region.textContent = msg; }, 50);
+}
+
+// ================================================================
+//  FUNCTION SELECTOR
+// ================================================================
+function selectFunction(fn, btn) {
+    currentFunction = fn;
+
+    document.getElementById('tab-cd').setAttribute('aria-pressed', fn === 'cobb-douglas');
+    document.getElementById('tab-lt').setAttribute('aria-pressed', fn === 'leontief');
+
+    if (fn === 'cobb-douglas') {
+        document.getElementById('cd-controls').classList.remove('hidden');
+        document.getElementById('lt-controls').classList.add('hidden');
+        document.getElementById('function-display').innerHTML = 'Q = L<sup>α</sup> × K<sup>(1−α)</sup>';
+        document.getElementById('function-display').setAttribute('aria-label',
+            'Q equals L to the alpha times K to the 1 minus alpha');
+    } else {
+        document.getElementById('cd-controls').classList.add('hidden');
+        document.getElementById('lt-controls').classList.remove('hidden');
+        document.getElementById('function-display').innerHTML = 'Q = min(K, a × L)';
+        document.getElementById('function-display').setAttribute('aria-label',
+            'Q equals the minimum of K and a times L');
+    }
+    updateAll();
+    announce('Production function changed to ' + (fn === 'cobb-douglas' ? 'Cobb-Douglas' : 'Leontief'));
+}
+
+// ================================================================
+//  SLIDER HANDLER – updates aria attributes + displays
+// ================================================================
+function handleSlider(slider) {
+    const val = parseFloat(slider.value);
+
+    switch (slider.id) {
+        case 'output-slider':
+            document.getElementById('output-display').textContent = val;
+            slider.setAttribute('aria-valuenow', val);
+            slider.setAttribute('aria-valuetext', 'Target output: ' + val + ' units');
+            break;
+        case 'alpha-slider':
+            document.getElementById('alpha-display').textContent = val.toFixed(2);
+            slider.setAttribute('aria-valuenow', val);
+            slider.setAttribute('aria-valuetext', 'Labor share alpha: ' + val.toFixed(2));
+            break;
+        case 'prop-slider':
+            document.getElementById('prop-display').textContent = val.toFixed(1);
+            slider.setAttribute('aria-valuenow', val);
+            slider.setAttribute('aria-valuetext', 'Fixed proportion a: ' + val.toFixed(1));
+            break;
+        case 'wage-slider':
+            document.getElementById('wage-display').textContent = '$' + val;
+            slider.setAttribute('aria-valuenow', val);
+            slider.setAttribute('aria-valuetext', 'Wage rate: $' + val + ' per unit');
+            break;
+        case 'rental-slider':
+            document.getElementById('rental-display').textContent = '$' + val;
+            slider.setAttribute('aria-valuenow', val);
+            slider.setAttribute('aria-valuetext', 'Rental rate: $' + val + ' per unit');
+            break;
+        case 'budget-slider':
+            document.getElementById('budget-display').textContent = '$' + val;
+            slider.setAttribute('aria-valuenow', val);
+            slider.setAttribute('aria-valuetext', 'Cost budget: $' + val);
+            break;
+    }
+    updateAll();
+}
+
+// ================================================================
+//  READ VALUES
+// ================================================================
+function getValues() {
+    return {
+        output:   parseFloat(document.getElementById('output-slider').value),
+        alpha:    parseFloat(document.getElementById('alpha-slider').value),
+        prop:     parseFloat(document.getElementById('prop-slider').value),
+        wage:     parseFloat(document.getElementById('wage-slider').value),
+        rental:   parseFloat(document.getElementById('rental-slider').value),
+        budget:   parseFloat(document.getElementById('budget-slider').value)
+    };
+}
+
+// ================================================================
+//  OPTIMAL INPUTS
+// ================================================================
+function calcOptimal(v) {
+    if (currentFunction === 'cobb-douglas') {
+        const alpha = v.alpha, beta = 1 - alpha;
+        const Q = v.output, w = v.wage, r = v.rental;
+        // Derived from cost-minimization: L* = Q*(β*w/(α*r))^(-β)... simpler:
+        // K/L = (β/α)*(w/r)  =>  K = L*(β/α)*(w/r)
+        // Q = L^α * K^β  =>  L* = Q * (α*r/(β*w))^β
+        const labor   = Q * Math.pow((alpha * r) / (beta * w), beta);
+        const capital = Q * Math.pow((beta  * w) / (alpha * r), alpha);
+        const cost    = w * labor + r * capital;
+        return { labor, capital, cost };
+    } else {
+        // Q = min(K, a*L)  => K = Q, L = Q/a
+        const labor   = v.output / v.prop;
+        const capital = v.output;
+        const cost    = v.wage * labor + v.rental * capital;
+        return { labor, capital, cost };
+    }
+}
+
+// ================================================================
+//  OPTIMALITY CHECK
+// ================================================================
+function checkOptimality(optCost, budget) {
+    const diff = Math.abs(budget - optCost) / optCost;
+    if (diff <= 0.01)  return { ok: true,  status: 'optimal', title: '🎉 Optimal Solution Found!',
+                                 text: 'The isocost line is tangent to the isoquant — this is the minimum cost combination.' };
+    if (diff <= 0.04)  return { ok: false, status: 'close',   title: '🎯 Almost There!',
+                                 text: 'Very close! Fine-tune the budget slider a bit more.' };
+    if (budget < optCost) return { ok: false, status: 'low',  title: '📉 Budget Too Low',
+                                 text: 'The isocost line does not reach the isoquant — increase the budget.' };
+    return              { ok: false, status: 'high',  title: '📈 Budget Too High',
+                                 text: 'The isocost line crosses the isoquant — lower the budget to minimize cost.' };
+}
+
+// ================================================================
+//  UPDATE ALL
+// ================================================================
+function updateAll() {
+    const v = getValues();
+    const opt = calcOptimal(v);
+    const check = checkOptimality(opt.cost, v.budget);
+
+    // -- Feedback box --
+    const fb = document.getElementById('feedback-box');
+    document.getElementById('feedback-title').textContent = check.title;
+    document.getElementById('feedback-text').textContent  = check.text;
+    fb.className = 'feedback-box' + (check.ok ? ' optimal' : '');
+
+    // -- Metrics --
+    if (check.ok) {
+        document.getElementById('metric-labor').textContent    = opt.labor.toFixed(2);
+        document.getElementById('metric-capital').textContent  = opt.capital.toFixed(2);
+        document.getElementById('metric-cost').textContent     = '$' + opt.cost.toFixed(0);
+        document.getElementById('metric-unitcost').textContent = '$' + (opt.cost / v.output).toFixed(2);
+        // Announce on first time hitting optimal
+        if (lastOptimalCost !== opt.cost) {
+            announce('Optimal! Minimum cost is $' + opt.cost.toFixed(0) +
+                     ' using ' + opt.labor.toFixed(2) + ' units of labor and ' +
+                     opt.capital.toFixed(2) + ' units of capital.');
+            lastOptimalCost = opt.cost;
+        }
+    } else {
+        document.getElementById('metric-labor').textContent    = '--';
+        document.getElementById('metric-capital').textContent  = '--';
+        document.getElementById('metric-cost').textContent     = '--';
+        document.getElementById('metric-unitcost').textContent = '--';
+        lastOptimalCost = null;
+    }
+
+    // -- Optimality condition box --
+    updateConditionBox(v, opt, check.ok);
+
+    // -- Concept text --
+    updateConceptText(v, opt, check.ok);
+
+    // -- Accessible table --
+    updateTable(v, opt, check.ok);
+
+    // -- Graph --
+    plotGraph(v, opt, check.ok);
+}
+
+// ================================================================
+//  CONDITION BOX
+// ================================================================
+function updateConditionBox(v, opt, isOpt) {
+    const box = document.getElementById('condition-box');
+    if (currentFunction === 'cobb-douglas') {
+        const mrtsNum = (v.alpha * opt.capital).toFixed(2);
+        const mrtsDen = ((1 - v.alpha) * opt.labor).toFixed(2);
+        const mrts = (v.alpha / (1 - v.alpha) * opt.capital / opt.labor).toFixed(3);
+        const priceRatio = (v.wage / v.rental).toFixed(3);
+        box.innerHTML = '<strong>Optimality condition (Cobb-Douglas):</strong> ' +
+            'MRTS = w/r &nbsp;→&nbsp; ' +
+            '<strong>αK / (1−α)L = w/r</strong><br>' +
+            'At optimal: MRTS = ' + mrts + ', &nbsp; w/r = ' + priceRatio +
+            (isOpt ? ' &nbsp; ✓' : '');
+    } else {
+        const a = v.prop;
+        box.innerHTML = '<strong>Optimality condition (Leontief):</strong> ' +
+            'No substitution possible. The corner of the L-shaped isoquant always gives the minimum cost: ' +
+            '<strong>K* = Q,&nbsp; L* = Q/a</strong>';
+    }
+}
+
+// ================================================================
+//  CONCEPT TEXT
+// ================================================================
+function updateConceptText(v, opt, isOpt) {
+    const el = document.getElementById('concept-text');
+    if (currentFunction === 'cobb-douglas') {
+        const ratio = (opt.labor / opt.capital).toFixed(2);
+        el.innerHTML =
+            'For <strong>Cobb-Douglas</strong> Q = L<sup>α</sup> K<sup>1−α</sup>, ' +
+            'the cost-minimizing input ratio is <strong>L/K = (α/(1−α)) × (r/w)</strong>. ' +
+            'Currently α = ' + v.alpha + ', w = $' + v.wage + ', r = $' + v.rental + ', so ' +
+            'L*/K* = ' + ratio + '. ' +
+            'When wages rise relative to rental rates, firms substitute <em>capital for labor</em>.';
+    } else {
+        el.innerHTML =
+            'For <strong>Leontief</strong> (fixed proportions), inputs are perfect complements — ' +
+            'you must use them in ratio a:1 (L:K). No substitution is possible. ' +
+            'The isoquant is L-shaped with a corner at (Q/a, Q). ' +
+            'Input price changes do <em>not</em> affect the input mix, only total cost.';
+    }
+}
+
+// ================================================================
+//  TABLE
+// ================================================================
+function updateTable(v, opt, isOpt) {
+    const w = v.wage, r = v.rental, Q = v.output, B = v.budget;
+    const rows = [
+        { param: 'Target Output (Q)', val: Q.toFixed(0) + ' units', meaning: 'Quantity the firm must produce' },
+        { param: 'Wage Rate (w)',      val: '$' + w,                  meaning: 'Cost of one unit of labor' },
+        { param: 'Rental Rate (r)',    val: '$' + r,                  meaning: 'Cost of one unit of capital' },
+        { param: 'Your Cost Budget',   val: '$' + B.toFixed(0),       meaning: 'Position of the isocost line' },
+        { param: 'Minimum Cost (C*)',  val: '$' + opt.cost.toFixed(0), meaning: 'Least-cost way to produce Q', hl: true },
+        { param: 'Optimal Labor (L*)', val: isOpt ? opt.labor.toFixed(2) : '--', meaning: 'Labor at tangency', hl: isOpt },
+        { param: 'Optimal Capital (K*)',val: isOpt ? opt.capital.toFixed(2) : '--', meaning: 'Capital at tangency', hl: isOpt },
+        { param: 'Cost per Unit',      val: isOpt ? '$' + (opt.cost/Q).toFixed(2) : '--', meaning: 'Average cost at minimum' }
+    ];
+    if (currentFunction === 'cobb-douglas') {
+        rows.splice(2, 0, { param: 'Labor Share (α)', val: v.alpha.toFixed(2), meaning: 'Production elasticity of labor' });
+    } else {
+        rows.splice(2, 0, { param: 'Fixed Proportion (a)', val: v.prop.toFixed(1), meaning: 'Units of L per unit of K required' });
+    }
+
+    const tbody = document.getElementById('table-body');
+    tbody.innerHTML = rows.map(r =>
+        `<tr>
+          <th scope="row">${r.param}</th>
+          <td class="${r.hl ? 'highlight' : ''}">${r.val}</td>
+          <td>${r.meaning}</td>
+        </tr>`
+    ).join('');
+}
+
+// ================================================================
+//  GRAPH
+// ================================================================
+function plotGraph(v, opt, showStar) {
+    const traces = [];
+
+    // ---- Isoquant ----
+    const isoL = [], isoK = [];
+
+    if (currentFunction === 'cobb-douglas') {
+        for (let L = 0.5; L <= 28; L += 0.25) {
+            const K = Math.pow(v.output / Math.pow(L, v.alpha), 1 / (1 - v.alpha));
+            if (K > 0 && K <= 28) { isoL.push(L); isoK.push(K); }
+        }
+    } else {
+        // L-shaped: vertical then horizontal
+        const cornerL = v.output / v.prop;
+        const cornerK = v.output;
+        for (let K = Math.min(cornerK + 12, 28); K >= cornerK; K -= 0.1) {
+            isoL.push(cornerL); isoK.push(K);
+        }
+        for (let L = cornerL; L <= Math.min(cornerL + 12, 28); L += 0.1) {
+            isoL.push(L); isoK.push(cornerK);
+        }
+    }
+
+    traces.push({
+        x: isoL, y: isoK,
+        mode: 'lines',
+        name: 'Isoquant (Q = ' + v.output + ')',
+        line: { color: '#1565c0', width: 3 }
+    });
+
+    // ---- User isocost ----
+    const userMaxL = v.budget / v.wage;
+    const userMaxK = v.budget / v.rental;
+    const isOpt = checkOptimality(opt.cost, v.budget).ok;
+    traces.push({
+        x: [0, userMaxL], y: [userMaxK, 0],
+        mode: 'lines',
+        name: 'Isocost (C = $' + v.budget.toFixed(0) + ')',
+        line: { color: isOpt ? '#18453B' : '#c62828', width: 2.5, dash: isOpt ? 'solid' : 'dash' }
+    });
+
+    // ---- Optimal isocost (shown always as reference) ----
+    const optMaxL = opt.cost / v.wage;
+    const optMaxK = opt.cost / v.rental;
+    traces.push({
+        x: [0, optMaxL], y: [optMaxK, 0],
+        mode: 'lines',
+        name: 'Min-Cost Isocost (C* = $' + opt.cost.toFixed(0) + ')',
+        line: { color: '#18453B', width: 1.5, dash: 'dot' },
+        visible: isOpt ? false : true   // hide once user finds it (redundant with solid line)
+    });
+
+    // ---- Optimal point ----
+    if (currentFunction !== 'leontief') {
+        traces.push({
+            x: [opt.labor], y: [opt.capital],
+            mode: 'markers',
+            name: 'Tangency (L*=' + opt.labor.toFixed(1) + ', K*=' + opt.capital.toFixed(1) + ')',
+            marker: { color: '#18453B', size: showStar ? 16 : 10, symbol: showStar ? 'star' : 'circle-open' }
+        });
+    } else {
+        // For Leontief, corner point
+        traces.push({
+            x: [opt.labor], y: [opt.capital],
+            mode: 'markers',
+            name: 'Corner (L*=' + opt.labor.toFixed(1) + ', K*=' + opt.capital.toFixed(1) + ')',
+            marker: { color: '#18453B', size: showStar ? 16 : 10, symbol: showStar ? 'star' : 'circle-open' }
+        });
+    }
+
+    const layout = {
+        xaxis: {
+            title: { text: 'Labor (L)', font: { size: 14 } },
+            range: [0, 28],
+            gridcolor: '#ecf0f1',
+            fixedrange: true
+        },
+        yaxis: {
+            title: { text: 'Capital (K)', font: { size: 14 } },
+            range: [0, 28],
+            gridcolor: '#ecf0f1',
+            fixedrange: true
+        },
+        margin: { l: 65, r: 30, t: 50, b: 65 },
+        autosize: false,
+        width: 680,
+        height: 500,
+        plot_bgcolor: 'white',
+        paper_bgcolor: 'white',
+        showlegend: true,
+        legend: { x: 0.62, y: 0.97, bgcolor: 'rgba(255,255,255,0.85)', bordercolor: '#e9ecef', borderwidth: 1, font: { size: 11 } },
+        title: {
+            text: currentFunction === 'cobb-douglas'
+                ? 'Cost Minimization: Cobb-Douglas (α = ' + v.alpha + ')'
+                : 'Cost Minimization: Leontief (a = ' + v.prop.toFixed(1) + ')',
+            font: { size: 15, color: '#212529' }
+        }
+    };
+
+    const config = { responsive: false, displayModeBar: false, staticPlot: false };
+
+    Plotly.newPlot('cost-graph', traces, layout, config).then(function () {
+        setTimeout(() => Plotly.Plots.resize('cost-graph'), 100);
+        setTimeout(() => Plotly.Plots.resize('cost-graph'), 500);
+    });
+}
+
+// ================================================================
+//  RESET
+// ================================================================
+function resetDefaults() {
+    document.getElementById('output-slider').value = 10;
+    document.getElementById('alpha-slider').value  = 0.5;
+    document.getElementById('prop-slider').value   = 1;
+    document.getElementById('wage-slider').value   = 10;
+    document.getElementById('rental-slider').value = 10;
+    document.getElementById('budget-slider').value = 150;
+
+    // Sync displays
+    document.getElementById('output-display').textContent = '10';
+    document.getElementById('alpha-display').textContent  = '0.50';
+    document.getElementById('prop-display').textContent   = '1.0';
+    document.getElementById('wage-display').textContent   = '$10';
+    document.getElementById('rental-display').textContent = '$10';
+    document.getElementById('budget-display').textContent = '$150';
+
+    // Sync aria
+    ['output-slider','alpha-slider','prop-slider','wage-slider','rental-slider','budget-slider'].forEach(id => {
+        const el = document.getElementById(id);
+        el.setAttribute('aria-valuenow', el.value);
+    });
+
+    currentFunction = 'cobb-douglas';
+    document.getElementById('tab-cd').setAttribute('aria-pressed', 'true');
+    document.getElementById('tab-lt').setAttribute('aria-pressed', 'false');
+    document.getElementById('cd-controls').classList.remove('hidden');
+    document.getElementById('lt-controls').classList.add('hidden');
+    document.getElementById('function-display').innerHTML = 'Q = L<sup>α</sup> × K<sup>(1−α)</sup>';
+
+    announce('All controls reset to default values.');
+    updateAll();
+}
+
+// ================================================================
+//  KEYBOARD SUPPORT FOR FUNCTION TABS
+// ================================================================
+document.addEventListener('DOMContentLoaded', function () {
+    // Allow arrow key navigation between tabs
+    const tabs = [document.getElementById('tab-cd'), document.getElementById('tab-lt')];
+    tabs.forEach((tab, i) => {
+        tab.addEventListener('keydown', function (e) {
+            let next;
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { next = tabs[(i+1) % 2]; }
+            if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   { next = tabs[(i+1) % 2]; }
+            if (next) { next.focus(); next.click(); e.preventDefault(); }
+        });
+    });
+
+    // Initialize
+    updateAll();
+
+    // Extra resize passes on load
+    setTimeout(() => Plotly.Plots.resize('cost-graph'), 200);
+    setTimeout(() => Plotly.Plots.resize('cost-graph'), 600);
+});
+</script>
+</body>
+</html>

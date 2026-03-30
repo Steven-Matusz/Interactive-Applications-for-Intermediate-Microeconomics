@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Economic vs. Accounting Profit</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Skip link (WCAG 2.4.1) ── */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: #18453B;
+      color: white;
+      padding: 8px 16px;
+      text-decoration: none;
+      border-radius: 0 0 4px 0;
+      z-index: 9999;
+      font-weight: 700;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ── Screen-reader only (WCAG 1.3.1) ── */
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ── Live region ── */
+    .live-region {
+      position: absolute;
+      left: -10000px;
+      width: 1px; height: 1px;
+      overflow: hidden;
+    }
+
+    /* ── Focus visible (WCAG 2.4.11) ── */
+    :focus-visible {
+      outline: 3px solid #C89A2A;
+      outline-offset: 3px;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      line-height: 1.6;
+      color: #1a1a1a;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #18453B 0%, #2d5a4f 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 { font-size: 2em; margin-bottom: 10px; font-weight: 700; }
+    .header p  { font-size: 1.1em; opacity: 0.9; }
+
+    /* ── Scenario selector ── */
+    .scenario-selector {
+      background: #f8f9fa;
+      padding: 20px 30px;
+      border-bottom: 3px solid #18453B;
+    }
+    .scenario-selector h2 {
+      color: #18453B;
+      margin-bottom: 14px;
+      font-size: 1.2em;
+    }
+    .scenario-buttons {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .scenario-btn {
+      flex: 1;
+      min-width: 180px;
+      padding: 14px 18px;
+      font-size: 1em;
+      border: 3px solid #18453B;
+      background: white;
+      color: #18453B;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 600;
+    }
+    .scenario-btn:hover {
+      background: #18453B;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(24,69,59,0.3);
+    }
+    .scenario-btn.active {
+      background: #18453B;
+      color: white;
+    }
+    .scenario-btn:focus-visible {
+      outline: 3px solid #C89A2A;
+      outline-offset: 3px;
+    }
+
+    /* ── Main two-column layout ── */
+    .content-wrapper {
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      gap: 0;
+      min-height: 600px;
+    }
+
+    /* ── Control panel (left) ── */
+    .control-panel {
+      background: #f8f9fa;
+      padding: 30px;
+      border-right: 3px solid #e9ecef;
+      overflow-y: auto;
+      max-height: 860px;
+    }
+    .control-panel h3 {
+      color: #18453B;
+      margin-bottom: 18px;
+      font-size: 1.15em;
+      border-bottom: 2px solid #e9ecef;
+      padding-bottom: 10px;
+    }
+
+    /* Input rows */
+    .input-group {
+      background: white;
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .form-label {
+      display: block;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 6px;
+      font-size: 0.95em;
+    }
+    .form-label .label-hint {
+      font-weight: 400;
+      color: #666;
+      font-size: 0.88em;
+    }
+
+    /* Range slider */
+    .slider-row { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+    input[type="range"] {
+      flex: 1;
+      height: 8px;
+      border-radius: 5px;
+      background: #d3d3d3;
+      cursor: pointer;
+      accent-color: #18453B;
+    }
+    input[type="range"]:focus-visible {
+      outline: 3px solid #C89A2A;
+      outline-offset: 3px;
+    }
+    .slider-value {
+      min-width: 80px;
+      text-align: right;
+      font-weight: 700;
+      color: #18453B;
+      font-size: 0.95em;
+    }
+    .slider-limits {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8em;
+      color: #888;
+      margin-top: 2px;
+    }
+
+    /* Reset button */
+    .reset-btn {
+      width: 100%;
+      padding: 12px;
+      margin-top: 6px;
+      background: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .reset-btn:hover { background: #5a6268; transform: translateY(-1px); }
+    .reset-btn:focus-visible { outline: 3px solid #C89A2A; outline-offset: 3px; }
+
+    /* Concept box */
+    .concept-box {
+      background: #e7f3ff;
+      border: 2px solid #007bff;
+      border-radius: 10px;
+      padding: 16px;
+      margin-top: 18px;
+      font-size: 0.92em;
+    }
+    .concept-box h4 { color: #004085; margin-bottom: 8px; font-size: 1em; }
+    .concept-box p  { color: #333; line-height: 1.5; }
+
+    /* ── Graph panel (right) ── */
+    .graph-panel {
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Bar chart wrapper */
+    .graph-wrapper {
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      overflow: hidden;
+      background: white;
+    }
+
+    /* Profit cards */
+    .profit-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    .profit-card {
+      border-radius: 12px;
+      padding: 22px;
+      text-align: center;
+      border: 3px solid;
+    }
+    .profit-card.accounting {
+      border-color: #27ae60;
+      background: linear-gradient(135deg, #f8fff8, #e8f5e8);
+    }
+    .profit-card.economic {
+      border-color: #007bff;
+      background: linear-gradient(135deg, #f8fbff, #e8f2ff);
+    }
+    .profit-card-title {
+      font-size: 1em;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .profit-card.accounting .profit-card-title { color: #27ae60; }
+    .profit-card.economic  .profit-card-title { color: #007bff; }
+    .profit-card-value {
+      font-size: 2em;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+    .profit-card-formula {
+      font-size: 0.82em;
+      color: #555;
+      line-height: 1.4;
+    }
+
+    /* Metrics row (below cards) */
+    .metrics-row {
+      display: flex;
+      gap: 12px;
+    }
+    .metric-card {
+      flex: 1;
+      padding: 14px;
+      border-radius: 8px;
+      text-align: center;
+      border: 2px solid;
+    }
+    .metric-card.opp { background: rgba(255,193,7,.1); border-color: #ffc107; }
+    .metric-card.ebit { background: rgba(108,117,125,.1); border-color: #6c757d; }
+    .metric-label { font-size: 0.82em; font-weight: 600; color: #555; margin-bottom: 4px; }
+    .metric-value { font-size: 1.3em; font-weight: 700; color: #18453B; }
+
+    /* Interpretation box */
+    .interpretation-box {
+      padding: 16px 20px;
+      border-radius: 10px;
+      border: 2px solid;
+      font-size: 1em;
+      line-height: 1.5;
+      font-weight: 500;
+    }
+    .interpretation-box.positive { background: #d4edda; border-color: #28a745; color: #155724; }
+    .interpretation-box.zero     { background: #fff3cd; border-color: #ffc107; color: #856404; }
+    .interpretation-box.negative { background: #f8d7da; border-color: #dc3545; color: #721c24; }
+
+    /* ── Data table for accessibility ── */
+    .data-table {
+      width: 100%;
+      margin-top: 6px;
+      border-collapse: collapse;
+      background: white;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 0.92em;
+    }
+    .data-table caption {
+      padding: 10px 14px;
+      font-weight: 700;
+      color: #18453B;
+      text-align: left;
+      background: #f8f9fa;
+      border-bottom: 2px solid #e9ecef;
+    }
+    .data-table th, .data-table td {
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid #e9ecef;
+    }
+    .data-table th { background: #f8f9fa; font-weight: 600; color: #18453B; }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: #f8f9fa; }
+
+    /* ── Income statement ── */
+    .income-statement {
+      background: white;
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .income-statement h4 {
+      color: #18453B;
+      font-size: 1em;
+      margin-bottom: 14px;
+      border-bottom: 2px solid #e9ecef;
+      padding-bottom: 8px;
+    }
+    .stmt-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 7px 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 0.93em;
+    }
+    .stmt-row:last-child { border-bottom: none; font-weight: 700; font-size: 1em; }
+    .stmt-row.subtotal { font-weight: 700; background: #f8f9fa; margin: 4px -4px; padding: 7px 4px; border-radius: 4px; }
+    .stmt-label { color: #444; }
+    .stmt-value { font-weight: 600; }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .content-wrapper { grid-template-columns: 1fr; }
+      .control-panel { border-right: none; border-bottom: 3px solid #e9ecef; max-height: none; }
+      .profit-cards { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Skip navigation (WCAG 2.4.1) -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Live region for screen-reader announcements (WCAG 4.1.3) -->
+<div id="live-updates" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+<div class="container">
+
+  <!-- Header -->
+  <header class="header">
+    <h1>Economic vs. Accounting Profit</h1>
+    <p>Explore how opportunity costs reveal the true economic performance of a firm</p>
+  </header>
+
+  <!-- Scenario selector -->
+  <nav class="scenario-selector" aria-label="Preset scenarios">
+    <h2 id="scenario-heading">Choose a Scenario</h2>
+    <div class="scenario-buttons" role="group" aria-labelledby="scenario-heading">
+      <button class="scenario-btn active" id="btn-custom"
+              onclick="loadScenario('custom')" aria-pressed="true">
+        ✏️ Custom Firm
+      </button>
+      <button class="scenario-btn" id="btn-tech"
+              onclick="loadScenario('tech')" aria-pressed="false">
+        💻 Tech Startup
+      </button>
+      <button class="scenario-btn" id="btn-retail"
+              onclick="loadScenario('retail')" aria-pressed="false">
+        🛒 Retail Store
+      </button>
+      <button class="scenario-btn" id="btn-factory"
+              onclick="loadScenario('factory')" aria-pressed="false">
+        🏭 Factory (Value Destroyer)
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main id="main-content">
+    <div class="content-wrapper">
+
+      <!-- ── Left: Controls ── -->
+      <section class="control-panel" aria-label="Input controls">
+        <h3>Firm Financial Data</h3>
+
+        <!-- Revenue -->
+        <div class="input-group">
+          <label class="form-label" for="sl-revenue">
+            Revenue
+            <span class="label-hint">(annual sales)</span>
+          </label>
+          <div class="slider-row">
+            <input type="range" id="sl-revenue"
+                   min="0" max="5000000" step="50000" value="1000000"
+                   aria-valuemin="0" aria-valuemax="5000000"
+                   aria-valuenow="1000000" aria-valuetext="$1,000,000"
+                   oninput="onSlider('revenue', this.value)">
+            <span class="slider-value" id="val-revenue" aria-hidden="true">$1,000,000</span>
+          </div>
+          <div class="slider-limits" aria-hidden="true"><span>$0</span><span>$5,000,000</span></div>
+        </div>
+
+        <!-- Operating Expenses -->
+        <div class="input-group">
+          <label class="form-label" for="sl-expenses">
+            Operating Expenses
+            <span class="label-hint">(explicit costs)</span>
+          </label>
+          <div class="slider-row">
+            <input type="range" id="sl-expenses"
+                   min="0" max="4500000" step="50000" value="600000"
+                   aria-valuemin="0" aria-valuemax="4500000"
+                   aria-valuenow="600000" aria-valuetext="$600,000"
+                   oninput="onSlider('expenses', this.value)">
+            <span class="slider-value" id="val-expenses" aria-hidden="true">$600,000</span>
+          </div>
+          <div class="slider-limits" aria-hidden="true"><span>$0</span><span>$4,500,000</span></div>
+        </div>
+
+        <!-- Taxes -->
+        <div class="input-group">
+          <label class="form-label" for="sl-taxes">
+            Taxes
+            <span class="label-hint">(income taxes paid)</span>
+          </label>
+          <div class="slider-row">
+            <input type="range" id="sl-taxes"
+                   min="0" max="1000000" step="10000" value="100000"
+                   aria-valuemin="0" aria-valuemax="1000000"
+                   aria-valuenow="100000" aria-valuetext="$100,000"
+                   oninput="onSlider('taxes', this.value)">
+            <span class="slider-value" id="val-taxes" aria-hidden="true">$100,000</span>
+          </div>
+          <div class="slider-limits" aria-hidden="true"><span>$0</span><span>$1,000,000</span></div>
+        </div>
+
+        <!-- Invested Capital -->
+        <div class="input-group">
+          <label class="form-label" for="sl-capital">
+            Invested Capital
+            <span class="label-hint">(shareholders' equity + debt)</span>
+          </label>
+          <div class="slider-row">
+            <input type="range" id="sl-capital"
+                   min="100000" max="10000000" step="100000" value="2000000"
+                   aria-valuemin="100000" aria-valuemax="10000000"
+                   aria-valuenow="2000000" aria-valuetext="$2,000,000"
+                   oninput="onSlider('capital', this.value)">
+            <span class="slider-value" id="val-capital" aria-hidden="true">$2,000,000</span>
+          </div>
+          <div class="slider-limits" aria-hidden="true"><span>$100,000</span><span>$10,000,000</span></div>
+        </div>
+
+        <!-- Required Return Rate -->
+        <div class="input-group">
+          <label class="form-label" for="sl-rate">
+            Required Return Rate
+            <span class="label-hint">(opportunity cost of capital, %)</span>
+          </label>
+          <div class="slider-row">
+            <input type="range" id="sl-rate"
+                   min="1" max="25" step="0.5" value="10"
+                   aria-valuemin="1" aria-valuemax="25"
+                   aria-valuenow="10" aria-valuetext="10%"
+                   oninput="onSlider('rate', this.value)">
+            <span class="slider-value" id="val-rate" aria-hidden="true">10.0%</span>
+          </div>
+          <div class="slider-limits" aria-hidden="true"><span>1%</span><span>25%</span></div>
+        </div>
+
+        <button class="reset-btn" onclick="resetToDefaults()"
+                aria-label="Reset all sliders to default values">
+          ↺ Reset to Defaults
+        </button>
+
+        <!-- Concept box -->
+        <div class="concept-box" role="complementary" aria-label="Key concept">
+          <h4>💡 Key Concept</h4>
+          <p>
+            <strong>Accounting profit</strong> = Revenue − Explicit costs (what the accountant sees).<br><br>
+            <strong>Economic profit</strong> = Accounting profit − Opportunity cost of capital.<br><br>
+            A firm with <em>positive</em> accounting profit but <em>negative</em> economic profit is covering its bills
+            but failing to reward investors for the risk they bear.
+          </p>
+        </div>
+      </section>
+
+      <!-- ── Right: Visualizations ── -->
+      <section class="graph-panel" aria-label="Results and visualizations">
+
+        <!-- Bar chart -->
+        <div class="graph-wrapper">
+          <!-- Text description for screen readers (WCAG 1.1.1) -->
+          <p id="graph-desc" class="sr-only" aria-live="polite"></p>
+          <div id="profit-chart"
+               role="img"
+               aria-label="Bar chart comparing revenue components and profit measures"
+               aria-describedby="graph-desc">
+          </div>
+        </div>
+
+        <!-- Profit cards -->
+        <div class="profit-cards">
+          <div class="profit-card accounting"
+               role="region" aria-label="Accounting profit result"
+               aria-describedby="acct-formula">
+            <div class="profit-card-title">📊 Accounting Profit (NOPAT)</div>
+            <div class="profit-card-value" id="acct-value" aria-live="polite">—</div>
+            <div class="profit-card-formula" id="acct-formula">
+              NOPAT = Revenue − Operating Expenses − Taxes
+            </div>
+          </div>
+          <div class="profit-card economic"
+               role="region" aria-label="Economic profit result"
+               aria-describedby="econ-formula">
+            <div class="profit-card-title">💰 Economic Profit (EVA)</div>
+            <div class="profit-card-value" id="econ-value" aria-live="polite">—</div>
+            <div class="profit-card-formula" id="econ-formula">
+              EVA = NOPAT − (Invested Capital × Required Return)
+            </div>
+          </div>
+        </div>
+
+        <!-- Secondary metrics -->
+        <div class="metrics-row" role="group" aria-label="Additional metrics">
+          <div class="metric-card opp">
+            <div class="metric-label">Opportunity Cost of Capital</div>
+            <div class="metric-value" id="opp-cost-value" aria-live="polite">—</div>
+          </div>
+          <div class="metric-card ebit">
+            <div class="metric-label">EBIT (Operating Income)</div>
+            <div class="metric-value" id="ebit-value" aria-live="polite">—</div>
+          </div>
+        </div>
+
+        <!-- Interpretation -->
+        <div id="interpretation-box" class="interpretation-box positive"
+             role="status" aria-live="polite">
+          Adjust the sliders to explore how costs affect firm performance.
+        </div>
+
+        <!-- Accessible data table -->
+        <table class="data-table" aria-label="Detailed financial breakdown">
+          <caption>Financial Breakdown — Current Values</caption>
+          <thead>
+            <tr>
+              <th scope="col">Line Item</th>
+              <th scope="col">Amount</th>
+              <th scope="col">Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Revenue</th>
+              <td id="tbl-revenue">—</td>
+              <td>Total sales</td>
+            </tr>
+            <tr>
+              <th scope="row">Operating Expenses</th>
+              <td id="tbl-expenses">—</td>
+              <td>Explicit costs of production</td>
+            </tr>
+            <tr>
+              <th scope="row">EBIT</th>
+              <td id="tbl-ebit">—</td>
+              <td>Revenue − Operating Expenses</td>
+            </tr>
+            <tr>
+              <th scope="row">Taxes</th>
+              <td id="tbl-taxes">—</td>
+              <td>Income taxes paid</td>
+            </tr>
+            <tr>
+              <th scope="row">NOPAT (Accounting Profit)</th>
+              <td id="tbl-nopat">—</td>
+              <td>EBIT − Taxes</td>
+            </tr>
+            <tr>
+              <th scope="row">Invested Capital</th>
+              <td id="tbl-capital">—</td>
+              <td>Shareholders' equity + debt</td>
+            </tr>
+            <tr>
+              <th scope="row">Required Return Rate</th>
+              <td id="tbl-rate">—</td>
+              <td>Investors' opportunity cost</td>
+            </tr>
+            <tr>
+              <th scope="row">Opportunity Cost of Capital</th>
+              <td id="tbl-occ">—</td>
+              <td>Capital × Required Return</td>
+            </tr>
+            <tr>
+              <th scope="row">Economic Profit (EVA)</th>
+              <td id="tbl-eva">—</td>
+              <td>NOPAT − Opportunity Cost</td>
+            </tr>
+          </tbody>
+        </table>
+
+      </section>
+    </div><!-- end content-wrapper -->
+  </main>
+</div><!-- end container -->
+
+<script>
+// ──────────────────────────────────────────────
+//  State
+// ──────────────────────────────────────────────
+const state = {
+  revenue:  1000000,
+  expenses:  600000,
+  taxes:     100000,
+  capital:  2000000,
+  rate:         10
+};
+
+const DEFAULTS = { ...state };
+
+// Preset scenarios
+const SCENARIOS = {
+  custom:  { revenue:1000000, expenses:600000,  taxes:100000, capital:2000000, rate:10   },
+  tech:    { revenue:3500000, expenses:2000000, taxes:300000, capital:5000000, rate:12   },
+  retail:  { revenue:800000,  expenses:680000,  taxes:20000,  capital:500000,  rate:8    },
+  factory: { revenue:2000000, expenses:1700000, taxes:60000,  capital:3000000, rate:10   }
+};
+
+// ──────────────────────────────────────────────
+//  Helpers
+// ──────────────────────────────────────────────
+function fmt(n) {
+  const abs = Math.abs(n);
+  const s   = '$' + abs.toLocaleString('en-US', {maximumFractionDigits:0});
+  return n < 0 ? '−' + s : (n > 0 ? s : s);
+}
+
+function fmtSigned(n) {
+  if (n > 0)  return '+' + fmt(n);
+  if (n < 0)  return '−$' + Math.abs(n).toLocaleString('en-US',{maximumFractionDigits:0});
+  return fmt(n);
+}
+
+function announce(msg) {
+  const el = document.getElementById('live-updates');
+  el.textContent = '';
+  setTimeout(() => { el.textContent = msg; }, 50);
+}
+
+// ──────────────────────────────────────────────
+//  Slider handler
+// ──────────────────────────────────────────────
+function onSlider(key, rawVal) {
+  const v = parseFloat(rawVal);
+  state[key === 'rate' ? 'rate' : key] = v;
+
+  // Update displayed label
+  const labels = {
+    revenue:  '#val-revenue',
+    expenses: '#val-expenses',
+    taxes:    '#val-taxes',
+    capital:  '#val-capital',
+    rate:     '#val-rate'
+  };
+  const el = document.querySelector(labels[key]);
+  if (key === 'rate') {
+    el.textContent = v.toFixed(1) + '%';
+    document.getElementById('sl-rate').setAttribute('aria-valuetext', v.toFixed(1) + '%');
+  } else {
+    el.textContent = fmt(v);
+    document.getElementById('sl-' + key).setAttribute('aria-valuetext', fmt(v));
+  }
+
+  recalc();
+  // Deactivate preset buttons when user edits
+  setActiveScenarioBtn(null);
+}
+
+// ──────────────────────────────────────────────
+//  Scenario loader
+// ──────────────────────────────────────────────
+function loadScenario(name) {
+  const s = SCENARIOS[name];
+  Object.assign(state, s);
+  syncSlidersToState();
+  recalc();
+  setActiveScenarioBtn(name);
+}
+
+function setActiveScenarioBtn(name) {
+  ['custom','tech','retail','factory'].forEach(id => {
+    const btn = document.getElementById('btn-' + id);
+    const active = (id === name);
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+}
+
+function syncSlidersToState() {
+  const map = [
+    ['sl-revenue',  'revenue',  '#val-revenue',  v => fmt(v)],
+    ['sl-expenses', 'expenses', '#val-expenses', v => fmt(v)],
+    ['sl-taxes',    'taxes',    '#val-taxes',    v => fmt(v)],
+    ['sl-capital',  'capital',  '#val-capital',  v => fmt(v)],
+    ['sl-rate',     'rate',     '#val-rate',     v => v.toFixed(1)+'%']
+  ];
+  map.forEach(([slId, key, valSel, fmt]) => {
+    const sl  = document.getElementById(slId);
+    const val = state[key];
+    sl.value = val;
+    sl.setAttribute('aria-valuenow', val);
+    sl.setAttribute('aria-valuetext', fmt(val));
+    document.querySelector(valSel).textContent = fmt(val);
+  });
+}
+
+function resetToDefaults() {
+  loadScenario('custom');
+  announce('All values reset to defaults.');
+}
+
+// ──────────────────────────────────────────────
+//  Core calculation + update
+// ──────────────────────────────────────────────
+function recalc() {
+  const { revenue, expenses, taxes, capital, rate } = state;
+  const ebit    = revenue - expenses;
+  const nopat   = ebit - taxes;
+  const occ     = capital * (rate / 100);
+  const eva     = nopat - occ;
+
+  // ── Profit cards ──
+  document.getElementById('acct-value').textContent  = fmt(nopat);
+  document.getElementById('acct-value').style.color  = nopat >= 0 ? '#27ae60' : '#e74c3c';
+  document.getElementById('econ-value').textContent  = fmt(eva);
+  document.getElementById('econ-value').style.color  = eva >= 0 ? '#007bff' : '#e74c3c';
+  document.getElementById('opp-cost-value').textContent = fmt(occ);
+  document.getElementById('ebit-value').textContent     = fmt(ebit);
+
+  // ── Interpretation ──
+  const box = document.getElementById('interpretation-box');
+  box.className = 'interpretation-box ';
+  let msg;
+  if (eva > 0) {
+    box.className += 'positive';
+    msg = `✅ This firm creates economic value. Accounting profit is ${fmt(nopat)} and economic profit is ${fmt(eva)}. 
+           Investors earn more than their opportunity cost — the firm is worth staying in.`;
+  } else if (eva === 0) {
+    box.className += 'zero';
+    msg = `⚠️ Zero economic profit. The firm earns exactly its opportunity cost of capital (${fmt(occ)}). 
+           Investors are just indifferent between this firm and the next-best alternative.`;
+  } else {
+    box.className += 'negative';
+    if (nopat > 0) {
+      msg = `🚨 Despite positive accounting profit (${fmt(nopat)}), economic profit is ${fmt(eva)}. 
+             The firm is not covering the opportunity cost of capital (${fmt(occ)}) — investors could do better elsewhere.`;
+    } else {
+      msg = `🚨 Both accounting profit (${fmt(nopat)}) and economic profit (${fmt(eva)}) are negative. 
+             The firm is destroying value: it fails to cover even its explicit costs.`;
+    }
+  }
+  box.textContent = msg;
+
+  // ── Data table ──
+  document.getElementById('tbl-revenue').textContent  = fmt(revenue);
+  document.getElementById('tbl-expenses').textContent = fmt(expenses);
+  document.getElementById('tbl-ebit').textContent     = fmt(ebit);
+  document.getElementById('tbl-taxes').textContent    = fmt(taxes);
+  document.getElementById('tbl-nopat').textContent    = fmt(nopat);
+  document.getElementById('tbl-capital').textContent  = fmt(capital);
+  document.getElementById('tbl-rate').textContent     = rate.toFixed(1) + '%';
+  document.getElementById('tbl-occ').textContent      = fmt(occ);
+  document.getElementById('tbl-eva').textContent      = fmt(eva);
+
+  // ── Screen-reader graph description ──
+  document.getElementById('graph-desc').textContent =
+    `Bar chart showing: Revenue ${fmt(revenue)}, Operating Expenses ${fmt(expenses)}, ` +
+    `Taxes ${fmt(taxes)}, Opportunity Cost of Capital ${fmt(occ)}, ` +
+    `Accounting Profit (NOPAT) ${fmt(nopat)}, Economic Profit (EVA) ${fmt(eva)}.`;
+
+  // Announce summary to screen reader
+  announce(`Updated. Accounting profit: ${fmt(nopat)}. Economic profit: ${fmt(eva)}.`);
+
+  // ── Chart ──
+  plotChart(revenue, expenses, taxes, occ, nopat, eva);
+}
+
+// ──────────────────────────────────────────────
+//  Plotly bar chart  — Method 1: fixed dimensions
+// ──────────────────────────────────────────────
+let chartInitialized = false;
+
+function plotChart(revenue, expenses, taxes, occ, nopat, eva) {
+  const labels = ['Revenue', 'Op. Expenses', 'Taxes', 'Opp. Cost\nof Capital', 'Accounting\nProfit', 'Economic\nProfit (EVA)'];
+  const values = [revenue, expenses, taxes, occ, nopat, eva];
+
+  const colors = values.map((v, i) => {
+    if (i === 0) return '#18453B';          // Revenue — MSU green
+    if (i === 4) return v >= 0 ? '#27ae60' : '#e74c3c'; // Accounting profit
+    if (i === 5) return v >= 0 ? '#007bff' : '#c0392b'; // Economic profit
+    return '#C89A2A';                        // Cost items — MSU gold
+  });
+
+  const trace = {
+    type: 'bar',
+    x: labels,
+    y: values,
+    marker: { color: colors },
+    text: values.map(v => fmt(v)),
+    textposition: 'outside',
+    hovertemplate: '<b>%{x}</b><br>%{text}<extra></extra>',
+    cliponaxis: false
+  };
+
+  const layout = {
+    title: {
+      text: 'Financial Components at a Glance',
+      font: { size: 15, color: '#18453B' },
+      x: 0.5
+    },
+    yaxis: {
+      title: 'Amount ($)',
+      tickformat: '$,.0f',
+      gridcolor: '#e9ecef',
+      zeroline: true,
+      zerolinecolor: '#333',
+      zerolinewidth: 2,
+      range: [
+        Math.min(0, Math.min(...values)) * 1.25,
+        Math.max(...values) * 1.3
+      ]
+    },
+    xaxis: { tickfont: { size: 11 } },
+    plot_bgcolor:  'white',
+    paper_bgcolor: 'white',
+    margin: { l: 80, r: 30, t: 60, b: 80 },
+    autosize: false,
+    width:  680,
+    height: 380,
+    font: { family: 'Segoe UI, sans-serif' }
+  };
+
+  const config = {
+    responsive: false,
+    displayModeBar: false,
+    staticPlot: true
+  };
+
+  if (!chartInitialized) {
+    Plotly.newPlot('profit-chart', [trace], layout, config);
+    chartInitialized = true;
+  } else {
+    Plotly.react('profit-chart', [trace], layout, config);
+  }
+}
+
+// ──────────────────────────────────────────────
+//  Init
+// ──────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function () {
+  syncSlidersToState();
+  recalc();
+});
+</script>
+</body>
+</html>

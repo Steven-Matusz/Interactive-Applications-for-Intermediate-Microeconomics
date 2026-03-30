@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Returns to Scale &amp; Long-Run Cost Analysis</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        :root {
+            --msu-green: #18453B;
+            --msu-green-light: #2d5a4f;
+            --accent-purple: #9b59b6;
+            --success-green: #27ae60;
+            --warning-orange: #f39c12;
+            --danger-red: #e74c3c;
+            --border-color: #e9ecef;
+            --bg-light: #f8f9fa;
+            --text-dark: #2c3e50;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        /* ── Skip link ── */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--msu-green);
+            color: white;
+            padding: 8px 16px;
+            text-decoration: none;
+            border-radius: 0 0 4px 0;
+            z-index: 100;
+            font-weight: 600;
+        }
+        .skip-link:focus { top: 0; }
+
+        /* ── Screen-reader only ── */
+        .sr-only {
+            position: absolute;
+            width: 1px; height: 1px;
+            padding: 0; margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+
+        /* ── Live region ── */
+        .live-region {
+            position: absolute;
+            left: -10000px;
+            width: 1px; height: 1px;
+            overflow: hidden;
+        }
+
+        /* ── Focus styles ── */
+        *:focus-visible {
+            outline: 3px solid #667eea;
+            outline-offset: 2px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        /* ── Header ── */
+        .header {
+            background: linear-gradient(135deg, var(--msu-green) 0%, var(--msu-green-light) 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 { font-size: 2em; margin-bottom: 10px; }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+
+        /* ── Industry selector ── */
+        .industry-selector {
+            background: var(--bg-light);
+            padding: 20px 30px;
+            border-bottom: 3px solid var(--msu-green);
+        }
+        .industry-selector h2 {
+            color: var(--msu-green);
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+        .industry-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .industry-btn {
+            flex: 1;
+            min-width: 180px;
+            padding: 14px 18px;
+            font-size: 1em;
+            border: 3px solid var(--msu-green);
+            background: white;
+            color: var(--msu-green);
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .industry-btn:hover,
+        .industry-btn:focus {
+            background: var(--msu-green);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(24,69,59,0.3);
+        }
+        .industry-btn.active {
+            background: var(--msu-green);
+            color: white;
+        }
+        .industry-desc {
+            margin-top: 12px;
+            padding: 12px 16px;
+            background: white;
+            border-left: 4px solid var(--msu-green);
+            border-radius: 5px;
+            font-size: 0.95em;
+            color: var(--text-dark);
+        }
+
+        /* ── Main two-column layout ── */
+        .content-wrapper {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            min-height: 650px;
+        }
+
+        /* ── Controls panel ── */
+        .control-panel {
+            background: var(--bg-light);
+            padding: 25px;
+            border-right: 3px solid var(--border-color);
+            overflow-y: auto;
+            max-height: 900px;
+        }
+
+        .section-heading {
+            color: var(--msu-green);
+            font-size: 1.1em;
+            font-weight: 700;
+            margin-bottom: 12px;
+            margin-top: 20px;
+        }
+        .section-heading:first-child { margin-top: 0; }
+
+        /* Plant cards */
+        .plant-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .plant-card {
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            padding: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .plant-card:hover,
+        .plant-card:focus {
+            border-color: var(--msu-green);
+            box-shadow: 0 2px 8px rgba(24,69,59,0.2);
+        }
+        .plant-card.active {
+            border-color: var(--msu-green);
+            background: rgba(24,69,59,0.05);
+        }
+        .plant-card .plant-color {
+            width: 14px; height: 40px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+        .plant-card .plant-info { flex: 1; }
+        .plant-card .plant-name { font-weight: 700; font-size: 0.95em; color: var(--text-dark); }
+        .plant-card .plant-details { font-size: 0.82em; color: #666; margin-top: 2px; }
+        .plant-card .plant-fc { font-size: 0.82em; color: var(--msu-green); font-weight: 600; }
+        .plant-card .plant-check {
+            width: 22px; height: 22px;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px;
+            color: white;
+            flex-shrink: 0;
+        }
+        .plant-card.active .plant-check {
+            background: var(--msu-green);
+            border-color: var(--msu-green);
+        }
+
+        /* Curve toggles */
+        .curve-toggles {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .curve-toggle {
+            padding: 8px 14px;
+            border: 2px solid var(--msu-green);
+            background: white;
+            color: var(--msu-green);
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 600;
+            transition: all 0.25s ease;
+        }
+        .curve-toggle:hover,
+        .curve-toggle:focus {
+            background: var(--msu-green);
+            color: white;
+        }
+        .curve-toggle.active {
+            background: var(--msu-green);
+            color: white;
+        }
+
+        /* Sliders */
+        .slider-group {
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+        .slider-group label {
+            display: block;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+        .slider-group input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #d3d3d3;
+            outline: none;
+            cursor: pointer;
+            margin: 10px 0 6px;
+        }
+        .slider-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            background: var(--msu-green);
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        .slider-group input[type="range"]::-moz-range-thumb {
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            background: var(--msu-green);
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        .slider-group input[type="range"]:focus {
+            outline: 3px solid #667eea;
+            outline-offset: 3px;
+        }
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.82em;
+            color: #6c757d;
+        }
+        .slider-value {
+            font-weight: 700;
+            color: var(--msu-green);
+            font-size: 1em;
+        }
+
+        /* Returns analysis */
+        .returns-box {
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+        .returns-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.9em;
+            margin-top: 6px;
+        }
+        .returns-badge.economies { background: #d4edda; color: #155724; border: 2px solid #28a745; }
+        .returns-badge.diseconomies { background: #f8d7da; color: #721c24; border: 2px solid #dc3545; }
+        .returns-badge.constant { background: #fff3cd; color: #856404; border: 2px solid #ffc107; }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.9em;
+        }
+        .stat-row:last-child { border-bottom: none; }
+        .stat-label { color: #666; }
+        .stat-value { font-weight: 700; color: var(--text-dark); }
+
+        /* MES box */
+        .mes-box {
+            background: rgba(39,174,96,0.1);
+            border: 2px solid var(--success-green);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 14px;
+        }
+        .mes-box h4 { color: #155724; font-size: 0.95em; margin-bottom: 6px; }
+        .mes-value { font-size: 1.2em; font-weight: 700; color: var(--success-green); }
+
+        /* Insight */
+        .insight-box {
+            background: #fff3cd;
+            border: 2px solid var(--warning-orange);
+            border-radius: 10px;
+            padding: 14px;
+            font-size: 0.88em;
+            color: #5d4e00;
+            line-height: 1.55;
+        }
+
+        /* Reset button */
+        .reset-btn {
+            width: 100%;
+            padding: 11px;
+            margin-top: 14px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .reset-btn:hover, .reset-btn:focus {
+            background: #5a6268;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        /* ── Graph panel ── */
+        .graph-panel {
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .graph-wrapper {
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+            background: white;
+        }
+
+        /* ── Data table ── */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid var(--border-color);
+            font-size: 0.9em;
+        }
+        .data-table caption {
+            padding: 10px 12px;
+            font-weight: 700;
+            color: var(--msu-green);
+            text-align: left;
+            background: var(--bg-light);
+            border-bottom: 2px solid var(--border-color);
+            caption-side: top;
+        }
+        .data-table th, .data-table td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .data-table th {
+            background: var(--bg-light);
+            font-weight: 600;
+            color: var(--msu-green);
+        }
+        .data-table tr:last-child td { border-bottom: none; }
+        .data-table tr:hover { background: #f8f9fa; }
+
+        /* ── Concept box ── */
+        .concept-box {
+            background: #e7f3ff;
+            border: 2px solid #007bff;
+            border-radius: 10px;
+            padding: 16px;
+        }
+        .concept-box h3 { color: #004085; margin-bottom: 8px; font-size: 1em; }
+        .concept-box p { font-size: 0.88em; color: #004085; line-height: 1.5; margin-bottom: 6px; }
+        .concept-box p:last-child { margin-bottom: 0; }
+
+        @media (max-width: 1024px) {
+            .content-wrapper { grid-template-columns: 1fr; }
+            .control-panel { border-right: none; border-bottom: 3px solid var(--border-color); max-height: none; }
+        }
+    </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Live region for screen reader announcements -->
+<div id="live-updates" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+<div class="container">
+
+    <header class="header">
+        <h1>🏭 Returns to Scale &amp; Long-Run Cost Analysis</h1>
+        <p>Explore how plant size and industry type shape the long-run average cost envelope curve</p>
+    </header>
+
+    <!-- Industry selector -->
+    <section class="industry-selector" aria-label="Industry scenario selection">
+        <h2 id="industry-heading">Choose an Industry:</h2>
+        <div class="industry-buttons" role="group" aria-labelledby="industry-heading">
+            <button class="industry-btn active"
+                    aria-pressed="true"
+                    aria-describedby="desc-bakery"
+                    onclick="selectIndustry('bakery', this)">
+                🥐 Artisan Bakery
+            </button>
+            <button class="industry-btn"
+                    aria-pressed="false"
+                    aria-describedby="desc-restaurant"
+                    onclick="selectIndustry('restaurant', this)">
+                🍽️ Restaurant Chain
+            </button>
+            <button class="industry-btn"
+                    aria-pressed="false"
+                    aria-describedby="desc-software"
+                    onclick="selectIndustry('software', this)">
+                💻 Software Platform
+            </button>
+        </div>
+        <span id="desc-bakery" class="sr-only">Small-scale production with low fixed costs. MES reached at modest output.</span>
+        <span id="desc-restaurant" class="sr-only">Medium-scale industry where regional chains find cost advantages.</span>
+        <span id="desc-software" class="sr-only">High fixed cost development with near-zero marginal costs at scale.</span>
+        <div id="industry-info" class="industry-desc" aria-live="polite">
+            <strong>Artisan Bakery</strong> — Small-scale production. Three plant sizes: Cottage, Commercial, and Industrial.
+        </div>
+    </section>
+
+    <main id="main-content">
+        <div class="content-wrapper">
+
+            <!-- ══ CONTROL PANEL ══ -->
+            <aside class="control-panel" aria-label="Interactive controls and analysis">
+
+                <!-- Plant size selection -->
+                <h3 class="section-heading" id="plants-heading">Plant Sizes (click to show/hide SRAC curve):</h3>
+                <div class="plant-cards" role="group" aria-labelledby="plants-heading">
+                    <button class="plant-card active"
+                            id="plant-card-1"
+                            role="checkbox"
+                            aria-checked="true"
+                            aria-label="Plant 1 — Small. Toggle short-run average cost curve."
+                            onclick="togglePlant(1)">
+                        <span class="plant-color" style="background:#e74c3c;" aria-hidden="true"></span>
+                        <span class="plant-info">
+                            <span class="plant-name" id="plant-1-name">Small Plant</span>
+                            <span class="plant-details" id="plant-1-details">Low capacity, low overhead</span>
+                            <span class="plant-fc" id="plant-1-cost">FC: $5,000</span>
+                        </span>
+                        <span class="plant-check" aria-hidden="true">✓</span>
+                    </button>
+                    <button class="plant-card active"
+                            id="plant-card-2"
+                            role="checkbox"
+                            aria-checked="true"
+                            aria-label="Plant 2 — Medium. Toggle short-run average cost curve."
+                            onclick="togglePlant(2)">
+                        <span class="plant-color" style="background:#f39c12;" aria-hidden="true"></span>
+                        <span class="plant-info">
+                            <span class="plant-name" id="plant-2-name">Medium Plant</span>
+                            <span class="plant-details" id="plant-2-details">Moderate capacity</span>
+                            <span class="plant-fc" id="plant-2-cost">FC: $15,000</span>
+                        </span>
+                        <span class="plant-check" aria-hidden="true">✓</span>
+                    </button>
+                    <button class="plant-card active"
+                            id="plant-card-3"
+                            role="checkbox"
+                            aria-checked="true"
+                            aria-label="Plant 3 — Large. Toggle short-run average cost curve."
+                            onclick="togglePlant(3)">
+                        <span class="plant-color" style="background:#27ae60;" aria-hidden="true"></span>
+                        <span class="plant-info">
+                            <span class="plant-name" id="plant-3-name">Large Plant</span>
+                            <span class="plant-details" id="plant-3-details">High capacity, high overhead</span>
+                            <span class="plant-fc" id="plant-3-cost">FC: $40,000</span>
+                        </span>
+                        <span class="plant-check" aria-hidden="true">✓</span>
+                    </button>
+                </div>
+
+                <!-- Curve display toggles -->
+                <h3 class="section-heading" id="curves-heading">Display Options:</h3>
+                <div class="curve-toggles" role="group" aria-labelledby="curves-heading">
+                    <button class="curve-toggle active"
+                            id="toggle-srac"
+                            aria-pressed="true"
+                            onclick="toggleCurveType('srac', this)">
+                        SRAC Curves
+                    </button>
+                    <button class="curve-toggle active"
+                            id="toggle-lrac"
+                            aria-pressed="true"
+                            onclick="toggleCurveType('lrac', this)">
+                        LRAC Envelope
+                    </button>
+                    <button class="curve-toggle active"
+                            id="toggle-grid"
+                            aria-pressed="true"
+                            onclick="toggleCurveType('grid', this)">
+                        Grid
+                    </button>
+                </div>
+
+                <!-- Variable cost slider -->
+                <h3 class="section-heading">Cost Parameters:</h3>
+                <div class="slider-group">
+                    <label for="vc-slider">
+                        Variable Cost per Unit:
+                        <span class="slider-value" id="vc-display" aria-live="polite">$8</span>
+                    </label>
+                    <span id="vc-desc" class="sr-only">Adjust the base variable cost per unit of output. Use arrow keys for fine adjustment. Range: $2 to $20.</span>
+                    <input type="range" id="vc-slider"
+                           min="2" max="20" step="1" value="8"
+                           aria-label="Variable cost per unit"
+                           aria-describedby="vc-desc"
+                           aria-valuemin="2" aria-valuemax="20"
+                           aria-valuenow="8"
+                           aria-valuetext="Variable cost $8 per unit"
+                           oninput="onSliderChange()">
+                    <div class="slider-labels"><span>$2</span><span>$20</span></div>
+                </div>
+
+                <!-- Technology slider -->
+                <div class="slider-group">
+                    <label for="tech-slider">
+                        Technology Efficiency (1 = basic, 2 = advanced):
+                        <span class="slider-value" id="tech-display" aria-live="polite">1.0</span>
+                    </label>
+                    <span id="tech-desc" class="sr-only">Adjust technology level. Higher values reduce effective variable cost. Range: 1.0 to 2.0.</span>
+                    <input type="range" id="tech-slider"
+                           min="1.0" max="2.0" step="0.1" value="1.0"
+                           aria-label="Technology efficiency multiplier"
+                           aria-describedby="tech-desc"
+                           aria-valuemin="1.0" aria-valuemax="2.0"
+                           aria-valuenow="1.0"
+                           aria-valuetext="Technology level 1.0"
+                           oninput="onSliderChange()">
+                    <div class="slider-labels"><span>1.0 (Basic)</span><span>2.0 (Advanced)</span></div>
+                </div>
+
+                <!-- MES -->
+                <div class="mes-box" role="region" aria-label="Minimum Efficient Scale">
+                    <h4>⭐ Minimum Efficient Scale (MES)</h4>
+                    <div class="mes-value" id="mes-value" aria-live="polite">Q = 200 units</div>
+                    <div style="font-size:0.82em; color:#155724; margin-top:4px;">
+                        Output where LRAC reaches its minimum
+                    </div>
+                </div>
+
+                <!-- Returns to scale -->
+                <div class="returns-box" role="region" aria-label="Returns to scale analysis">
+                    <h4 style="color:var(--msu-green); margin-bottom:10px; font-size:0.95em;">📊 Returns to Scale Analysis</h4>
+                    <div class="stat-row">
+                        <span class="stat-label">Comparing plant sizes:</span>
+                        <span class="stat-value" id="current-scale" aria-live="polite">Medium Plant</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Output doubles by:</span>
+                        <span class="stat-value" id="output-multiplier" aria-live="polite">2.0x</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Total cost grows by:</span>
+                        <span class="stat-value" id="cost-multiplier" aria-live="polite">1.8x</span>
+                    </div>
+                    <div style="margin-top:10px;">
+                        <span id="returns-type" class="returns-badge economies" aria-live="polite">Economies of Scale</span>
+                    </div>
+                </div>
+
+                <!-- Insight -->
+                <div class="insight-box" role="status" aria-live="polite" id="insight-text">
+                    Select an industry and adjust parameters to explore cost structure.
+                </div>
+
+                <button class="reset-btn"
+                        aria-label="Reset all parameters to industry defaults"
+                        onclick="resetToDefaults()">
+                    Reset to Defaults
+                </button>
+
+            </aside>
+
+            <!-- ══ GRAPH PANEL ══ -->
+            <section class="graph-panel" aria-label="Cost curve visualization">
+
+                <div class="graph-wrapper">
+                    <div id="scale-graph"
+                         role="img"
+                         aria-label="Long-run average cost graph showing SRAC curves for each plant size and the LRAC envelope"
+                         aria-describedby="graph-text-desc">
+                    </div>
+                    <!-- Hidden text description updated dynamically -->
+                    <div id="graph-text-desc" class="sr-only" aria-live="polite"></div>
+                </div>
+
+                <!-- Accessible data table -->
+                <table class="data-table" aria-label="Cost curve data by plant size">
+                    <caption>Current Cost Analysis — <span id="table-industry-name">Artisan Bakery</span></caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Plant Size</th>
+                            <th scope="col">Fixed Cost</th>
+                            <th scope="col">AC at Optimal Output</th>
+                            <th scope="col">Optimal Output</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cost-table-body">
+                        <!-- filled dynamically -->
+                    </tbody>
+                </table>
+
+                <!-- Key concepts -->
+                <div class="concept-box">
+                    <h3>💡 Key Concepts</h3>
+                    <p><strong>SRAC curve:</strong> Short-run average cost for a given plant size. U-shaped because fixed costs spread over more output but variable costs rise near capacity.</p>
+                    <p><strong>LRAC envelope:</strong> The lowest attainable average cost at each output — formed by choosing the optimal plant size. Its shape reveals returns to scale.</p>
+                    <p><strong>Minimum Efficient Scale (MES):</strong> The smallest output at which the LRAC reaches its minimum. Industries with large MES tend toward fewer, bigger firms.</p>
+                </div>
+
+            </section>
+        </div>
+    </main>
+</div>
+
+<script>
+    // ── Industry data ────────────────────────────────────────────
+    const industries = {
+        bakery: {
+            name: 'Artisan Bakery',
+            desc: '<strong>Artisan Bakery</strong> — Small-scale production. Three plant sizes: Cottage, Commercial, and Industrial.',
+            baseVC: 8,
+            technology: 1.0,
+            maxCost: 120,
+            maxQ: 800,
+            plants: [
+                { name: 'Cottage Kitchen',  details: 'Home-based, very low overhead', fc: 2000,  capacity: 200, efficiency: 0.85 },
+                { name: 'Commercial Bakery', details: 'Professional equipment',       fc: 8000,  capacity: 500, efficiency: 1.05 },
+                { name: 'Industrial Plant',  details: 'High-volume automation',       fc: 20000, capacity: 800, efficiency: 1.20 }
+            ],
+            smallQ: 100, mediumQ: 300,
+            insight: (mes) => `Bakery MES is at Q ≈ ${mes.quantity} units — achievable by a SMALL commercial operation. Local bakeries benefit from fresh product appeal and low overhead. Industrial-scale rarely pays off unless targeting mass retail.`
+        },
+        restaurant: {
+            name: 'Restaurant Chain',
+            desc: '<strong>Restaurant Chain</strong> — Medium-scale industry where regional chains find cost advantages.',
+            baseVC: 12,
+            technology: 1.0,
+            maxCost: 80,
+            maxQ: 2400,
+            plants: [
+                { name: 'Single Location', details: 'Independent restaurant',           fc: 20000,  capacity: 600,  efficiency: 0.90 },
+                { name: 'Small Chain',     details: '3–5 locations, shared purchasing', fc: 60000,  capacity: 1200, efficiency: 1.10 },
+                { name: 'Regional Chain',  details: '15+ locations, central kitchen',   fc: 150000, capacity: 2400, efficiency: 1.25 }
+            ],
+            smallQ: 300, mediumQ: 800,
+            insight: (mes) => `Restaurant chains reach MES around Q ≈ ${mes.quantity} covers — a MEDIUM-sized operation. Single locations lack purchasing economies; mega-chains lose local appeal. Regional chains often find the sweet spot.`
+        },
+        software: {
+            name: 'Software Platform',
+            desc: '<strong>Software Platform</strong> — High fixed cost development with near-zero marginal costs at scale.',
+            baseVC: 2,
+            technology: 1.0,
+            maxCost: 60,
+            maxQ: 6000,
+            plants: [
+                { name: 'Startup MVP',     details: 'Small team, basic infrastructure', fc: 50000,  capacity: 1000, efficiency: 0.80 },
+                { name: 'Growth Platform', details: 'Scaled engineering & support',     fc: 200000, capacity: 3000, efficiency: 1.10 },
+                { name: 'Enterprise SaaS', details: 'Full data centers, global CDN',    fc: 600000, capacity: 6000, efficiency: 1.30 }
+            ],
+            smallQ: 500, mediumQ: 2000,
+            insight: (mes) => `Software platforms reach MES at Q ≈ ${mes.quantity} users — requiring LARGE-SCALE operations. Massive fixed dev costs and near-zero marginal costs make this a natural oligopoly. This explains why tech markets concentrate rapidly.`
+        }
+    };
+
+    // ── State ────────────────────────────────────────────────────
+    let currentIndustry = 'bakery';
+    let visiblePlants = [1, 2, 3];
+    let showSRAC = true;
+    let showLRAC = true;
+    let showGrid = true;
+
+    // ── Helpers ──────────────────────────────────────────────────
+    function announce(msg) {
+        const el = document.getElementById('live-updates');
+        el.textContent = '';
+        setTimeout(() => { el.textContent = msg; }, 50);
+    }
+
+    function getVC()   { return parseFloat(document.getElementById('vc-slider').value); }
+    function getTech() { return parseFloat(document.getElementById('tech-slider').value); }
+
+    function calculateSRAC(q, plantIdx, vc, tech) {
+        const ind = industries[currentIndustry];
+        const plant = ind.plants[plantIdx];
+        const baseVC = vc / tech;
+        const utilizationFactor = Math.max(1, Math.pow(q / plant.capacity, 1.5));
+        const adjVC = baseVC / plant.efficiency * utilizationFactor;
+        return (plant.fc + adjVC * q) / q;
+    }
+
+    function calculateLRAC(q, vc, tech) {
+        let minCost = Infinity;
+        visiblePlants.forEach(p => {
+            const c = calculateSRAC(q, p - 1, vc, tech);
+            if (c < minCost) minCost = c;
+        });
+        return minCost;
+    }
+
+    function findMES(vc, tech) {
+        const ind = industries[currentIndustry];
+        const maxQ = ind.maxQ;
+        let minCost = Infinity, mesQ = 0;
+        for (let q = 10; q <= maxQ; q += 10) {
+            const c = calculateLRAC(q, vc, tech);
+            if (c < minCost) { minCost = c; mesQ = q; }
+        }
+        return { quantity: mesQ, cost: minCost };
+    }
+
+    function calculateReturnsToScale(vc, tech) {
+        const ind = industries[currentIndustry];
+        const sQ = ind.smallQ, mQ = ind.mediumQ;
+        const sCost = calculateLRAC(sQ, vc, tech) * sQ;
+        const mCost = calculateLRAC(mQ, vc, tech) * mQ;
+        const outputRatio = mQ / sQ;
+        const costRatio   = mCost / sCost;
+        let type, cls;
+        if      (costRatio < outputRatio * 0.92) { type = 'Economies of Scale';    cls = 'economies'; }
+        else if (costRatio > outputRatio * 1.08) { type = 'Diseconomies of Scale'; cls = 'diseconomies'; }
+        else                                      { type = 'Constant Returns';      cls = 'constant'; }
+        return { outputRatio: outputRatio.toFixed(1), costRatio: costRatio.toFixed(1), type, cls };
+    }
+
+    function optimalOutputForPlant(plantIdx, vc, tech) {
+        const ind = industries[currentIndustry];
+        const cap = ind.plants[plantIdx].capacity;
+        let minAC = Infinity, optQ = 0;
+        for (let q = 10; q <= cap * 1.5; q += 10) {
+            const ac = calculateSRAC(q, plantIdx, vc, tech);
+            if (ac < minAC) { minAC = ac; optQ = q; }
+        }
+        return { q: optQ, ac: minAC };
+    }
+
+    // ── Select industry ──────────────────────────────────────────
+    function selectIndustry(key, btn) {
+        currentIndustry = key;
+        visiblePlants = [1, 2, 3];
+
+        document.querySelectorAll('.industry-btn').forEach(b => {
+            b.classList.remove('active');
+            b.setAttribute('aria-pressed', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
+
+        document.getElementById('industry-info').innerHTML = industries[key].desc;
+
+        // Restore sliders to industry defaults
+        const ind = industries[key];
+        document.getElementById('vc-slider').value    = ind.baseVC;
+        document.getElementById('tech-slider').value  = ind.technology;
+
+        // Restore plant card states
+        [1,2,3].forEach(n => {
+            const card = document.getElementById(`plant-card-${n}`);
+            card.classList.add('active');
+            card.setAttribute('aria-checked', 'true');
+        });
+
+        loadIndustryLabels();
+        updateAll();
+        announce(`Industry changed to ${ind.name}. Parameters reset to defaults.`);
+    }
+
+    function loadIndustryLabels() {
+        const ind = industries[currentIndustry];
+        ind.plants.forEach((p, i) => {
+            document.getElementById(`plant-${i+1}-name`).textContent   = p.name;
+            document.getElementById(`plant-${i+1}-details`).textContent = p.details;
+            document.getElementById(`plant-${i+1}-cost`).textContent   = `FC: $${p.fc.toLocaleString()}`;
+        });
+        document.getElementById('table-industry-name').textContent = ind.name;
+    }
+
+    // ── Toggle plant ─────────────────────────────────────────────
+    function togglePlant(n) {
+        const card = document.getElementById(`plant-card-${n}`);
+        const isOn = visiblePlants.includes(n);
+        if (isOn) {
+            if (visiblePlants.length === 1) {
+                announce('At least one plant must remain visible.');
+                return;
+            }
+            visiblePlants = visiblePlants.filter(p => p !== n);
+            card.classList.remove('active');
+            card.setAttribute('aria-checked', 'false');
+            announce(`Plant ${n} hidden.`);
+        } else {
+            visiblePlants.push(n);
+            visiblePlants.sort();
+            card.classList.add('active');
+            card.setAttribute('aria-checked', 'true');
+            announce(`Plant ${n} shown.`);
+        }
+        updateAll();
+    }
+
+    // ── Toggle curve type ────────────────────────────────────────
+    function toggleCurveType(type, btn) {
+        if (type === 'srac') showSRAC = !showSRAC;
+        if (type === 'lrac') showLRAC = !showLRAC;
+        if (type === 'grid') showGrid = !showGrid;
+        const on = (type === 'srac') ? showSRAC : (type === 'lrac') ? showLRAC : showGrid;
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-pressed', String(on));
+        announce(`${type.toUpperCase()} curves ${on ? 'shown' : 'hidden'}.`);
+        updateAll();
+    }
+
+    // ── Slider change ────────────────────────────────────────────
+    function onSliderChange() {
+        const vc   = getVC();
+        const tech = getTech();
+        document.getElementById('vc-display').textContent   = `$${vc}`;
+        document.getElementById('tech-display').textContent = tech.toFixed(1);
+        document.getElementById('vc-slider').setAttribute('aria-valuenow', vc);
+        document.getElementById('vc-slider').setAttribute('aria-valuetext', `Variable cost $${vc} per unit`);
+        document.getElementById('tech-slider').setAttribute('aria-valuenow', tech);
+        document.getElementById('tech-slider').setAttribute('aria-valuetext', `Technology level ${tech.toFixed(1)}`);
+        updateAll();
+    }
+
+    // ── Reset ────────────────────────────────────────────────────
+    function resetToDefaults() {
+        const ind = industries[currentIndustry];
+        document.getElementById('vc-slider').value   = ind.baseVC;
+        document.getElementById('tech-slider').value = ind.technology;
+        visiblePlants = [1, 2, 3];
+        showSRAC = true; showLRAC = true; showGrid = true;
+        [1,2,3].forEach(n => {
+            const c = document.getElementById(`plant-card-${n}`);
+            c.classList.add('active');
+            c.setAttribute('aria-checked', 'true');
+        });
+        ['toggle-srac','toggle-lrac','toggle-grid'].forEach(id => {
+            const b = document.getElementById(id);
+            b.classList.add('active');
+            b.setAttribute('aria-pressed', 'true');
+        });
+        onSliderChange();
+        announce('Parameters reset to industry defaults.');
+    }
+
+    // ── Main update ───────────────────────────────────────────────
+    function updateAll() {
+        const vc   = getVC();
+        const tech = getTech();
+        document.getElementById('vc-display').textContent   = `$${vc}`;
+        document.getElementById('tech-display').textContent = tech.toFixed(1);
+
+        const mes = findMES(vc, tech);
+        document.getElementById('mes-value').textContent = `Q = ${mes.quantity} units`;
+
+        const returns = calculateReturnsToScale(vc, tech);
+        const ind = industries[currentIndustry];
+        document.getElementById('current-scale').textContent    = ind.plants[1].name;
+        document.getElementById('output-multiplier').textContent = returns.outputRatio + 'x';
+        document.getElementById('cost-multiplier').textContent   = returns.costRatio + 'x';
+        const badge = document.getElementById('returns-type');
+        badge.textContent  = returns.type;
+        badge.className    = `returns-badge ${returns.cls}`;
+
+        document.getElementById('insight-text').textContent = ind.insight(mes);
+
+        updateTable(vc, tech);
+        plotGraph(vc, tech, mes);
+        updateGraphDescription(vc, tech, mes, returns);
+    }
+
+    // ── Accessible data table ────────────────────────────────────
+    function updateTable(vc, tech) {
+        const ind   = industries[currentIndustry];
+        const tbody = document.getElementById('cost-table-body');
+        const colors = ['#e74c3c','#f39c12','#27ae60'];
+        let html = '';
+        ind.plants.forEach((p, i) => {
+            const opt = optimalOutputForPlant(i, vc, tech);
+            const shown = visiblePlants.includes(i + 1);
+            html += `<tr style="${shown ? '' : 'opacity:0.4;'}">
+                <td><span style="display:inline-block;width:10px;height:10px;background:${colors[i]};border-radius:2px;margin-right:6px;" aria-hidden="true"></span>${p.name}</td>
+                <td>$${p.fc.toLocaleString()}</td>
+                <td>$${opt.ac.toFixed(2)}</td>
+                <td>${opt.q} units</td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    // ── Graph text description ────────────────────────────────────
+    function updateGraphDescription(vc, tech, mes, returns) {
+        const ind = industries[currentIndustry];
+        const visNames = visiblePlants.map(n => ind.plants[n-1].name).join(', ');
+        const desc = `Long-run average cost graph for ${ind.name}. ` +
+            `Visible plant SRAC curves: ${visNames}. ` +
+            `LRAC envelope reaches minimum of $${mes.cost.toFixed(2)} at Q = ${mes.quantity} units (MES). ` +
+            `Returns to scale: ${returns.type} — doubling output multiplies total cost by ${returns.costRatio}.`;
+        document.getElementById('graph-text-desc').textContent = desc;
+    }
+
+    // ── Plotly graph ─────────────────────────────────────────────
+    function plotGraph(vc, tech, mes) {
+        const ind     = industries[currentIndustry];
+        const maxQ    = ind.maxQ;
+        const maxCost = ind.maxCost;
+        const colors  = ['#e74c3c','#f39c12','#27ae60'];
+
+        const quantities = [];
+        for (let q = 10; q <= maxQ; q += 10) quantities.push(q);
+
+        const traces = [];
+
+        // SRAC traces
+        if (showSRAC) {
+            visiblePlants.forEach(pNum => {
+                const p = ind.plants[pNum - 1];
+                const costs = quantities.map(q => calculateSRAC(q, pNum - 1, vc, tech));
+                traces.push({
+                    x: quantities, y: costs,
+                    mode: 'lines',
+                    name: `SRAC – ${p.name}`,
+                    line: { color: colors[pNum - 1], width: 2 },
+                    hovertemplate: `<b>${p.name}</b><br>Output: %{x}<br>AC: $%{y:.2f}<extra></extra>`
+                });
+            });
+        }
+
+        // LRAC envelope
+        if (showLRAC && visiblePlants.length > 0) {
+            const lracCosts = quantities.map(q => calculateLRAC(q, vc, tech));
+            traces.push({
+                x: quantities, y: lracCosts,
+                mode: 'lines',
+                name: 'LRAC Envelope',
+                line: { color: '#18453B', width: 4 },
+                hovertemplate: `<b>LRAC</b><br>Output: %{x}<br>AC: $%{y:.2f}<extra></extra>`
+            });
+
+            // MES marker
+            traces.push({
+                x: [mes.quantity], y: [mes.cost],
+                mode: 'markers+text',
+                name: 'MES',
+                marker: { color: '#27ae60', size: 14, symbol: 'star' },
+                text: [`MES (Q=${mes.quantity})`],
+                textposition: 'top right',
+                hovertemplate: `<b>Minimum Efficient Scale</b><br>Q = ${mes.quantity}<br>AC = $${mes.cost.toFixed(2)}<extra></extra>`
+            });
+        }
+
+        const layout = {
+            title: {
+                text: `${ind.name}: Long-Run Cost Analysis`,
+                font: { size: 16, color: '#2c3e50' }
+            },
+            xaxis: {
+                title: 'Output (units per period)',
+                range: [0, maxQ],
+                showgrid: showGrid,
+                gridcolor: '#e9ecef',
+                zeroline: true, zerolinecolor: '#999'
+            },
+            yaxis: {
+                title: 'Average Cost per Unit ($)',
+                range: [0, maxCost],
+                showgrid: showGrid,
+                gridcolor: '#e9ecef',
+                zeroline: true, zerolinecolor: '#999'
+            },
+            margin: { l: 70, r: 30, t: 60, b: 70 },
+            autosize: false,
+            width: 700,
+            height: 500,
+            plot_bgcolor: 'white',
+            paper_bgcolor: 'white',
+            showlegend: true,
+            legend: { x: 0.60, y: 0.98, bgcolor: 'rgba(255,255,255,0.9)', bordercolor: '#e9ecef', borderwidth: 1 }
+        };
+
+        const config = { responsive: false, displayModeBar: false, staticPlot: false };
+
+        Plotly.newPlot('scale-graph', traces, layout, config).then(() => {
+            setTimeout(() => Plotly.Plots.resize('scale-graph'), 100);
+            setTimeout(() => Plotly.Plots.resize('scale-graph'), 500);
+        });
+    }
+
+    // ── Keyboard navigation enhancements ─────────────────────────
+    function addKeyboardSupport() {
+        ['vc-slider','tech-slider'].forEach(id => {
+            document.getElementById(id).addEventListener('keydown', function(e) {
+                if (e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+                    e.preventDefault();
+                    const step = parseFloat(this.step) / 5;
+                    const dir  = (e.key === 'ArrowRight') ? 1 : -1;
+                    const nv   = Math.max(parseFloat(this.min), Math.min(parseFloat(this.max), parseFloat(this.value) + step * dir));
+                    this.value = nv;
+                    this.dispatchEvent(new Event('input'));
+                }
+            });
+        });
+
+        // Plant cards — Enter / Space already triggers onclick on <button>
+    }
+
+    // ── Init ──────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function() {
+        loadIndustryLabels();
+        updateAll();
+        addKeyboardSupport();
+
+        // Extra resize passes for initial load
+        setTimeout(() => Plotly.Plots.resize('scale-graph'), 200);
+        setTimeout(() => Plotly.Plots.resize('scale-graph'), 600);
+    });
+</script>
+
+</body>
+</html>

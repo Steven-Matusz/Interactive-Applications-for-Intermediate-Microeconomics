@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Short-Run Production &amp; Cost Curves</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        /* ===== BASE ===== */
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f0f4f0;
+            color: #1a1a1a;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        /* ===== SKIP LINK ===== */
+        .skip-link {
+            position: absolute;
+            left: -10000px;
+            top: auto;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            background: #18453B;
+            color: white;
+            padding: 10px 16px;
+            font-weight: 700;
+            border-radius: 4px;
+            z-index: 9999;
+        }
+        .skip-link:focus {
+            position: static;
+            width: auto;
+            height: auto;
+        }
+
+        /* ===== SCREEN READER ONLY ===== */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+
+        /* ===== LIVE REGION ===== */
+        .live-region {
+            position: absolute;
+            left: -10000px;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+        }
+
+        /* ===== FOCUS STYLES ===== */
+        *:focus-visible {
+            outline: 3px solid #18453B;
+            outline-offset: 3px;
+        }
+
+        /* ===== CONTAINER ===== */
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            text-align: center;
+            margin-bottom: 28px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #18453B;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            font-weight: 700;
+            color: #18453B;
+            margin: 0 0 8px;
+        }
+
+        .header p {
+            font-size: 1.05em;
+            color: #444;
+            margin: 0;
+        }
+
+        /* ===== LEARNING OBJECTIVES ===== */
+        .objectives {
+            background: #e8f5e9;
+            border-left: 5px solid #18453B;
+            border-radius: 8px;
+            padding: 18px 22px;
+            margin-bottom: 24px;
+        }
+
+        .objectives h2 {
+            font-size: 1.1em;
+            color: #18453B;
+            margin: 0 0 10px;
+        }
+
+        .objectives ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .objectives li {
+            margin-bottom: 4px;
+            color: #333;
+        }
+
+        /* ===== MAIN LAYOUT ===== */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 0;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        /* ===== CONTROL PANEL ===== */
+        .control-panel {
+            background: #f8f9fa;
+            padding: 24px;
+            border-right: 2px solid #e0e0e0;
+        }
+
+        .control-panel h2 {
+            font-size: 1.1em;
+            color: #18453B;
+            margin: 0 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #18453B;
+        }
+
+        /* ===== BUTTON GROUPS ===== */
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 6px;
+        }
+
+        .select-btn {
+            padding: 9px 14px;
+            border: 2px solid #18453B;
+            border-radius: 8px;
+            background: white;
+            color: #18453B;
+            font-size: 0.9em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .select-btn:hover {
+            background: #e8f5e9;
+        }
+
+        .select-btn[aria-pressed="true"] {
+            background: #18453B;
+            color: white;
+        }
+
+        .select-btn:focus-visible {
+            outline: 3px solid #18453B;
+            outline-offset: 3px;
+        }
+
+        /* ===== SLIDERS ===== */
+        .slider-group {
+            margin-bottom: 22px;
+        }
+
+        .slider-group label {
+            display: block;
+            font-weight: 600;
+            color: #18453B;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .slider-row input[type=range] {
+            flex: 1;
+            height: 8px;
+            border-radius: 4px;
+            background: #c8e6c9;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+            outline: none;
+        }
+
+        .slider-row input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #18453B;
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+        }
+
+        .slider-row input[type=range]::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #18453B;
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+        }
+
+        .slider-row input[type=range]:focus {
+            outline: 3px solid #18453B;
+            outline-offset: 3px;
+        }
+
+        .slider-val {
+            min-width: 60px;
+            text-align: right;
+            font-weight: 700;
+            color: #18453B;
+            font-size: 1em;
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 3px;
+        }
+
+        /* ===== METRICS PANEL ===== */
+        .metrics-section {
+            margin-top: 24px;
+        }
+
+        .metrics-section h2 {
+            font-size: 1em;
+            color: #18453B;
+            margin: 0 0 12px;
+            font-weight: 700;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .metric-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px 12px;
+            text-align: center;
+        }
+
+        .metric-card.production { border-color: #ff7f0e; }
+        .metric-card.cost       { border-color: #18453B; }
+
+        .metric-label {
+            font-size: 0.8em;
+            color: #555;
+            margin-bottom: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .metric-value {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        /* ===== GRAPH PANEL ===== */
+        .graph-panel {
+            padding: 20px;
+            background: white;
+        }
+
+        .graph-panel h2 {
+            font-size: 1.05em;
+            color: #18453B;
+            margin: 0 0 8px;
+            text-align: center;
+        }
+
+        .graphs-row {
+            display: flex;
+            gap: 16px;
+        }
+
+        .graph-wrapper {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .graph-wrapper h3 {
+            font-size: 1em;
+            color: #333;
+            text-align: center;
+            margin: 0 0 6px;
+            font-weight: 600;
+        }
+
+        .graph-box {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+        }
+
+        /* ===== RELATIONSHIP CALLOUT ===== */
+        .relationship-box {
+            background: #fff8e1;
+            border: 2px solid #f9a825;
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+        }
+
+        .relationship-box h2 {
+            font-size: 1em;
+            color: #6d4c00;
+            margin: 0 0 10px;
+            font-weight: 700;
+        }
+
+        .relationship-box p {
+            margin: 0 0 6px;
+            color: #5d4037;
+            font-size: 0.95em;
+        }
+
+        .relationship-box p:last-child { margin-bottom: 0; }
+
+        /* ===== DATA TABLE ===== */
+        .data-table-section {
+            margin-top: 24px;
+        }
+
+        .data-table-section h2 {
+            font-size: 1.05em;
+            color: #18453B;
+            margin: 0 0 10px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+
+        .data-table caption {
+            text-align: left;
+            font-weight: 700;
+            color: #18453B;
+            padding: 6px 0;
+            font-size: 0.95em;
+        }
+
+        .data-table th {
+            background: #18453B;
+            color: white;
+            padding: 9px 12px;
+            text-align: right;
+            font-weight: 600;
+        }
+
+        .data-table th:first-child { text-align: center; }
+
+        .data-table td {
+            padding: 7px 12px;
+            text-align: right;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .data-table td:first-child { text-align: center; font-weight: 600; }
+
+        .data-table tr:nth-child(even) { background: #f8f9fa; }
+
+        .data-table tr.current-row {
+            background: #e8f5e9 !important;
+            font-weight: 700;
+            outline: 2px solid #18453B;
+        }
+
+        /* ===== INSIGHT BOX ===== */
+        .insight-box {
+            background: #e3f2fd;
+            border: 2px solid #1565c0;
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-top: 24px;
+            font-size: 0.95em;
+            color: #0d47a1;
+        }
+
+        .insight-box strong { color: #0a2e6e; }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1000px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+            .control-panel {
+                border-right: none;
+                border-bottom: 2px solid #e0e0e0;
+            }
+            .graphs-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<a href="#main-controls" class="skip-link">Skip to controls</a>
+
+<!-- Screen reader live region -->
+<div id="live-region" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+<div class="container">
+
+    <!-- HEADER -->
+    <header class="header">
+        <h1>Short-Run Production &amp; Cost Curves</h1>
+        <p>Explore how productivity and costs relate in the short run</p>
+    </header>
+
+    <!-- LEARNING OBJECTIVES -->
+    <section class="objectives" aria-labelledby="obj-heading">
+        <h2 id="obj-heading">Learning Objectives</h2>
+        <ul>
+            <li>Understand how Marginal Product and Average Product change as labor increases</li>
+            <li>See how diminishing marginal returns drive cost curves upward</li>
+            <li>Recognize that Marginal Cost and Average Cost are mirror images of MP and AP</li>
+            <li>Compare cost structures across different plant sizes</li>
+        </ul>
+    </section>
+
+    <!-- MAIN LAYOUT -->
+    <div class="main-layout">
+
+        <!-- CONTROL PANEL -->
+        <aside class="control-panel" id="main-controls" aria-labelledby="controls-heading">
+            <h2 id="controls-heading">Controls</h2>
+
+            <!-- Plant selection -->
+            <div class="slider-group">
+                <fieldset style="border:none;padding:0;margin:0;">
+                    <legend style="font-weight:700;color:#18453B;font-size:0.95em;margin-bottom:8px;">Plant Size</legend>
+                    <div class="btn-group" role="group" aria-labelledby="plant-legend">
+                        <button class="select-btn" id="btn-small" aria-pressed="true"
+                                onclick="selectPlant('small', this)">Small Plant</button>
+                        <button class="select-btn" id="btn-large" aria-pressed="false"
+                                onclick="selectPlant('large', this)">Large Plant</button>
+                    </div>
+                </fieldset>
+                <p id="plant-desc" class="sr-only">Small plant: fixed cost $2,000, productivity scale 100. Large plant: fixed cost $8,000, productivity scale 180.</p>
+            </div>
+
+            <!-- Workers slider -->
+            <div class="slider-group">
+                <label for="workers-slider">
+                    Number of Workers
+                    <span class="sr-only">(use arrow keys to adjust)</span>
+                </label>
+                <div class="slider-row">
+                    <span aria-hidden="true" style="font-size:0.85em;color:#666">1</span>
+                    <input type="range" id="workers-slider" min="1" max="30" value="8"
+                           aria-valuemin="1" aria-valuemax="30" aria-valuenow="8"
+                           aria-valuetext="8 workers"
+                           aria-describedby="workers-hint"
+                           oninput="updateAll()">
+                    <span aria-hidden="true" style="font-size:0.85em;color:#666">30</span>
+                    <span class="slider-val" id="workers-val" aria-hidden="true">8</span>
+                </div>
+                <p id="workers-hint" class="sr-only">Range: 1 to 30 workers. Arrow keys adjust by 1.</p>
+            </div>
+
+            <!-- Wage slider -->
+            <div class="slider-group">
+                <label for="wage-slider">
+                    Wage Rate ($/worker)
+                    <span class="sr-only">(use arrow keys to adjust)</span>
+                </label>
+                <div class="slider-row">
+                    <span aria-hidden="true" style="font-size:0.85em;color:#666">$300</span>
+                    <input type="range" id="wage-slider" min="300" max="800" value="500" step="10"
+                           aria-valuemin="300" aria-valuemax="800" aria-valuenow="500"
+                           aria-valuetext="$500 per worker"
+                           aria-describedby="wage-hint"
+                           oninput="updateAll()">
+                    <span aria-hidden="true" style="font-size:0.85em;color:#666">$800</span>
+                    <span class="slider-val" id="wage-val" aria-hidden="true">$500</span>
+                </div>
+                <p id="wage-hint" class="sr-only">Range: $300 to $800 per worker. Arrow keys adjust by $10.</p>
+            </div>
+
+            <!-- Metrics -->
+            <section class="metrics-section" aria-labelledby="metrics-heading" aria-live="polite" aria-atomic="true">
+                <h2 id="metrics-heading">Current Values</h2>
+                <div class="metrics-grid">
+                    <div class="metric-card production">
+                        <div class="metric-label">Total Product</div>
+                        <div class="metric-value" id="m-tp">—</div>
+                    </div>
+                    <div class="metric-card production">
+                        <div class="metric-label">Marginal Product</div>
+                        <div class="metric-value" id="m-mp">—</div>
+                    </div>
+                    <div class="metric-card production">
+                        <div class="metric-label">Average Product</div>
+                        <div class="metric-value" id="m-ap">—</div>
+                    </div>
+                    <div class="metric-card cost">
+                        <div class="metric-label">Total Cost</div>
+                        <div class="metric-value" id="m-tc">—</div>
+                    </div>
+                    <div class="metric-card cost">
+                        <div class="metric-label">Marginal Cost</div>
+                        <div class="metric-value" id="m-mc">—</div>
+                    </div>
+                    <div class="metric-card cost">
+                        <div class="metric-label">Average Cost</div>
+                        <div class="metric-value" id="m-ac">—</div>
+                    </div>
+                </div>
+            </section>
+        </aside>
+
+        <!-- GRAPH PANEL -->
+        <main class="graph-panel" id="main-content" aria-labelledby="graph-heading">
+            <h2 id="graph-heading" class="sr-only">Production and Cost Graphs</h2>
+            <div class="graphs-row">
+                <div class="graph-wrapper">
+                    <h3 id="prod-graph-title">Productivity: Marginal &amp; Average Product</h3>
+                    <div class="graph-box" role="img"
+                         aria-labelledby="prod-graph-title"
+                         aria-describedby="prod-graph-desc">
+                        <div id="production-graph"></div>
+                    </div>
+                    <p id="prod-graph-desc" class="sr-only">
+                        Line graph showing Marginal Product (orange) and Average Product (green) curves
+                        as functions of number of workers. Both curves rise initially then fall due to
+                        diminishing marginal returns. The solid portions show values up to your current
+                        worker count; dotted portions show potential values beyond.
+                    </p>
+                </div>
+                <div class="graph-wrapper">
+                    <h3 id="cost-graph-title">Cost Curves: Marginal &amp; Average Cost</h3>
+                    <div class="graph-box" role="img"
+                         aria-labelledby="cost-graph-title"
+                         aria-describedby="cost-graph-desc">
+                        <div id="cost-graph"></div>
+                    </div>
+                    <p id="cost-graph-desc" class="sr-only">
+                        Line graph showing Marginal Cost (orange) and Average Cost (green) curves
+                        as functions of output. Both curves are U-shaped. MC crosses AC at AC's minimum,
+                        reflecting the mirror relationship with the productivity curves.
+                    </p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- RELATIONSHIP INSIGHT -->
+    <section class="relationship-box" aria-labelledby="rel-heading">
+        <h2 id="rel-heading">Key Relationship: Productivity ↔ Costs</h2>
+        <p><strong>When MP is above AP:</strong> each new worker adds more than average → AP rises → MC is below AC and AC is falling.</p>
+        <p><strong>When MP equals AP:</strong> AP is at its maximum → MC equals AC (MC crosses AC at its minimum).</p>
+        <p><strong>When MP is below AP:</strong> diminishing returns dominate → AP falls → MC is above AC and AC is rising.</p>
+        <p id="current-insight" aria-live="polite" style="margin-top:10px;font-style:italic;color:#5d4037;">
+            &nbsp;
+        </p>
+    </section>
+
+    <!-- DATA TABLE (accessible alternative) -->
+    <section class="data-table-section" aria-labelledby="table-heading">
+        <h2 id="table-heading">Production &amp; Cost Data Table</h2>
+        <p style="color:#555;font-size:0.9em;margin:0 0 10px;">
+            The highlighted row shows your current worker level.
+        </p>
+        <div style="overflow-x:auto;" tabindex="0" aria-label="Scrollable data table">
+            <table class="data-table" id="data-table" aria-labelledby="table-caption">
+                <caption id="table-caption">Short-run production and cost values by number of workers</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Workers</th>
+                        <th scope="col">Total Product</th>
+                        <th scope="col">Marginal Product</th>
+                        <th scope="col">Average Product</th>
+                        <th scope="col">Total Cost ($)</th>
+                        <th scope="col">Marginal Cost ($/unit)</th>
+                        <th scope="col">Average Cost ($/unit)</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</div><!-- end container -->
+
+<script>
+    // ── STATE ──────────────────────────────────────────────────────────────
+    let currentPlant = 'small';
+    const alpha = 0.6;
+
+    const plantConfig = {
+        small: { fixedCost: 2000, productivity: 100, name: 'Small Plant' },
+        large: { fixedCost: 8000, productivity: 180, name: 'Large Plant' }
+    };
+
+    // ── PRODUCTION FUNCTIONS ───────────────────────────────────────────────
+    function calcTP(L, plant) {
+        return plantConfig[plant].productivity * Math.pow(L, alpha);
+    }
+    function calcMP(L, plant) {
+        return alpha * plantConfig[plant].productivity * Math.pow(L, alpha - 1);
+    }
+    function calcAP(L, plant) {
+        return calcTP(L, plant) / L;
+    }
+
+    // ── PLANT SELECTOR ─────────────────────────────────────────────────────
+    function selectPlant(size, btn) {
+        currentPlant = size;
+        document.querySelectorAll('.select-btn[id^="btn-"]').forEach(b => b.setAttribute('aria-pressed','false'));
+        btn.setAttribute('aria-pressed', 'true');
+        updateAll();
+    }
+
+    // ── MAIN UPDATE ────────────────────────────────────────────────────────
+    function updateAll() {
+        const workers = parseInt(document.getElementById('workers-slider').value);
+        const wage    = parseInt(document.getElementById('wage-slider').value);
+        const config  = plantConfig[currentPlant];
+
+        // Update slider ARIA values
+        const wSlider = document.getElementById('workers-slider');
+        wSlider.setAttribute('aria-valuenow', workers);
+        wSlider.setAttribute('aria-valuetext', workers + ' workers');
+        document.getElementById('workers-val').textContent = workers;
+
+        const wageSlider = document.getElementById('wage-slider');
+        wageSlider.setAttribute('aria-valuenow', wage);
+        wageSlider.setAttribute('aria-valuetext', '$' + wage + ' per worker');
+        document.getElementById('wage-val').textContent = '$' + wage;
+
+        // Current-point calculations
+        const TP  = calcTP(workers, currentPlant);
+        const MP  = calcMP(workers, currentPlant);
+        const AP  = calcAP(workers, currentPlant);
+        const TC  = config.fixedCost + workers * wage;
+        const AC  = TC / TP;
+        const MC  = wage / MP;
+
+        // Update metric cards
+        document.getElementById('m-tp').textContent = TP.toFixed(1);
+        document.getElementById('m-mp').textContent = MP.toFixed(2);
+        document.getElementById('m-ap').textContent = AP.toFixed(2);
+        document.getElementById('m-tc').textContent = '$' + TC.toLocaleString();
+        document.getElementById('m-mc').textContent = '$' + MC.toFixed(2);
+        document.getElementById('m-ac').textContent = '$' + AC.toFixed(2);
+
+        // Dynamic insight
+        let insightText = '';
+        if (Math.abs(MP - AP) < 1) {
+            insightText = `At ${workers} workers, MP ≈ AP (${MP.toFixed(1)} ≈ ${AP.toFixed(1)}): you are near the AP maximum, and MC ≈ AC at minimum average cost.`;
+        } else if (MP > AP) {
+            insightText = `At ${workers} workers, MP (${MP.toFixed(1)}) > AP (${AP.toFixed(1)}): each worker pulls the average up. On the cost side, MC ($${MC.toFixed(2)}) < AC ($${AC.toFixed(2)}) — average cost is still falling.`;
+        } else {
+            insightText = `At ${workers} workers, MP (${MP.toFixed(1)}) < AP (${AP.toFixed(1)}): diminishing returns drag the average down. On the cost side, MC ($${MC.toFixed(2)}) > AC ($${AC.toFixed(2)}) — average cost is rising.`;
+        }
+        document.getElementById('current-insight').textContent = insightText;
+
+        // Announce key values to screen reader
+        announceChange(`${workers} workers, ${config.name}: Total Product = ${TP.toFixed(1)}, Marginal Cost = $${MC.toFixed(2)}, Average Cost = $${AC.toFixed(2)}.`);
+
+        // Build full data series
+        const labor = [], mp = [], ap = [], tp = [], mc = [], ac = [], tcArr = [];
+        for (let L = 1; L <= 30; L++) {
+            const tpL = calcTP(L, currentPlant);
+            const mpL = calcMP(L, currentPlant);
+            const apL = calcAP(L, currentPlant);
+            const tcL = config.fixedCost + L * wage;
+            const acL = tcL / tpL;
+            const mcL = wage / mpL;
+            labor.push(L);
+            tp.push(tpL);
+            mp.push(mpL);
+            ap.push(apL);
+            tcArr.push(tcL);
+            mc.push(mcL);
+            ac.push(acL);
+        }
+
+        // Split at current workers
+        const splitIdx = workers - 1; // 0-based
+        const sl = (arr) => arr.slice(0, workers);
+        const sr = (arr) => arr.slice(workers - 1); // overlap at current point
+
+        updateProductionGraph(workers, labor, mp, ap, splitIdx, sl, sr);
+        updateCostGraph(workers, labor, tp, mc, ac, splitIdx, sl, sr);
+        updateTable(workers, wage, labor, tp, mp, ap, tcArr, mc, ac);
+    }
+
+    // ── PRODUCTION GRAPH ───────────────────────────────────────────────────
+    function updateProductionGraph(workers, labor, mp, ap, splitIdx, sl, sr) {
+        const traces = [
+            {
+                x: sl(labor), y: sl(mp),
+                type: 'scatter', mode: 'lines',
+                name: 'Marginal Product',
+                line: { color: '#e65100', width: 3 }
+            },
+            {
+                x: sl(labor), y: sl(ap),
+                type: 'scatter', mode: 'lines',
+                name: 'Average Product',
+                line: { color: '#18453B', width: 3 }
+            },
+            {
+                x: sr(labor), y: sr(mp),
+                type: 'scatter', mode: 'lines',
+                name: 'MP (potential)',
+                line: { color: '#e65100', width: 2, dash: 'dot' },
+                opacity: 0.45, showlegend: false
+            },
+            {
+                x: sr(labor), y: sr(ap),
+                type: 'scatter', mode: 'lines',
+                name: 'AP (potential)',
+                line: { color: '#18453B', width: 2, dash: 'dot' },
+                opacity: 0.45, showlegend: false
+            },
+            {
+                x: [workers], y: [mp[splitIdx]],
+                type: 'scatter', mode: 'markers',
+                name: 'Current MP',
+                marker: { size: 12, color: '#e65100', symbol: 'circle',
+                          line: { width: 2, color: 'white' } },
+                showlegend: false
+            },
+            {
+                x: [workers], y: [ap[splitIdx]],
+                type: 'scatter', mode: 'markers',
+                name: 'Current AP',
+                marker: { size: 12, color: '#18453B', symbol: 'circle',
+                          line: { width: 2, color: 'white' } },
+                showlegend: false
+            }
+        ];
+
+        const layout = {
+            xaxis: {
+                title: 'Number of Workers (L)',
+                range: [0, 31],
+                fixedrange: true,
+                gridcolor: '#e5e5e5'
+            },
+            yaxis: {
+                title: 'Product (units/worker)',
+                range: [0, 200],
+                fixedrange: true,
+                gridcolor: '#e5e5e5'
+            },
+            autosize: false,
+            width: 480,
+            height: 420,
+            margin: { l: 60, r: 20, t: 30, b: 55 },
+            legend: { x: 0.60, y: 0.98, bgcolor: 'rgba(255,255,255,0.9)', bordercolor: '#ccc', borderwidth: 1 },
+            plot_bgcolor: 'white',
+            paper_bgcolor: 'white'
+        };
+
+        Plotly.react('production-graph', traces, layout, { responsive: false, displayModeBar: false });
+    }
+
+    // ── COST GRAPH ─────────────────────────────────────────────────────────
+    function updateCostGraph(workers, labor, tp, mc, ac, splitIdx, sl, sr) {
+        // Map from output space
+        const tpAll = tp;
+        const tpCurrent = sl(tp);
+        const tpPotential = sr(tp);
+
+        const traces = [
+            {
+                x: tpCurrent, y: sl(mc),
+                type: 'scatter', mode: 'lines',
+                name: 'Marginal Cost',
+                line: { color: '#e65100', width: 3 }
+            },
+            {
+                x: tpCurrent, y: sl(ac),
+                type: 'scatter', mode: 'lines',
+                name: 'Average Cost',
+                line: { color: '#18453B', width: 3 }
+            },
+            {
+                x: tpPotential, y: sr(mc),
+                type: 'scatter', mode: 'lines',
+                name: 'MC (potential)',
+                line: { color: '#e65100', width: 2, dash: 'dot' },
+                opacity: 0.45, showlegend: false
+            },
+            {
+                x: tpPotential, y: sr(ac),
+                type: 'scatter', mode: 'lines',
+                name: 'AC (potential)',
+                line: { color: '#18453B', width: 2, dash: 'dot' },
+                opacity: 0.45, showlegend: false
+            },
+            {
+                x: [tpAll[splitIdx]], y: [mc[splitIdx]],
+                type: 'scatter', mode: 'markers',
+                name: 'Current MC',
+                marker: { size: 12, color: '#e65100', symbol: 'circle',
+                          line: { width: 2, color: 'white' } },
+                showlegend: false
+            },
+            {
+                x: [tpAll[splitIdx]], y: [ac[splitIdx]],
+                type: 'scatter', mode: 'markers',
+                name: 'Current AC',
+                marker: { size: 12, color: '#18453B', symbol: 'circle',
+                          line: { width: 2, color: 'white' } },
+                showlegend: false
+            }
+        ];
+
+        const layout = {
+            xaxis: {
+                title: 'Output (units)',
+                range: [0, 1600],
+                fixedrange: true,
+                gridcolor: '#e5e5e5'
+            },
+            yaxis: {
+                title: 'Cost per Unit ($/unit)',
+                range: [0, 55],
+                fixedrange: true,
+                gridcolor: '#e5e5e5'
+            },
+            autosize: false,
+            width: 480,
+            height: 420,
+            margin: { l: 65, r: 20, t: 30, b: 55 },
+            legend: { x: 0.60, y: 0.98, bgcolor: 'rgba(255,255,255,0.9)', bordercolor: '#ccc', borderwidth: 1 },
+            plot_bgcolor: 'white',
+            paper_bgcolor: 'white'
+        };
+
+        Plotly.react('cost-graph', traces, layout, { responsive: false, displayModeBar: false });
+    }
+
+    // ── DATA TABLE ─────────────────────────────────────────────────────────
+    function updateTable(workers, wage, labor, tp, mp, ap, tcArr, mc, ac) {
+        const tbody = document.getElementById('table-body');
+        // Show every 2nd worker to keep table compact; always include current
+        const toShow = labor.filter(L => L % 2 === 0 || L === workers || L === 1);
+        let html = '';
+        toShow.forEach(L => {
+            const idx = L - 1;
+            const isCurrent = (L === workers);
+            html += `<tr${isCurrent ? ' class="current-row" aria-current="true"' : ''}>
+                <td>${L}</td>
+                <td>${tp[idx].toFixed(1)}</td>
+                <td>${mp[idx].toFixed(2)}</td>
+                <td>${ap[idx].toFixed(2)}</td>
+                <td>${tcArr[idx].toLocaleString()}</td>
+                <td>${mc[idx].toFixed(2)}</td>
+                <td>${ac[idx].toFixed(2)}</td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    // ── ANNOUNCER ──────────────────────────────────────────────────────────
+    let announceTimer = null;
+    function announceChange(msg) {
+        clearTimeout(announceTimer);
+        announceTimer = setTimeout(() => {
+            const r = document.getElementById('live-region');
+            r.textContent = '';
+            requestAnimationFrame(() => { r.textContent = msg; });
+        }, 600);
+    }
+
+    // ── KEYBOARD SUPPORT FOR SLIDERS ───────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('workers-slider').addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                e.preventDefault();
+                const dir = e.key === 'ArrowRight' ? 1 : -1;
+                this.value = Math.max(1, Math.min(30, parseInt(this.value) + dir));
+                this.dispatchEvent(new Event('input'));
+            }
+        });
+        document.getElementById('wage-slider').addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                e.preventDefault();
+                const dir = e.key === 'ArrowRight' ? 10 : -10;
+                this.value = Math.max(300, Math.min(800, parseInt(this.value) + dir));
+                this.dispatchEvent(new Event('input'));
+            }
+        });
+
+        // Initial render
+        updateAll();
+    });
+</script>
+
+</body>
+</html>
