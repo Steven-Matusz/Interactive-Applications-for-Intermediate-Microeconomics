@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Theory Fundamentals</title>
+    <style>
+        /* ===== RESET & BASE ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f4f0;
+            padding: 20px;
+            min-height: 100vh;
+            color: #1a1a1a;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        /* ===== SKIP LINK ===== */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: #18453B;
+            color: white;
+            padding: 8px 16px;
+            text-decoration: none;
+            font-weight: 700;
+            border-radius: 0 0 4px 0;
+            z-index: 9999;
+            transition: top 0.2s;
+        }
+        .skip-link:focus { top: 0; }
+
+        /* ===== SCREEN READER ONLY ===== */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+
+        /* ===== LIVE REGION ===== */
+        .live-region {
+            position: absolute;
+            left: -10000px;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+        }
+
+        /* ===== FOCUS STYLES ===== */
+        *:focus-visible {
+            outline: 3px solid #18453B;
+            outline-offset: 2px;
+        }
+
+        /* ===== CONTAINER ===== */
+        .container {
+            max-width: 1380px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            overflow: hidden;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            background: linear-gradient(135deg, #18453B 0%, #1e5c4f 100%);
+            color: white;
+            padding: 28px 32px;
+            text-align: center;
+        }
+        .header h1 { font-size: 2.2em; margin-bottom: 8px; }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+
+        /* ===== LAYOUT ===== */
+        .main-content {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 0;
+            min-height: 600px;
+        }
+
+        /* ===== LEFT PANEL ===== */
+        .controls-panel {
+            background: #f8f9fa;
+            padding: 24px;
+            border-right: 3px solid #e0e0e0;
+            overflow-y: auto;
+        }
+
+        .controls-panel h2 {
+            color: #18453B;
+            margin-bottom: 14px;
+            font-size: 1.15em;
+        }
+
+        /* ===== GAME SELECTOR ===== */
+        .game-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .game-btn {
+            padding: 12px 14px;
+            background: white;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 0.93em;
+            transition: all 0.2s ease;
+            color: #1a1a1a;
+        }
+        .game-btn:hover { border-color: #18453B; background: #f0f7f4; }
+        .game-btn.active {
+            background: #18453B;
+            color: white;
+            border-color: #18453B;
+        }
+        .game-btn strong { display: block; margin-bottom: 3px; }
+        .game-btn small { opacity: 0.8; font-size: 0.9em; }
+        .game-btn.active small { opacity: 0.85; }
+
+        /* ===== INFO BOX ===== */
+        .info-box {
+            background: white;
+            padding: 14px 16px;
+            border-radius: 8px;
+            border-left: 4px solid #18453B;
+            margin-bottom: 16px;
+            font-size: 0.93em;
+        }
+        .info-box h3 { color: #18453B; margin-bottom: 8px; font-size: 1em; }
+        .info-box ul { margin-left: 18px; line-height: 1.8; }
+
+        /* ===== VIEW TOGGLE ===== */
+        .view-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            padding: 0 0 16px 0;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .view-btn {
+            flex: 1;
+            padding: 9px 10px;
+            font-size: 0.85em;
+            border: 2px solid #18453B;
+            background: white;
+            color: #18453B;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .view-btn:hover { background: #f0f7f4; }
+        .view-btn.active { background: #18453B; color: white; }
+
+        /* ===== RIGHT PANEL ===== */
+        .visualization-panel {
+            padding: 28px;
+            overflow-y: auto;
+        }
+
+        /* ===== PAYOFF MATRIX (VISUAL) ===== */
+        .matrix-section { margin-bottom: 24px; }
+        .matrix-section h2 {
+            color: #18453B;
+            margin-bottom: 18px;
+            font-size: 1.2em;
+        }
+
+        .matrix-outer {
+            overflow-x: auto;
+            margin-bottom: 16px;
+        }
+
+        .matrix-wrapper {
+            position: relative;
+            padding: 80px 80px 80px 240px;
+            display: inline-block;
+        }
+
+        .matrix-table {
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .matrix-table td {
+            width: 140px;
+            height: 100px;
+            border: 2px solid #333;
+            position: relative;
+            padding: 0;
+        }
+
+        .payoff-cell {
+            position: relative;
+            overflow: hidden;
+        }
+        .payoff-cell svg {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+        }
+        .payoff-upper {
+            position: absolute;
+            top: 12px; right: 14px;
+            font-size: 18px; font-weight: 600;
+            color: #000; z-index: 2;
+        }
+        .payoff-lower {
+            position: absolute;
+            bottom: 12px; left: 14px;
+            font-size: 18px; font-weight: 600;
+            color: #000; z-index: 2;
+        }
+
+        /* Column/Row headers on the matrix */
+        .col-header {
+            position: absolute;
+            font-weight: bold;
+            font-style: italic;
+            background-color: #8ab4d6;
+            padding: 6px 14px;
+            border: 2px solid #333;
+            top: 0;
+        }
+        .col-header-main {
+            left: 50%;
+            transform: translateX(calc(-50% + 100px));
+        }
+        .row-header {
+            position: absolute;
+            left: 50px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-weight: bold;
+            font-style: italic;
+            background-color: #f4a460;
+            padding: 6px 14px;
+            border: 2px solid #333;
+        }
+        .strategy-label-top {
+            position: absolute;
+            top: 55px;
+            font-size: 15px;
+            width: 140px;
+            text-align: center;
+        }
+        .strategy-label-top-1 { left: 240px; }
+        .strategy-label-top-2 { right: 70px; }
+        /* 3x3 top labels */
+        .matrix-3x3 .strategy-label-top-1 { left: 240px; }
+        .matrix-3x3 .strategy-label-top-2 { left: calc(50% + 90px); transform: translateX(-50%); }
+        .matrix-3x3 .strategy-label-top-3 { right: 60px; }
+
+        .strategy-label-left {
+            position: absolute;
+            left: 95px;
+            font-size: 15px;
+            width: 120px;
+            text-align: right;
+            padding-right: 10px;
+        }
+        .strategy-label-left-1 { top: 100px; }
+        .strategy-label-left-2 { bottom: 130px; }
+        /* 3x3 left labels */
+        .matrix-3x3 .strategy-label-left-1 { top: 120px; }
+        .matrix-3x3 .strategy-label-left-2 { top: 50%; transform: translateY(-50%); }
+        .matrix-3x3 .strategy-label-left-3 { bottom: 115px; }
+
+        /* Nash equilibrium border highlight */
+        .nash-border {
+            position: absolute;
+            inset: 0;
+            border: 4px solid #18453B;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        /* ===== LEGEND ===== */
+        .legend {
+            display: flex;
+            gap: 18px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+            padding: 12px 14px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.9em; }
+        .legend-box {
+            width: 28px; height: 18px;
+            border-radius: 3px;
+            border: 1px solid #999;
+            flex-shrink: 0;
+        }
+
+        /* ===== ACCESSIBLE TABLE VIEW ===== */
+        .a11y-table-section { margin-bottom: 24px; }
+        .a11y-table-section h2 {
+            color: #18453B;
+            margin-bottom: 12px;
+            font-size: 1.2em;
+        }
+
+        .payoff-data-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 2px solid #18453B;
+            font-size: 0.95em;
+            margin-bottom: 14px;
+        }
+        .payoff-data-table caption {
+            padding: 10px;
+            font-weight: 700;
+            color: #18453B;
+            text-align: left;
+            background: #f0f7f4;
+            border: 2px solid #18453B;
+            border-bottom: none;
+        }
+        .payoff-data-table th, .payoff-data-table td {
+            padding: 11px 14px;
+            border: 1px solid #ccc;
+            text-align: center;
+        }
+        .payoff-data-table th {
+            background: #f0f7f4;
+            color: #18453B;
+            font-weight: 700;
+        }
+        .payoff-data-table td.row-label {
+            font-weight: 700;
+            background: #fef3e8;
+            text-align: left;
+        }
+        .payoff-data-table td.best-row {
+            background: rgba(59,130,246,0.15);
+        }
+        .payoff-data-table td.best-col {
+            background: rgba(245,158,11,0.15);
+        }
+        .payoff-data-table td.best-both {
+            background: rgba(16,185,129,0.18);
+        }
+        .payoff-data-table td.nash-cell {
+            border: 3px solid #18453B !important;
+            font-weight: 700;
+        }
+
+        /* ===== ANALYSIS STEPS ===== */
+        .analysis-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .analysis-section h2 {
+            color: #18453B;
+            margin-bottom: 14px;
+            font-size: 1.1em;
+        }
+
+        .step-card {
+            background: white;
+            padding: 14px 16px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #18453B;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+        .step-card.active { opacity: 1; }
+        .step-card.active .step-content { display: block; }
+        .step-card h3 { color: #18453B; margin-bottom: 0; font-size: 1em; }
+        .step-content {
+            display: none;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #e0e0e0;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        .step-controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            padding: 10px 22px;
+            background: #18453B;
+            color: white;
+            border: 2px solid #18453B;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            min-height: 44px;
+        }
+        .btn:hover { background: #0f2d26; border-color: #0f2d26; }
+        .btn:disabled {
+            background: #aaa;
+            border-color: #aaa;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .btn-outline {
+            background: white;
+            color: #18453B;
+        }
+        .btn-outline:hover { background: #f0f7f4; }
+
+        /* Show Best Responses / Nash buttons */
+        .reveal-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+            padding: 14px;
+            background: #f0f7f4;
+            border-radius: 8px;
+            border: 1px solid #b2d4ca;
+        }
+        .reveal-controls p {
+            width: 100%;
+            color: #18453B;
+            font-weight: 600;
+            font-size: 0.9em;
+            margin-bottom: 4px;
+        }
+
+        /* ===== QUIZ SECTION ===== */
+        .quiz-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #18453B;
+            margin-top: 20px;
+        }
+        .quiz-section h2 { color: #18453B; margin-bottom: 14px; font-size: 1.1em; }
+        .quiz-question { margin-bottom: 14px; font-weight: 600; font-size: 1em; }
+
+        .quiz-options { display: flex; flex-direction: column; gap: 8px; }
+
+        .quiz-option {
+            padding: 12px 15px;
+            background: #f8f9fa;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            font-size: 0.95em;
+            min-height: 44px;
+            width: 100%;
+        }
+        .quiz-option:hover { border-color: #18453B; background: #f0f7f4; }
+        .quiz-option.selected { background: #e8f4fd; border-color: #3b82f6; }
+        .quiz-option.correct { background: #d1fae5; border-color: #10b981; }
+        .quiz-option.incorrect { background: #fee2e2; border-color: #ef4444; }
+        .quiz-option:focus-visible { outline: 3px solid #18453B; outline-offset: 2px; }
+
+        .quiz-feedback {
+            margin-top: 14px;
+            padding: 14px;
+            border-radius: 8px;
+            display: none;
+            font-size: 0.95em;
+        }
+        .quiz-feedback.show { display: block; }
+        .quiz-feedback.correct-fb { background: #d1fae5; color: #065f46; border: 2px solid #10b981; }
+        .quiz-feedback.incorrect-fb { background: #fee2e2; color: #7f1d1d; border: 2px solid #ef4444; }
+
+        /* ===== PRISONER'S DILEMMA CALLOUT ===== */
+        .pd-callout {
+            background: #fffbeb;
+            border: 2px solid #f59e0b;
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin-top: 14px;
+            font-size: 0.93em;
+        }
+        .pd-callout strong { color: #92400e; display: block; margin-bottom: 4px; }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1050px) {
+            .main-content { grid-template-columns: 1fr; }
+            .controls-panel { border-right: none; border-bottom: 3px solid #e0e0e0; }
+        }
+    </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Live region for screen reader announcements -->
+<div id="live-region" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+<div class="container">
+    <header class="header">
+        <h1>Game Theory Fundamentals</h1>
+        <p>Strategic Decision-Making in Oligopoly Markets</p>
+    </header>
+
+    <div class="main-content">
+
+        <!-- ===== LEFT PANEL ===== -->
+        <aside class="controls-panel" aria-label="Game selection and reference">
+
+            <section aria-labelledby="game-select-heading">
+                <h2 id="game-select-heading">Select a Game</h2>
+                <nav class="game-selector" aria-label="Game scenarios" role="list">
+                    <button class="game-btn active" role="listitem" onclick="selectGame('game1', this)"
+                        aria-pressed="true" aria-describedby="game1-desc">
+                        <strong>Game 1: Prisoner's Dilemma</strong>
+                        <small id="game1-desc">Both firms have dominant strategies</small>
+                    </button>
+                    <button class="game-btn" role="listitem" onclick="selectGame('game2', this)"
+                        aria-pressed="false" aria-describedby="game2-desc">
+                        <strong>Game 2: Asymmetric Payoffs</strong>
+                        <small id="game2-desc">One firm has a dominant strategy</small>
+                    </button>
+                    <button class="game-btn" role="listitem" onclick="selectGame('game3', this)"
+                        aria-pressed="false" aria-describedby="game3-desc">
+                        <strong>Game 3: Multiple Equilibria</strong>
+                        <small id="game3-desc">No dominant strategies</small>
+                    </button>
+                    <button class="game-btn" role="listitem" onclick="selectGame('game4', this)"
+                        aria-pressed="false" aria-describedby="game4-desc">
+                        <strong>Game 4: Three Strategy Options</strong>
+                        <small id="game4-desc">Expanded 3×3 game</small>
+                    </button>
+                    <button class="game-btn" role="listitem" onclick="selectGame('collusion', this)"
+                        aria-pressed="false" aria-describedby="collusion-desc">
+                        <strong>Collusion: Home Depot vs. Lowe's</strong>
+                        <small id="collusion-desc">Price competition</small>
+                    </button>
+                </nav>
+            </section>
+
+            <section class="info-box" aria-label="Key concepts">
+                <h3>Key Concepts</h3>
+                <ul>
+                    <li><strong>Dominant Strategy:</strong> Best regardless of rival's choice</li>
+                    <li><strong>Nash Equilibrium:</strong> No player wants to change unilaterally</li>
+                    <li><strong>Best Response:</strong> Optimal choice given rival's strategy</li>
+                </ul>
+            </section>
+
+            <section class="info-box" aria-label="How to use this interactive">
+                <h3>How to Use</h3>
+                <p>1. Select a game above<br>
+                2. Choose visual or accessible table view<br>
+                3. Work through the step-by-step analysis<br>
+                4. Test your understanding with the quiz</p>
+            </section>
+
+        </aside>
+
+        <!-- ===== RIGHT PANEL ===== -->
+        <main class="visualization-panel" id="main-content" aria-label="Game analysis">
+
+            <!-- View toggle -->
+            <div class="view-toggle" role="group" aria-label="Matrix display mode">
+                <button class="view-btn active" id="visual-btn" onclick="setView('visual', this)"
+                    aria-pressed="true">Visual Matrix</button>
+                <button class="view-btn" id="table-btn" onclick="setView('table', this)"
+                    aria-pressed="false">Accessible Table</button>
+            </div>
+
+            <!-- ===== VISUAL MATRIX VIEW ===== -->
+            <section id="visual-view" class="matrix-section" aria-label="Payoff matrix visual">
+                <h2 id="matrix-heading">Payoff Matrix</h2>
+                <p class="sr-only">
+                    Each cell shows two payoffs separated by a diagonal line.
+                    The lower-left number is the row player's payoff; the upper-right is the column player's payoff.
+                    Use the "Accessible Table" button above for a screen-reader-friendly version.
+                </p>
+
+                <!-- Reveal controls for the visual matrix -->
+                <div class="reveal-controls" role="group" aria-labelledby="reveal-heading">
+                    <p id="reveal-heading">Progressive Reveal:</p>
+                    <button class="btn btn-outline" id="btn-show-br" onclick="revealStep('bestresponses')"
+                        aria-describedby="br-hint">Show Best Responses</button>
+                    <span id="br-hint" class="sr-only">Highlights each firm's best response choices in the matrix</span>
+                    <button class="btn btn-outline" id="btn-show-ne" onclick="revealStep('nash')"
+                        aria-describedby="ne-hint">Show Nash Equilibrium</button>
+                    <span id="ne-hint" class="sr-only">Highlights the Nash equilibrium cell with a dark border</span>
+                    <button class="btn btn-outline" id="btn-reset-reveal" onclick="revealStep('none')">Reset</button>
+                </div>
+
+                <div class="matrix-outer" role="img" aria-labelledby="matrix-heading" aria-describedby="matrix-sr-desc">
+                    <span id="matrix-sr-desc" class="sr-only">Use the Accessible Table view for full screen reader access to all payoff data.</span>
+                    <div id="payoff-matrix"></div>
+                </div>
+
+                <div class="legend" aria-label="Matrix color legend">
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:#dbeafe; border-color:#3b82f6;" aria-hidden="true"></div>
+                        <span id="legend-row">Row player best response</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:#fef3c7; border-color:#f59e0b;" aria-hidden="true"></div>
+                        <span id="legend-col">Column player best response</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:#d1fae5; border-color:#10b981;" aria-hidden="true"></div>
+                        <span>Both firms' best response (Nash Equilibrium candidate)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background:white; border: 3px solid #18453B;" aria-hidden="true"></div>
+                        <span>Nash Equilibrium cell</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== ACCESSIBLE TABLE VIEW ===== -->
+            <section id="table-view" class="a11y-table-section" aria-label="Payoff matrix table" hidden>
+                <h2>Payoff Matrix — Accessible Table</h2>
+                <p style="margin-bottom:12px; font-size:0.93em; color:#555;">
+                    Each cell shows (Row player payoff, Column player payoff).
+                    Highlighted cells indicate best responses; bordered cells indicate Nash Equilibrium.
+                </p>
+                <div id="a11y-table-container" aria-live="polite"></div>
+            </section>
+
+            <!-- ===== STEP-BY-STEP ANALYSIS ===== -->
+            <section class="analysis-section" aria-labelledby="analysis-heading">
+                <h2 id="analysis-heading">Step-by-Step Analysis</h2>
+                <div id="analysis-steps" aria-live="polite"></div>
+                <div class="step-controls">
+                    <button class="btn" id="next-step-btn" onclick="nextStep()"
+                        aria-describedby="step-progress">Reveal Step 1</button>
+                    <button class="btn btn-outline" onclick="resetSteps()">Reset Steps</button>
+                    <span id="step-progress" class="sr-only"></span>
+                </div>
+            </section>
+
+            <!-- ===== QUIZ SECTION ===== -->
+            <section class="quiz-section" aria-labelledby="quiz-heading">
+                <h2 id="quiz-heading">Check Your Understanding</h2>
+                <p id="quiz-question" class="quiz-question" aria-live="polite"></p>
+                <div id="quiz-options" class="quiz-options" role="group" aria-labelledby="quiz-question"></div>
+                <div id="quiz-feedback" class="quiz-feedback" role="alert" aria-live="assertive"></div>
+            </section>
+
+        </main>
+    </div>
+</div>
+
+<script>
+    // ===== STATE =====
+    let currentGame = 'game1';
+    let currentStep = -1;
+    let revealState = 'none'; // 'none' | 'bestresponses' | 'nash'
+    let currentView = 'visual';
+
+    // ===== GAME DATA =====
+    const games = {
+        game1: {
+            name: "Game 1: Prisoner's Dilemma — Ford vs. Toyota",
+            firms: ['Ford', 'Toyota'],
+            strategies: ['Do Not Advertise', 'Advertise'],
+            payoffs: [
+                [[0, 0], [-1, 2]],
+                [[2, -1], [-0.5, -0.5]]
+            ],
+            analysis: {
+                rowDominant: 'Advertise',
+                colDominant: 'Advertise',
+                nashEquilibrium: [[1, 1]],
+                isPrisonersDilemma: true
+            },
+            steps: [
+                {
+                    title: 'Understand the Scenario',
+                    content: 'Ford and Toyota are considering national advertising campaigns. If neither advertises, profits are unchanged (0, 0). If one advertises alone, it gains $2M at the rival\'s expense. If both advertise, costs outweigh benefits and both lose $0.5M.'
+                },
+                {
+                    title: "Analyze Ford's Best Responses",
+                    content: 'If Toyota does <em>not</em> advertise: Ford earns $2M by advertising vs. $0 by not advertising — <strong>Advertise is better.</strong><br>If Toyota <em>does</em> advertise: Ford loses $0.5M by advertising vs. $1M by not advertising — <strong>Advertise is better (smaller loss).</strong><br><br><strong>Advertising is Ford\'s dominant strategy</strong> — it\'s the best choice no matter what Toyota does.'
+                },
+                {
+                    title: "Analyze Toyota's Best Responses",
+                    content: 'By symmetry, Toyota faces identical payoffs:<br>If Ford does not advertise: Toyota earns $2M by advertising — <strong>Advertise is better.</strong><br>If Ford advertises: Toyota loses $0.5M by advertising vs. $1M by not advertising — <strong>Advertise is better (smaller loss).</strong><br><br><strong>Advertising is Toyota\'s dominant strategy too.</strong>'
+                },
+                {
+                    title: 'Find the Nash Equilibrium',
+                    content: '<strong>Nash Equilibrium: Both Advertise (−0.5, −0.5)</strong><br>Neither firm wants to deviate. If either stops advertising alone, it loses $1M instead of $0.5M.<br><br>But notice: <em>both</em> would be better off at (0, 0) if neither advertised! Individual rationality leads to collective harm — this is the essence of the Prisoner\'s Dilemma.'
+                }
+            ],
+            pdNote: "This is a classic Prisoner's Dilemma. Both firms have dominant strategies, yet the Nash Equilibrium (−0.5, −0.5) is worse for both than the cooperative outcome (0, 0). Individual rationality produces a collectively inferior result.",
+            quiz: {
+                question: "Why is this game called a Prisoner's Dilemma?",
+                options: [
+                    'Because both firms end up losing money',
+                    'Because the Nash Equilibrium is worse for both than the cooperative outcome',
+                    'Because advertising campaigns are too expensive',
+                    'Because only one firm has a dominant strategy'
+                ],
+                correct: 1,
+                explanation: "A Prisoner's Dilemma occurs when dominant strategies lead both players to an outcome worse than if they had cooperated. Here, both advertising (−0.5, −0.5) is worse for each firm than neither advertising (0, 0)."
+            }
+        },
+
+        game2: {
+            name: 'Game 2: Asymmetric Payoffs — Ford vs. Toyota',
+            firms: ['Ford', 'Toyota'],
+            strategies: ['Do Not Advertise', 'Advertise'],
+            payoffs: [
+                [[0, 0], [-1, 2]],
+                [[2, -1], [-2.5, 0.5]]
+            ],
+            analysis: {
+                rowDominant: null,
+                colDominant: 'Advertise',
+                nashEquilibrium: [[0, 1]],
+                isPrisonersDilemma: false
+            },
+            steps: [
+                {
+                    title: 'Understand the Asymmetry',
+                    content: 'This time, advertising affects the two firms differently. When both advertise, Toyota gains $0.5M but Ford loses $2.5M. This asymmetry changes the entire strategic picture.'
+                },
+                {
+                    title: "Analyze Toyota's Strategy",
+                    content: 'If Ford does not advertise: Toyota gains $2M by advertising vs. $0 — <strong>Advertise is better.</strong><br>If Ford advertises: Toyota gains $0.5M by advertising vs. loses $1M by not advertising — <strong>Advertise is better.</strong><br><br><strong>Toyota has a dominant strategy: Advertise.</strong>'
+                },
+                {
+                    title: "Analyze Ford's Strategy",
+                    content: 'If Toyota does not advertise: Ford gains $2M by advertising — <strong>Advertise is better.</strong><br>If Toyota advertises: Ford loses $2.5M by advertising vs. $1M by not advertising — <strong>Do Not Advertise is better.</strong><br><br><strong>Ford has NO dominant strategy</strong> — its best move depends entirely on what Toyota does.'
+                },
+                {
+                    title: 'Find the Nash Equilibrium',
+                    content: '<strong>Nash Equilibrium: Ford does not advertise, Toyota advertises (−1, 2)</strong><br>Since Toyota always advertises (dominant strategy), Ford\'s best response is to stay out. Neither firm wants to deviate: if Ford switches to advertising it loses $2.5M instead of $1M; if Toyota stops advertising it earns $0 instead of $2M.<br><br>The firm with a dominant strategy ends up better off.'
+                }
+            ],
+            quiz: {
+                question: "Why does Ford NOT have a dominant strategy in Game 2?",
+                options: [
+                    'Because Ford always earns less than Toyota',
+                    "Because Ford's best choice changes depending on Toyota's decision",
+                    'Because Ford cannot afford to advertise',
+                    'Because Toyota moves first'
+                ],
+                correct: 1,
+                explanation: "A dominant strategy must be best against every possible opponent strategy. Ford prefers to advertise if Toyota doesn't, but prefers NOT to advertise if Toyota does. Since the optimal choice changes depending on Toyota's action, Ford has no dominant strategy."
+            }
+        },
+
+        game3: {
+            name: 'Game 3: Multiple Equilibria — Ford vs. Toyota',
+            firms: ['Ford', 'Toyota'],
+            strategies: ['Do Not Advertise', 'Advertise'],
+            payoffs: [
+                [[0, 0], [-1, 2]],
+                [[2, -1], [-2, -2]]
+            ],
+            analysis: {
+                rowDominant: null,
+                colDominant: null,
+                nashEquilibrium: [[0, 1], [1, 0]],
+                isPrisonersDilemma: false
+            },
+            steps: [
+                {
+                    title: 'A Coordination Problem',
+                    content: 'When both firms advertise simultaneously, costs are very high and both lose $2M. Neither firm has a dominant strategy — each firm\'s best move depends entirely on what the other does.'
+                },
+                {
+                    title: "Analyze Ford's Best Responses",
+                    content: 'If Toyota does not advertise: Ford earns $2M by advertising vs. $0 by not advertising — <strong>Advertise is better.</strong><br>If Toyota advertises: Ford loses $1M by not advertising vs. $2M by advertising — <strong>Do Not Advertise is better.</strong><br><br><strong>Ford has no dominant strategy.</strong>'
+                },
+                {
+                    title: "Analyze Toyota's Best Responses",
+                    content: 'If Ford does not advertise: Toyota earns $2M by advertising — <strong>Advertise is better.</strong><br>If Ford advertises: Toyota loses $1M by not advertising vs. $2M by advertising — <strong>Do Not Advertise is better.</strong><br><br><strong>Toyota has no dominant strategy either.</strong>'
+                },
+                {
+                    title: 'Find the Nash Equilibria (Two!)',
+                    content: '<strong>Nash Equilibrium 1: Ford does not advertise, Toyota advertises (−1, 2)</strong><br>Neither wants to switch: Ford would go from −$1M to −$2M; Toyota would go from $2M to $0.<br><br><strong>Nash Equilibrium 2: Ford advertises, Toyota does not (2, −1)</strong><br>Neither wants to switch for the same symmetric reasons.<br><br>Note: (0, 0) where neither advertises is <em>not</em> an equilibrium — either firm could profitably deviate to earn $2M by advertising.'
+                }
+            ],
+            quiz: {
+                question: "Why is the (0, 0) outcome NOT a Nash Equilibrium?",
+                options: [
+                    'Because both firms earn zero profit',
+                    'Because either firm could profitably switch to advertising and earn $2M',
+                    'Because advertising is always the best strategy',
+                    'Because it is not shown in the payoff matrix'
+                ],
+                correct: 1,
+                explanation: "At (Do Not Advertise, Do Not Advertise), each firm earns $0. But if either firm unilaterally switches to advertising, it would earn $2M. Since both firms have an incentive to deviate, this outcome fails the Nash Equilibrium test."
+            }
+        },
+
+        game4: {
+            name: 'Game 4: Three Strategy Options — Ford vs. Toyota',
+            firms: ['Ford', 'Toyota'],
+            strategies: ['No Ads', 'Streaming', 'All Media'],
+            payoffs: [
+                [[0, 0],    [-1, 1],   [-2, 2]],
+                [[1, -1],   [0, 0],    [-1, 1]],
+                [[1.5, -2], [1, 0],    [-0.5, -3]]
+            ],
+            is3x3: true,
+            analysis: {
+                rowDominant: 'All Media',
+                colDominant: null,
+                nashEquilibrium: [[2, 1]],
+                isPrisonersDilemma: false
+            },
+            steps: [
+                {
+                    title: 'Expanding the Strategy Space',
+                    content: 'Now firms choose from three options: No advertising, a Streaming-only campaign, or an All Media campaign. More advertising attracts customers when the rival holds back — but if both go big, gains cancel out and costs pile up.'
+                },
+                {
+                    title: "Analyze Ford's Strategy (Column by Column)",
+                    content: 'Against Toyota\'s No Ads: Ford earns $1.5M with All Media (best).<br>Against Toyota\'s Streaming: Ford earns $1M with All Media (best).<br>Against Toyota\'s All Media: Ford loses $0.5M with All Media, but loses more with other choices (All Media is least bad).<br><br><strong>All Media is Ford\'s dominant strategy</strong> — it\'s the best response to every possible Toyota strategy.'
+                },
+                {
+                    title: "Analyze Toyota's Strategy (Row by Row)",
+                    content: 'Against Ford\'s No Ads: Toyota earns $2M with All Media (best).<br>Against Ford\'s Streaming: Toyota breaks even with All Media — best option.<br>Against Ford\'s All Media: Toyota loses $1M with Streaming but $3M with All Media — Streaming is better.<br><br><strong>Toyota has no dominant strategy</strong> — best response depends on Ford\'s choice.'
+                },
+                {
+                    title: 'Find the Nash Equilibrium',
+                    content: '<strong>Nash Equilibrium: Ford chooses All Media, Toyota chooses Streaming (1, 0)</strong><br>Since Ford always chooses All Media (dominant strategy), Toyota\'s best response is Streaming. Neither wants to deviate: if Ford scales back it earns less; if Toyota switches to All Media it loses $3M instead of breaking even.<br><br>This asymmetric equilibrium features one firm going big and the other holding back.'
+                }
+            ],
+            quiz: {
+                question: "How do you verify that 'All Media' is Ford's dominant strategy?",
+                options: [
+                    "Check that it gives Ford the highest payoff in at least one column",
+                    "Check that it gives Ford the highest payoff in every column (against all of Toyota's strategies)",
+                    "Check that it leads to the Nash Equilibrium",
+                    "Compare only the diagonal cells of the matrix"
+                ],
+                correct: 1,
+                explanation: "A dominant strategy must be the best response to EVERY possible opponent strategy. For Ford (row player), you must check all three columns. 'All Media' gives Ford the highest payoff in every column, confirming it as a dominant strategy."
+            }
+        },
+
+        collusion: {
+            name: "Collusion: Home Depot vs. Lowe's",
+            firms: ["Home Depot", "Lowe's"],
+            strategies: ['Collude (High Price)', 'Compete (Low Price)'],
+            payoffs: [
+                [[1250, 1250], [1800, 625]],
+                [[625, 1800],  [800, 800]]
+            ],
+            analysis: {
+                rowDominant: 'Compete (Low Price)',
+                colDominant: 'Compete (Low Price)',
+                nashEquilibrium: [[1, 1]],
+                isPrisonersDilemma: true
+            },
+            steps: [
+                {
+                    title: 'The Collusion Temptation',
+                    content: "Home Depot and Lowe's both sell light bulbs. They can collude to keep prices high, or compete by cutting prices. Collusion brings near-monopoly profits ($1,250 each), but each firm has an incentive to cheat on the agreement."
+                },
+                {
+                    title: "Analyze Home Depot's Incentives",
+                    content: "If Lowe's colludes: Home Depot earns $1,250 by colluding or $1,800 by competing — <strong>Compete is better (gain $550).</strong><br>If Lowe's competes: Home Depot earns $625 by colluding or $800 by competing — <strong>Compete is better (gain $175).</strong><br><br><strong>Competing is Home Depot's dominant strategy</strong> — the temptation to cheat is too strong."
+                },
+                {
+                    title: "Analyze Lowe's Incentives",
+                    content: "By symmetry, Lowe's faces identical payoffs and incentives:<br>Against Collude: Compete earns $1,800 vs. $1,250 — Compete is better.<br>Against Compete: Compete earns $800 vs. $625 — Compete is better.<br><br><strong>Competing is also Lowe's dominant strategy.</strong>"
+                },
+                {
+                    title: 'The Tragedy of Competition',
+                    content: "<strong>Nash Equilibrium: Both Compete ($800, $800)</strong><br>Both firms compete and earn $800 each — but if they could cooperate, each would earn $1,250!<br><br>This is a <strong>classic Prisoner's Dilemma</strong>: individual incentives destroy collective profit. Each firm acts rationally, but both end up worse off.<br><br><strong>Repeated play note:</strong> In a one-shot game, defection dominates. But firms that interact repeatedly can sustain collusion using punishment strategies (like grim trigger) — if cheating is detectable and future profits matter enough."
+                }
+            ],
+            pdNote: "This is a Prisoner's Dilemma applied to collusion. Both firms have a dominant strategy to compete, yet both would earn more by colluding. This explains why cartels are inherently unstable even when they would benefit all members.",
+            quiz: {
+                question: "Why is collusion difficult to sustain in a one-shot game?",
+                options: [
+                    'Because firms do not want to maximize profits',
+                    'Because each firm has a dominant strategy to cheat — competing earns more regardless of what the rival does',
+                    'Because collusion always leads to lower profits for both firms',
+                    'Because customers prefer lower prices from competition'
+                ],
+                correct: 1,
+                explanation: "Even when collusion benefits both firms collectively, each individual firm earns more by competing (cheating) regardless of what the rival does. Since 'Compete' is a dominant strategy for both, the Nash Equilibrium is mutual competition — not the collusive outcome."
+            }
+        }
+    };
+
+    // ===== HELPER: ANNOUNCE TO SCREEN READER =====
+    function announce(msg) {
+        const region = document.getElementById('live-region');
+        region.textContent = '';
+        requestAnimationFrame(() => { region.textContent = msg; });
+    }
+
+    // ===== SELECT GAME =====
+    function selectGame(gameId, btn) {
+        currentGame = gameId;
+        currentStep = -1;
+        revealState = 'none';
+
+        // Update button states
+        document.querySelectorAll('.game-btn').forEach(b => {
+            b.classList.remove('active');
+            b.setAttribute('aria-pressed', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
+
+        renderAll();
+        announce('Loaded ' + games[gameId].name);
+    }
+
+    // ===== SET VIEW =====
+    function setView(view, btn) {
+        currentView = view;
+        document.querySelectorAll('.view-btn').forEach(b => {
+            b.classList.remove('active');
+            b.setAttribute('aria-pressed', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
+
+        document.getElementById('visual-view').hidden = (view !== 'visual');
+        document.getElementById('table-view').hidden = (view !== 'table');
+
+        announce(view === 'visual' ? 'Switched to visual matrix view' : 'Switched to accessible table view');
+    }
+
+    // ===== REVEAL STEP =====
+    function revealStep(state) {
+        revealState = state;
+        renderMatrix();
+        renderAccessibleTable();
+
+        const msgs = {
+            bestresponses: 'Best responses highlighted. Blue triangle = row player best response. Yellow triangle = column player best response. Green = both.',
+            nash: 'Nash Equilibrium highlighted with dark border.',
+            none: 'Matrix reset. No highlights shown.'
+        };
+        announce(msgs[state] || '');
+    }
+
+    // ===== RENDER ALL =====
+    function renderAll() {
+        renderMatrix();
+        renderAccessibleTable();
+        renderLegend();
+        renderSteps();
+        renderQuiz();
+    }
+
+    // ===== RENDER VISUAL MATRIX =====
+    function renderMatrix() {
+        const game = games[currentGame];
+        const is3x3 = game.strategies.length === 3;
+        const showBR = (revealState === 'bestresponses' || revealState === 'nash');
+        const showNash = (revealState === 'nash');
+
+        const wrapClass = is3x3 ? 'matrix-wrapper matrix-3x3' : 'matrix-wrapper';
+        let html = '<div class="' + wrapClass + '">';
+
+        // Column player header
+        html += '<div class="col-header col-header-main" aria-hidden="true">' + game.firms[1] + '</div>';
+
+        // Column strategy labels
+        game.strategies.forEach((s, j) => {
+            html += '<div class="strategy-label-top strategy-label-top-' + (j+1) + '" aria-hidden="true">' + s + '</div>';
+        });
+
+        // Row player header
+        html += '<div class="row-header" aria-hidden="true">' + game.firms[0] + '</div>';
+
+        // Row strategy labels
+        game.strategies.forEach((s, i) => {
+            html += '<div class="strategy-label-left strategy-label-left-' + (i+1) + '" aria-hidden="true">' + s + '</div>';
+        });
+
+        // Table cells
+        html += '<table class="matrix-table" aria-hidden="true"><tbody>';
+        game.strategies.forEach((rs, i) => {
+            html += '<tr>';
+            game.strategies.forEach((cs, j) => {
+                const payoff = game.payoffs[i][j];
+                const isNash = showNash && isNashEq(game, i, j);
+                const isBR1 = showBR && isBestResponse1(game, i, j);
+                const isBR2 = showBR && isBestResponse2(game, i, j);
+
+                let upperFill = '#8ab4d6';
+                let lowerFill = '#f4a460';
+
+                if (showBR) {
+                    if (isBR1 && isBR2) {
+                        upperFill = '#d1fae5';
+                        lowerFill = '#d1fae5';
+                    } else if (isBR1) {
+                        lowerFill = '#dbeafe';
+                    } else if (isBR2) {
+                        upperFill = '#fef3c7';
+                    }
+                }
+
+                html += '<td class="payoff-cell">';
+                html += '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 100" preserveAspectRatio="none">';
+                html += '<polygon points="0,0 140,0 140,100" fill="' + upperFill + '"></polygon>';
+                html += '<polygon points="0,0 0,100 140,100" fill="' + lowerFill + '"></polygon>';
+                html += '<line x1="0" y1="0" x2="140" y2="100" stroke="#333" stroke-width="1"></line>';
+                html += '</svg>';
+                html += '<div class="payoff-upper">' + payoff[1] + '</div>';
+                html += '<div class="payoff-lower">' + payoff[0] + '</div>';
+                if (isNash) html += '<div class="nash-border" aria-hidden="true"></div>';
+                html += '</td>';
+            });
+            html += '</tr>';
+        });
+        html += '</tbody></table></div>';
+
+        document.getElementById('payoff-matrix').innerHTML = html;
+    }
+
+    // ===== RENDER ACCESSIBLE TABLE =====
+    function renderAccessibleTable() {
+        const game = games[currentGame];
+        const showBR = (revealState === 'bestresponses' || revealState === 'nash');
+        const showNash = (revealState === 'nash');
+
+        let html = '<table class="payoff-data-table">';
+        html += '<caption>' + game.name + '<br>Payoffs shown as (Row player, Column player) in $millions (or $thousands for collusion game).</caption>';
+
+        // Header row
+        html += '<thead><tr>';
+        html += '<th scope="col">' + game.firms[0] + ' \\ ' + game.firms[1] + '</th>';
+        game.strategies.forEach(s => {
+            html += '<th scope="col">' + s + '</th>';
+        });
+        html += '</tr></thead>';
+
+        // Data rows
+        html += '<tbody>';
+        game.strategies.forEach((rs, i) => {
+            html += '<tr>';
+            html += '<th scope="row" class="row-label">' + rs + '</th>';
+            game.strategies.forEach((cs, j) => {
+                const payoff = game.payoffs[i][j];
+                const isNash = showNash && isNashEq(game, i, j);
+                const isBR1 = showBR && isBestResponse1(game, i, j);
+                const isBR2 = showBR && isBestResponse2(game, i, j);
+
+                let cls = '';
+                let ariaLabel = '';
+                if (isBR1 && isBR2) {
+                    cls = 'best-both';
+                    ariaLabel = 'Both best responses. ';
+                } else if (isBR1) {
+                    cls = 'best-row';
+                    ariaLabel = game.firms[0] + ' best response. ';
+                } else if (isBR2) {
+                    cls = 'best-col';
+                    ariaLabel = game.firms[1] + ' best response. ';
+                }
+                if (isNash) { cls += ' nash-cell'; ariaLabel += 'Nash Equilibrium. '; }
+
+                const payoffText = '(' + payoff[0] + ', ' + payoff[1] + ')';
+                const fullLabel = ariaLabel + game.firms[0] + ': ' + payoff[0] + ', ' + game.firms[1] + ': ' + payoff[1];
+
+                html += '<td class="' + cls.trim() + '" aria-label="' + fullLabel + '">' + payoffText + '</td>';
+            });
+            html += '</tr>';
+        });
+        html += '</tbody></table>';
+
+        // Summary paragraph
+        html += '<div style="margin-top:12px; font-size:0.92em; background:#f0f7f4; padding:12px; border-radius:6px; border-left:4px solid #18453B;">';
+        html += '<strong>Analysis Summary:</strong> ';
+        const g = game.analysis;
+        if (g.rowDominant) {
+            html += game.firms[0] + ' has a dominant strategy: <strong>' + g.rowDominant + '</strong>. ';
+        } else {
+            html += game.firms[0] + ' has <strong>no dominant strategy</strong>. ';
+        }
+        if (g.colDominant) {
+            html += game.firms[1] + ' has a dominant strategy: <strong>' + g.colDominant + '</strong>. ';
+        } else {
+            html += game.firms[1] + ' has <strong>no dominant strategy</strong>. ';
+        }
+        html += 'Nash Equilibrium: ';
+        g.nashEquilibrium.forEach((eq, idx) => {
+            if (idx > 0) html += ' and ';
+            html += '(' + game.strategies[eq[0]] + ', ' + game.strategies[eq[1]] + ') with payoffs (' + game.payoffs[eq[0]][eq[1]][0] + ', ' + game.payoffs[eq[0]][eq[1]][1] + ')';
+        });
+        html += '.';
+        if (g.isPrisonersDilemma) {
+            html += ' <strong>This is a Prisoner\'s Dilemma:</strong> individual rationality leads to a collectively inferior outcome.';
+        }
+        html += '</div>';
+
+        // Reveal controls for accessible view
+        html += '<div class="reveal-controls" role="group" aria-label="Reveal options" style="margin-top:14px;">';
+        html += '<p>Progressive Reveal:</p>';
+        html += '<button class="btn btn-outline" onclick="revealStep(\'bestresponses\')">Highlight Best Responses</button>';
+        html += '<button class="btn btn-outline" onclick="revealStep(\'nash\')">Highlight Nash Equilibrium</button>';
+        html += '<button class="btn btn-outline" onclick="revealStep(\'none\')">Clear Highlights</button>';
+        html += '</div>';
+
+        document.getElementById('a11y-table-container').innerHTML = html;
+    }
+
+    // ===== RENDER LEGEND =====
+    function renderLegend() {
+        const game = games[currentGame];
+        document.getElementById('legend-row').textContent = game.firms[0] + ' best response';
+        document.getElementById('legend-col').textContent = game.firms[1] + ' best response';
+    }
+
+    // ===== RENDER STEPS =====
+    function renderSteps() {
+        const game = games[currentGame];
+        let html = '';
+        game.steps.forEach((step, i) => {
+            const isActive = i <= currentStep;
+            html += '<div class="step-card' + (isActive ? ' active' : '') + '" id="step-card-' + i + '">';
+            html += '<h3>Step ' + (i+1) + ': ' + step.title + '</h3>';
+            html += '<div class="step-content">' + step.content + '</div>';
+            html += '</div>';
+        });
+        document.getElementById('analysis-steps').innerHTML = html;
+
+        if (game.analysis.isPrisonersDilemma && currentStep >= game.steps.length - 1) {
+            const pdDiv = document.createElement('div');
+            pdDiv.className = 'pd-callout';
+            pdDiv.innerHTML = '<strong>Prisoner\'s Dilemma:</strong> ' + game.pdNote;
+            document.getElementById('analysis-steps').appendChild(pdDiv);
+        }
+
+        // Update button
+        const btn = document.getElementById('next-step-btn');
+        const progress = document.getElementById('step-progress');
+        if (currentStep >= game.steps.length - 1) {
+            btn.textContent = 'All Steps Revealed';
+            btn.disabled = true;
+            progress.textContent = 'All ' + game.steps.length + ' steps revealed.';
+        } else {
+            const next = currentStep + 2; // next step number (1-indexed)
+            btn.textContent = currentStep < 0 ? 'Reveal Step 1' : 'Reveal Step ' + next;
+            btn.disabled = false;
+            progress.textContent = (currentStep + 1) + ' of ' + game.steps.length + ' steps revealed.';
+        }
+    }
+
+    // ===== NEXT STEP =====
+    function nextStep() {
+        const game = games[currentGame];
+        if (currentStep < game.steps.length - 1) {
+            currentStep++;
+            renderSteps();
+            // Update matrix to show best responses when step 1+ is revealed
+            if (currentStep >= 1 && revealState === 'none') {
+                revealState = 'bestresponses';
+                renderMatrix();
+                renderAccessibleTable();
+            }
+            if (currentStep >= game.steps.length - 1) {
+                revealState = 'nash';
+                renderMatrix();
+                renderAccessibleTable();
+            }
+            const step = game.steps[currentStep];
+            announce('Step ' + (currentStep+1) + ' revealed: ' + step.title);
+        }
+    }
+
+    // ===== RESET STEPS =====
+    function resetSteps() {
+        currentStep = -1;
+        revealState = 'none';
+        renderSteps();
+        renderMatrix();
+        renderAccessibleTable();
+        announce('Analysis reset. Click Reveal Step 1 to begin.');
+    }
+
+    // ===== RENDER QUIZ =====
+    function renderQuiz() {
+        const game = games[currentGame];
+        document.getElementById('quiz-question').textContent = game.quiz.question;
+
+        let html = '';
+        game.quiz.options.forEach((option, i) => {
+            html += '<button class="quiz-option" id="qopt-' + i + '" onclick="selectOption(' + i + ')"' +
+                ' aria-describedby="quiz-question">' + option + '</button>';
+        });
+        document.getElementById('quiz-options').innerHTML = html;
+
+        const fb = document.getElementById('quiz-feedback');
+        fb.className = 'quiz-feedback';
+        fb.textContent = '';
+    }
+
+    // ===== SELECT QUIZ OPTION =====
+    function selectOption(idx) {
+        const game = games[currentGame];
+        const correct = game.quiz.correct;
+
+        document.querySelectorAll('.quiz-option').forEach(b => {
+            b.classList.remove('selected', 'correct', 'incorrect');
+            b.removeAttribute('aria-describedby');
+        });
+
+        const selected = document.getElementById('qopt-' + idx);
+        selected.classList.add('selected');
+
+        const fb = document.getElementById('quiz-feedback');
+        if (idx === correct) {
+            selected.classList.add('correct');
+            fb.className = 'quiz-feedback correct-fb show';
+            fb.innerHTML = '<strong>Correct!</strong> ' + game.quiz.explanation;
+            announce('Correct! ' + game.quiz.explanation);
+        } else {
+            selected.classList.add('incorrect');
+            document.getElementById('qopt-' + correct).classList.add('correct');
+            fb.className = 'quiz-feedback incorrect-fb show';
+            fb.innerHTML = '<strong>Not quite.</strong> ' + game.quiz.explanation;
+            announce('Incorrect. ' + game.quiz.explanation);
+        }
+    }
+
+    // ===== BEST RESPONSE HELPERS =====
+    function isBestResponse1(game, row, col) {
+        const myPayoff = game.payoffs[row][col][0];
+        return game.strategies.every((_, i) => game.payoffs[i][col][0] <= myPayoff);
+    }
+    function isBestResponse2(game, row, col) {
+        const myPayoff = game.payoffs[row][col][1];
+        return game.strategies.every((_, j) => game.payoffs[row][j][1] <= myPayoff);
+    }
+    function isNashEq(game, row, col) {
+        return game.analysis.nashEquilibrium.some(eq => eq[0] === row && eq[1] === col);
+    }
+
+    // ===== KEYBOARD: GAME BUTTONS =====
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && e.target.classList.contains('game-btn')) {
+            e.target.click();
+        }
+        if (e.key === 'Enter' && e.target.classList.contains('quiz-option')) {
+            e.target.click();
+        }
+    });
+
+    // ===== INIT =====
+    document.addEventListener('DOMContentLoaded', function() {
+        renderAll();
+    });
+</script>
+</body>
+</html>

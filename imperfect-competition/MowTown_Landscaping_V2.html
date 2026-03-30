@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MowTown Landscaping: Dynamics of Monopolistic Competition</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      min-height: 100vh;
+      line-height: 1.6;
+      color: #1a1a1a;
+    }
+
+    /* ── Skip Link ── */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: #18453B;
+      color: white;
+      padding: 8px 16px;
+      text-decoration: none;
+      border-radius: 0 0 4px 0;
+      z-index: 9999;
+      font-weight: 700;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ── Screen-reader only ── */
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ── Live region ── */
+    .live-region {
+      position: absolute;
+      left: -10000px;
+      width: 1px; height: 1px;
+      overflow: hidden;
+    }
+
+    /* ── Focus visible (WCAG 2.4.11) ── */
+    :focus-visible {
+      outline: 3px solid #C89A2A;
+      outline-offset: 2px;
+    }
+
+    /* ── Wrapper ── */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #18453B 0%, #2d5a4f 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 { font-size: 2em; margin-bottom: 8px; }
+    .header p  { font-size: 1.1em; opacity: 0.9; }
+
+    /* ── Main two-column layout ── */
+    .content-wrapper {
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      gap: 0;
+      min-height: 600px;
+    }
+
+    /* ── Control Panel ── */
+    .control-panel {
+      background: #f8f9fa;
+      padding: 28px;
+      border-right: 3px solid #e9ecef;
+      overflow-y: auto;
+    }
+
+    .control-section {
+      background: white;
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+    .control-section h3 {
+      color: #18453B;
+      font-size: 1.05em;
+      margin-bottom: 14px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #18453B;
+    }
+
+    /* Slider styles */
+    .slider-group { margin-bottom: 18px; }
+    .form-label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      color: #333;
+      font-size: 0.95em;
+    }
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .price-slider {
+      flex: 1;
+      height: 8px;
+      border-radius: 5px;
+      background: #d3d3d3;
+      outline: none;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .price-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: #18453B;
+      cursor: pointer;
+      border: 2px solid white;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    }
+    .price-slider::-moz-range-thumb {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: #18453B;
+      cursor: pointer;
+      border: 2px solid white;
+    }
+    .price-slider:focus-visible {
+      outline: 3px solid #C89A2A;
+      outline-offset: 3px;
+    }
+    .slider-value {
+      display: inline-block;
+      background: #18453B;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 5px;
+      font-weight: bold;
+      min-width: 52px;
+      text-align: center;
+      font-size: 0.95em;
+    }
+    .slider-hint {
+      font-size: 0.82em;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    /* Fixed cost buttons */
+    .cost-btn-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+    .cost-btn {
+      padding: 8px 14px;
+      border: 2px solid #18453B;
+      background: white;
+      color: #18453B;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9em;
+      transition: all 0.2s;
+    }
+    .cost-btn:hover { background: #e8f0ee; }
+    .cost-btn.active { background: #18453B; color: white; }
+    .cost-btn:focus-visible { outline: 3px solid #C89A2A; outline-offset: 2px; }
+
+    /* ── Metrics grid ── */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .metric-card {
+      padding: 12px;
+      border-radius: 8px;
+      border: 2px solid;
+      text-align: center;
+    }
+    .metric-card.quantity  { background: rgba(21,101,192,0.08); border-color: #1565C0; }
+    .metric-card.price     { background: rgba(24,69,59,0.08);   border-color: #18453B; }
+    .metric-card.profit    { background: rgba(39,174,96,0.08);  border-color: #27ae60; }
+    .metric-card.dwl       { background: rgba(220,53,69,0.08);  border-color: #dc3545; }
+    .metric-label {
+      font-size: 0.8em;
+      font-weight: 700;
+      color: #444;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .metric-value {
+      font-size: 1.4em;
+      font-weight: bold;
+      color: #18453B;
+    }
+
+    /* ── Status box ── */
+    .status-box {
+      padding: 14px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+      font-size: 0.95em;
+      line-height: 1.5;
+    }
+    .status-profit  { background: #d4edda; color: #155724; border-left: 5px solid #28a745; }
+    .status-loss    { background: #f8d7da; color: #721c24; border-left: 5px solid #dc3545; }
+    .status-zero    { background: #fff3cd; color: #856404; border-left: 5px solid #ffc107; }
+
+    /* ── Analysis section ── */
+    .analysis-section {
+      background: #e3f2fd;
+      border: 2px solid #1565C0;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 0.9em;
+      color: #0d47a1;
+    }
+    .analysis-section h4 {
+      margin-bottom: 8px;
+      font-size: 1em;
+      color: #0d47a1;
+    }
+    .analysis-section p { margin: 4px 0; }
+
+    /* ── Graph panel ── */
+    .graph-panel {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .graph-wrapper {
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      overflow: hidden;
+      background: white;
+    }
+
+    /* ── Data table ── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid #e9ecef;
+      font-size: 0.9em;
+    }
+    .data-table caption {
+      padding: 10px 14px;
+      font-weight: bold;
+      color: #18453B;
+      text-align: left;
+      background: #f8f9fa;
+      border-bottom: 2px solid #e9ecef;
+    }
+    .data-table th, .data-table td {
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid #e9ecef;
+    }
+    .data-table th {
+      background: #f8f9fa;
+      font-weight: 700;
+      color: #18453B;
+    }
+    .data-table tr:hover { background: #f8f9fa; }
+
+    /* ── Concept box ── */
+    .concept-box {
+      background: #e8f5e9;
+      border: 2px solid #2e7d32;
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .concept-box h4 { color: #2e7d32; margin-bottom: 8px; font-size: 1em; }
+    .concept-box p  { font-size: 0.9em; color: #1b5e20; margin-bottom: 6px; }
+
+    @media (max-width: 1024px) {
+      .content-wrapper { grid-template-columns: 1fr; }
+      .control-panel   { border-right: none; border-bottom: 3px solid #e9ecef; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Skip Link -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Live region for screen-reader announcements -->
+<div id="live-updates" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+<div class="container" role="main">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>🌿 MowTown Landscaping</h1>
+    <p>Dynamics of Monopolistic Competition — Short-Run Profits, Long-Run Equilibrium, and Market Inefficiency</p>
+  </div>
+
+  <!-- Main content -->
+  <div class="content-wrapper" id="main-content">
+
+    <!-- ── Control Panel ── -->
+    <div class="control-panel" role="region" aria-label="Market controls and results">
+
+      <!-- Parameters -->
+      <div class="control-section">
+        <h3>🎛️ Market Parameters</h3>
+
+        <div class="slider-group">
+          <label class="form-label" for="firms-slider">
+            Number of Competing Firms:
+          </label>
+          <div class="slider-row">
+            <input type="range" id="firms-slider" class="price-slider"
+                   min="5" max="25" step="1" value="5"
+                   aria-describedby="firms-hint"
+                   oninput="updateMarket()">
+            <span class="slider-value" id="firms-display" aria-live="polite" aria-atomic="true">5</span>
+          </div>
+          <p id="firms-hint" class="slider-hint">More firms → lower demand intercept (a = 200 − 5n). Demand: P = a − 2q.</p>
+        </div>
+
+        <div class="slider-group">
+          <fieldset style="border:none; padding:0;">
+            <legend class="form-label">Fixed Costs (per month):</legend>
+            <div class="cost-btn-group" role="group" aria-label="Select monthly fixed costs">
+              <button class="cost-btn active" id="fc-400" onclick="setFixedCost(400, this)" aria-pressed="true">$400</button>
+              <button class="cost-btn"        id="fc-800" onclick="setFixedCost(800, this)" aria-pressed="false">$800</button>
+              <button class="cost-btn"        id="fc-1200" onclick="setFixedCost(1200, this)" aria-pressed="false">$1,200</button>
+              <button class="cost-btn"        id="fc-2000" onclick="setFixedCost(2000, this)" aria-pressed="false">$2,000</button>
+            </div>
+          </fieldset>
+          <p class="slider-hint" style="margin-top:6px;">Fixed costs = barriers to entry. Higher FC → fewer long-run competitors.</p>
+        </div>
+
+        <!-- Firm info box -->
+        <div style="background:#f8f9fa; border-left:4px solid #18453B; padding:12px; border-radius:5px; font-size:0.9em; margin-top:10px;">
+          <strong>Firm:</strong> MowTown Landscaping<br>
+          <strong>Market:</strong> Suburban lawn-care services<br>
+          <strong>Product:</strong> Differentiated (quality, reputation, reliability)<br>
+          <strong>Marginal Cost:</strong> $30 per lawn (constant)
+        </div>
+        <!-- LR equilibrium guide -->
+        <div style="background:#fff8e1; border-left:4px solid #f9a825; padding:12px; border-radius:5px; font-size:0.85em; margin-top:10px;" role="note" aria-label="Long-run equilibrium guide">
+          <strong>📍 Long-run equilibrium (zero profit) occurs near:</strong><br>
+          FC = $400 → ~23 firms &nbsp;|&nbsp; FC = $800 → ~18 firms<br>
+          FC = $1,200 → ~14 firms &nbsp;|&nbsp; FC = $2,000 → ~9 firms
+        </div>
+      </div>
+
+      <!-- Key metrics -->
+      <div class="control-section">
+        <h3>📊 Firm Outcomes</h3>
+        <div class="metrics-grid" aria-label="Key economic metrics">
+          <div class="metric-card quantity">
+            <div class="metric-label">Quantity (Q*)</div>
+            <div class="metric-value" id="quantity-metric" aria-live="polite">—</div>
+            <div style="font-size:0.75em;color:#555;">lawns/month</div>
+          </div>
+          <div class="metric-card price">
+            <div class="metric-label">Price (P*)</div>
+            <div class="metric-value" id="price-metric" aria-live="polite">—</div>
+          </div>
+          <div class="metric-card profit">
+            <div class="metric-label">Economic Profit</div>
+            <div class="metric-value" id="profit-metric" aria-live="polite">—</div>
+          </div>
+          <div class="metric-card dwl">
+            <div class="metric-label">Deadweight Loss</div>
+            <div class="metric-value" id="dwl-metric" aria-live="polite">—</div>
+          </div>
+        </div>
+
+        <!-- Status -->
+        <div id="status-panel" role="status" aria-live="polite"></div>
+      </div>
+
+      <!-- Market analysis -->
+      <div class="control-section">
+        <h3>🔍 Market Analysis</h3>
+        <div id="analysis-panel" class="analysis-section">
+          <h4>Adjust the sliders to see results.</h4>
+        </div>
+      </div>
+
+    </div><!-- end control-panel -->
+
+    <!-- ── Graph Panel ── -->
+    <div class="graph-panel" role="region" aria-label="Economic graph and data table">
+
+      <!-- Graph description for screen readers -->
+      <div id="graph-description" class="sr-only" aria-live="polite"></div>
+
+      <div class="graph-wrapper">
+        <div id="main-graph"
+             role="img"
+             aria-label="MowTown Landscaping firm-level cost and revenue curves"
+             aria-describedby="graph-description">
+        </div>
+      </div>
+
+      <!-- Data table -->
+      <table class="data-table" aria-describedby="table-caption-desc">
+        <caption>
+          Current Equilibrium Data
+          <span id="table-caption-desc" class="sr-only">
+            Table showing key economic values for MowTown Landscaping at the current market conditions.
+          </span>
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Variable</th>
+            <th scope="col">Monopolistic Competition</th>
+            <th scope="col">Perfect Competition Benchmark</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Price</th>
+            <td id="table-mc-price">—</td>
+            <td id="table-pc-price">—</td>
+          </tr>
+          <tr>
+            <th scope="row">Quantity</th>
+            <td id="table-mc-qty">—</td>
+            <td id="table-pc-qty">—</td>
+          </tr>
+          <tr>
+            <th scope="row">Revenue</th>
+            <td id="table-mc-rev">—</td>
+            <td id="table-pc-rev">—</td>
+          </tr>
+          <tr>
+            <th scope="row">Total Cost</th>
+            <td id="table-mc-cost">—</td>
+            <td id="table-pc-cost">—</td>
+          </tr>
+          <tr>
+            <th scope="row">Economic Profit</th>
+            <td id="table-mc-profit">—</td>
+            <td id="table-pc-profit">—</td>
+          </tr>
+          <tr>
+            <th scope="row">Deadweight Loss</th>
+            <td id="table-dwl" colspan="2">—</td>
+          </tr>
+          <tr>
+            <th scope="row">Markup (P − MC)</th>
+            <td id="table-markup" colspan="2">—</td>
+          </tr>
+          <tr>
+            <th scope="row">Demand Curve</th>
+            <td id="table-demand" colspan="2">—</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Concept reminder -->
+      <div class="concept-box" role="note" aria-label="Key economic concept">
+        <h4>📚 Key Concept: Monopolistic Competition</h4>
+        <p>In <strong>short-run equilibrium</strong>, MR = MC determines quantity. Price is read off the demand curve. Profit = (P − ATC) × Q.</p>
+        <p>In <strong>long-run equilibrium</strong>, free entry/exit drives economic profit to zero. The demand curve shifts until it is tangent to ATC — the "tangency condition." This creates <em>excess capacity</em> and a <em>markup</em> over marginal cost, causing deadweight loss.</p>
+        <p>Unlike perfect competition, long-run equilibrium does <strong>not</strong> occur at minimum ATC. The gap is the cost of product variety.</p>
+      </div>
+
+    </div><!-- end graph-panel -->
+  </div><!-- end content-wrapper -->
+</div><!-- end container -->
+
+<script>
+  // ── State ──
+  let numFirms  = 5;
+  let fixedCost = 400;
+  const MC = 30;  // constant marginal cost per lawn
+
+  // ── Demand model (recalibrated) ──
+  // P = a − b·q   where  a = 200 − 5n,  b = 2  (constant slope)
+  // More firms → lower intercept (less demand per firm) + flatter (more elastic) in spirit,
+  // but keeping b=2 constant keeps the algebra clean for a course.
+  // Zero-profit firm counts: FC=400 → n≈23, FC=800 → n≈18, FC=1200 → n≈14, FC=2000 → n≈9
+
+  // ── Fixed cost button handler ──
+  function setFixedCost(fc, btn) {
+    fixedCost = fc;
+    document.querySelectorAll('.cost-btn').forEach(b => {
+      b.classList.remove('active');
+      b.setAttribute('aria-pressed', 'false');
+    });
+    btn.classList.add('active');
+    btn.setAttribute('aria-pressed', 'true');
+    updateMarket();
+    announceChange('Fixed costs set to $' + fc + ' per month.');
+  }
+
+  // ── Main update ──
+  function updateMarket() {
+    numFirms = parseInt(document.getElementById('firms-slider').value);
+    document.getElementById('firms-display').textContent = numFirms;
+    const eq = calculateEquilibrium();
+    updateMetrics(eq);
+    drawGraph(eq);
+    updateTable(eq);
+    updateGraphDescription(eq);
+  }
+
+  // ── Economics ──
+  function calculateEquilibrium() {
+    const a = 200 - 5 * numFirms;   // demand intercept
+    const b = 2;                     // constant slope
+
+    // Profit max: MR = MC  →  (a − 2b·q) = MC  →  q* = (a−MC)/(2b)
+    const qStar = Math.max(0, (a - MC) / (2 * b));
+    const pStar = Math.max(MC, a - b * qStar);    // read off demand curve
+
+    // Costs
+    const tc   = fixedCost + MC * qStar;
+    const atc  = qStar > 0 ? tc / qStar : 9999;
+
+    // Revenue & profit
+    const tr     = pStar * qStar;
+    const profit = tr - tc;
+
+    // Perfect competition benchmark (P = MC, ignores FC coverage)
+    const pcQ  = Math.max(0, (a - MC) / b);   // where D intersects MC
+    const pcTC = fixedCost + MC * pcQ;
+
+    // Deadweight loss triangle: ½ × (P*−MC) × (Qpc−Q*)
+    const dwl = Math.max(0, 0.5 * (pStar - MC) * (pcQ - qStar));
+
+    // Long-run equilibrium firm count for current FC (for annotation)
+    // Zero profit: (P*−ATC)·Q* = 0  →  P* = ATC
+    // P* = (a+MC)/2,  ATC = FC/Q* + MC,  Q* = (a−MC)/4
+    // Solve numerically
+    let lrN = null;
+    for (let n = 5; n <= 35; n++) {
+      const an = 200 - 5*n;
+      if (an <= MC) break;
+      const qn = (an - MC) / 4;
+      const pn = (an + MC) / 2;
+      const atcn = fixedCost / qn + MC;
+      if (pn <= atcn) { lrN = n; break; }
+    }
+
+    return { a, b, qStar, pStar, tc, atc, tr, profit, pcQ, pcTC, dwl, lrN };
+  }
+
+  // ── Metrics display ──
+  function updateMetrics(eq) {
+    document.getElementById('quantity-metric').textContent = eq.qStar.toFixed(1);
+    document.getElementById('price-metric').textContent    = '$' + eq.pStar.toFixed(2);
+    document.getElementById('profit-metric').textContent   = '$' + eq.profit.toFixed(0);
+    document.getElementById('dwl-metric').textContent      = '$' + eq.dwl.toFixed(0);
+
+    // Status box
+    let statusHTML = '';
+    const lrNote = eq.lrN
+      ? `Long-run equilibrium (zero profit) occurs near <strong>n = ${eq.lrN} firms</strong> at this fixed cost level.`
+      : 'Long-run equilibrium is beyond the slider range at this fixed cost.';
+
+    if (eq.profit > 50) {
+      statusHTML = `<div class="status-box status-profit" role="status">
+        <strong>✅ Positive Economic Profit ($${eq.profit.toFixed(0)})</strong><br>
+        New firms will enter, shifting each existing firm's demand curve left (lower intercept) and making it more elastic. Both effects erode profit until economic profit reaches zero.<br>
+        <span style="font-size:0.9em;margin-top:6px;display:block;">📍 ${lrNote}</span>
+      </div>`;
+      announceChange('Positive economic profit of $' + eq.profit.toFixed(0) + '. Firms will enter. Long-run equilibrium near n equals ' + (eq.lrN || 'beyond range') + '.');
+    } else if (eq.profit < -50) {
+      statusHTML = `<div class="status-box status-loss" role="status">
+        <strong>❌ Economic Loss ($${eq.profit.toFixed(0)})</strong><br>
+        Some firms will exit. Remaining firms absorb departing demand (intercept rises) and face less elastic demand (steeper slope). Both effects reduce losses until long-run equilibrium is restored.<br>
+        <span style="font-size:0.9em;margin-top:6px;display:block;">📍 ${lrNote}</span>
+      </div>`;
+      announceChange('Economic loss of $' + eq.profit.toFixed(0) + '. Firms will exit. Long-run equilibrium near n equals ' + (eq.lrN || 'beyond range') + '.');
+    } else {
+      statusHTML = `<div class="status-box status-zero" role="status">
+        <strong>⚖️ Long-Run Equilibrium (≈ Zero Economic Profit)</strong><br>
+        The demand curve is approximately tangent to ATC. No incentive for entry or exit.<br>
+        Demand: P = ${eq.a.toFixed(0)} − 2q &nbsp;|&nbsp; Price = $${eq.pStar.toFixed(2)} &nbsp;|&nbsp; Q = ${eq.qStar.toFixed(1)} lawns
+      </div>`;
+      announceChange('Near long-run equilibrium with approximately zero economic profit.');
+    }
+    document.getElementById('status-panel').innerHTML = statusHTML;
+
+    // Analysis panel
+    const markup    = (eq.pStar - MC).toFixed(2);
+    const excessCap = Math.max(0, eq.pcQ - eq.qStar).toFixed(1);
+    document.getElementById('analysis-panel').innerHTML = `
+      <h4>🔍 Market Analysis (n = ${numFirms} firms, FC = $${fixedCost})</h4>
+      <p><strong>Demand curve:</strong> P = ${eq.a.toFixed(0)} − 2q</p>
+      <p><strong>MR curve:</strong> MR = ${eq.a.toFixed(0)} − 4q</p>
+      <p><strong>Profit-max output:</strong> Q* = ${eq.qStar.toFixed(1)} lawns/month</p>
+      <p><strong>Price:</strong> P* = $${eq.pStar.toFixed(2)}</p>
+      <p><strong>ATC at Q*:</strong> $${eq.atc.toFixed(2)}</p>
+      <p><strong>Markup (P* − MC):</strong> $${markup} per lawn</p>
+      <p><strong>Excess capacity vs. P=MC:</strong> ${excessCap} lawns/month</p>
+      <p><strong>Deadweight loss:</strong> $${eq.dwl.toFixed(0)}</p>
+      ${eq.lrN ? `<p style="margin-top:8px;font-weight:600;color:#0d47a1;">📍 LR equilibrium: ~${eq.lrN} firms at this FC</p>` : ''}
+    `;
+  }
+
+  // ── Graph ──
+  function drawGraph(eq) {
+    const maxQ = 120;
+    const maxP = 220;   // raised ceiling so curves at low n are fully visible
+
+    const qRange = [];
+    for (let q = 0; q <= maxQ; q += 1) qRange.push(q);
+
+    // Demand: clip at 0
+    const demandTrace = {
+      x: qRange,
+      y: qRange.map(q => Math.max(0, eq.a - 2*q)),
+      mode: 'lines', name: 'Demand (D)',
+      line: { color: '#1565C0', width: 3 }
+    };
+
+    // MR: clip at 0
+    const mrTrace = {
+      x: qRange,
+      y: qRange.map(q => Math.max(0, eq.a - 4*q)),
+      mode: 'lines', name: 'MR',
+      line: { color: '#1565C0', width: 2, dash: 'dash' }
+    };
+
+    // MC horizontal
+    const mcTrace = {
+      x: [0, maxQ],
+      y: [MC, MC],
+      mode: 'lines', name: 'MC = $30',
+      line: { color: '#2e7d32', width: 3 }
+    };
+
+    // ATC: FC/q + MC, clip at maxP, start at q=1
+    const atcX = qRange.filter(q => q >= 1);
+    const atcTrace = {
+      x: atcX,
+      y: atcX.map(q => Math.min(maxP, fixedCost / q + MC)),
+      mode: 'lines', name: 'ATC',
+      line: { color: '#dc3545', width: 3 }
+    };
+
+    const traces = [demandTrace, mrTrace, mcTrace, atcTrace];
+
+    // Profit / loss rectangle: from 0 to Q*, between P* and ATC
+    if (Math.abs(eq.profit) > 10 && eq.qStar > 0 && eq.atc < maxP) {
+      const rectColor   = eq.profit > 0 ? 'rgba(39,174,96,0.25)' : 'rgba(220,53,69,0.25)';
+      const borderColor = eq.profit > 0 ? 'rgba(39,174,96,0.9)'  : 'rgba(220,53,69,0.9)';
+      const lo = Math.min(eq.pStar, eq.atc);
+      const hi = Math.max(eq.pStar, eq.atc);
+      traces.push({
+        x: [0, eq.qStar, eq.qStar, 0, 0],
+        y: [lo, lo, hi, hi, lo],
+        fill: 'toself', fillcolor: rectColor,
+        mode: 'lines',
+        name: eq.profit > 0 ? 'Profit' : 'Loss',
+        line: { color: borderColor, width: 1.5, dash: 'dot' },
+        hoverinfo: 'skip'
+      });
+    }
+
+    // Deadweight loss triangle
+    if (eq.dwl > 5 && eq.pcQ <= maxQ) {
+      traces.push({
+        x: [eq.qStar, eq.pcQ, eq.qStar, eq.qStar],
+        y: [eq.pStar, MC,     MC,        eq.pStar],
+        fill: 'toself', fillcolor: 'rgba(255,152,0,0.4)',
+        mode: 'lines', name: 'DWL',
+        line: { color: 'rgba(255,152,0,0.9)', width: 1.5, dash: 'dot' },
+        hoverinfo: 'skip'
+      });
+    }
+
+    // Equilibrium point (on top)
+    traces.push({
+      x: [eq.qStar], y: [eq.pStar],
+      mode: 'markers', name: 'MR=MC',
+      marker: { size: 13, color: '#18453B', symbol: 'circle',
+                line: { color: 'white', width: 2 } },
+      hovertemplate: '<b>MR = MC</b><br>Q* = %{x:.1f}<br>P* = $%{y:.2f}<extra></extra>'
+    });
+
+    const layout = {
+      title: {
+        text: `MowTown Landscaping — ${numFirms} firms, FC = $${fixedCost.toLocaleString()}`,
+        font: { size: 15, color: '#18453B' }
+      },
+      xaxis: {
+        title: 'Quantity (lawns per month)',
+        range: [0, maxQ], gridcolor: '#e9ecef', zeroline: true, fixedrange: true
+      },
+      yaxis: {
+        title: 'Price / Cost ($)',
+        range: [0, maxP], gridcolor: '#e9ecef', zeroline: true, fixedrange: true
+      },
+      showlegend: true,
+      legend: {
+        x: 0.58, y: 0.98,
+        bgcolor: 'rgba(255,255,255,0.88)',
+        bordercolor: '#dee2e6', borderwidth: 1,
+        font: { size: 12 }
+      },
+      margin: { l: 65, r: 30, t: 55, b: 60 },
+      autosize: false,
+      width: 640,
+      height: 500,
+      plot_bgcolor: '#fafafa',
+      paper_bgcolor: 'white'
+    };
+
+    const config = { responsive: false, displayModeBar: false };
+    Plotly.newPlot('main-graph', traces, layout, config);
+  }
+
+  // ── Data table ──
+  function updateTable(eq) {
+    // PC benchmark: covers VC only (P=MC), so profit = −FC
+    const pcRev    = MC * eq.pcQ;
+    const pcProfit = pcRev - eq.pcTC;   // = −fixedCost if P=MC
+
+    document.getElementById('table-mc-price').textContent  = '$' + eq.pStar.toFixed(2);
+    document.getElementById('table-pc-price').textContent  = '$' + MC.toFixed(2);
+    document.getElementById('table-mc-qty').textContent    = eq.qStar.toFixed(1) + ' lawns';
+    document.getElementById('table-pc-qty').textContent    = eq.pcQ.toFixed(1) + ' lawns';
+    document.getElementById('table-mc-rev').textContent    = '$' + eq.tr.toFixed(0);
+    document.getElementById('table-pc-rev').textContent    = '$' + pcRev.toFixed(0);
+    document.getElementById('table-mc-cost').textContent   = '$' + eq.tc.toFixed(0);
+    document.getElementById('table-pc-cost').textContent   = '$' + eq.pcTC.toFixed(0);
+    document.getElementById('table-mc-profit').textContent = '$' + eq.profit.toFixed(0);
+    document.getElementById('table-pc-profit').textContent = '−$' + fixedCost + ' (FC not covered)';
+    document.getElementById('table-dwl').textContent       = '$' + eq.dwl.toFixed(0);
+    document.getElementById('table-markup').textContent    = '$' + (eq.pStar - MC).toFixed(2) + ' per lawn';
+    document.getElementById('table-demand').textContent    = `P = ${eq.a.toFixed(0)} − 2q`;
+  }
+
+  // ── Screen-reader graph description ──
+  function updateGraphDescription(eq) {
+    const profitWord = eq.profit > 50 ? 'positive economic profit' :
+                       eq.profit < -50 ? 'economic losses' : 'approximately zero economic profit';
+    document.getElementById('graph-description').textContent =
+      `Graph showing MowTown Landscaping firm-level curves with ${numFirms} firms and $${fixedCost} monthly fixed costs. ` +
+      `Demand: P = ${eq.a.toFixed(0)} minus 2Q. ` +
+      `MR = MC gives Q-star = ${eq.qStar.toFixed(1)} lawns at P-star = $${eq.pStar.toFixed(2)}. ` +
+      `ATC at Q-star = $${eq.atc.toFixed(2)}. ` +
+      `Firm earns ${profitWord} of $${eq.profit.toFixed(0)}. ` +
+      `Deadweight loss = $${eq.dwl.toFixed(0)}. ` +
+      `Long-run equilibrium near n = ${eq.lrN || 'beyond slider range'} firms.`;
+  }
+
+  // ── Live-region announcement ──
+  function announceChange(msg) {
+    const el = document.getElementById('live-updates');
+    el.textContent = '';
+    setTimeout(() => { el.textContent = msg; }, 50);
+  }
+
+  // ── Init ──
+  document.addEventListener('DOMContentLoaded', function () {
+    updateMarket();
+  });
+</script>
+</body>
+</html>

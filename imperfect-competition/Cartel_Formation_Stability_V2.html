@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cartel Formation and Stability Simulator</title>
+  <script src="https://cdn.plot.ly/plotly-2.18.0.min.js"></script>
+  <style>
+    /* ── Skip Link ── */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: #18453B;
+      color: white;
+      padding: 8px 16px;
+      z-index: 9999;
+      font-weight: 700;
+      text-decoration: none;
+      border-radius: 0 0 6px 0;
+      transition: top 0.2s;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ── Screen-reader only ── */
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ── Live region ── */
+    .live-region {
+      position: absolute;
+      left: -10000px;
+      width: 1px; height: 1px;
+      overflow: hidden;
+    }
+
+    /* ── Reset / Root ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --msu-green:   #18453B;
+      --msu-green2:  #2d5a4f;
+      --focus-ring:  #C89A2A;
+      --border:      #cdd9d6;
+      --bg-page:     #f0f4f0;
+      --text-dark:   #1a1a1a;
+      --text-mid:    #444;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg-page);
+      color: var(--text-dark);
+      min-height: 100vh;
+      padding: 16px;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 3px;
+    }
+
+    /* ── Wrapper ── */
+    .wrapper {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, var(--msu-green), var(--msu-green2));
+      color: white;
+      padding: 28px 32px;
+      text-align: center;
+    }
+    .header h1 { font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 700; margin-bottom: 6px; }
+    .header p  { font-size: 1.05rem; opacity: 0.92; }
+
+    /* ── Scenario selector ── */
+    .scenario-bar {
+      background: #f8f9fa;
+      padding: 18px 28px;
+      border-bottom: 3px solid var(--msu-green);
+    }
+    .scenario-bar h2 {
+      color: var(--msu-green);
+      font-size: 1.1rem;
+      margin-bottom: 12px;
+    }
+    .scenario-buttons {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .scenario-btn {
+      flex: 1;
+      min-width: 200px;
+      padding: 14px 18px;
+      font-size: 1rem;
+      font-weight: 600;
+      border: 3px solid var(--msu-green);
+      background: white;
+      color: var(--msu-green);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, transform 0.15s;
+    }
+    .scenario-btn:hover {
+      background: var(--msu-green);
+      color: white;
+      transform: translateY(-2px);
+    }
+    .scenario-btn.active {
+      background: var(--msu-green);
+      color: white;
+    }
+    .scenario-btn[aria-pressed="true"] {
+      background: var(--msu-green);
+      color: white;
+    }
+
+    /* ── Two-column layout ── */
+    .content-wrapper {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 0;
+      min-height: 600px;
+    }
+
+    /* ── Control Panel ── */
+    .control-panel {
+      background: #f8f9fa;
+      padding: 28px 26px;
+      border-right: 3px solid #e9ecef;
+      overflow-y: auto;
+    }
+
+    .instructions {
+      background: #e7f3ff;
+      border-left: 5px solid #0066cc;
+      padding: 16px 18px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+    }
+    .instructions h3 { color: #004080; margin-bottom: 8px; font-size: 1rem; }
+    .instructions p  { color: #004080; font-size: 0.95rem; line-height: 1.7; margin-bottom: 8px; }
+    .instructions p:last-child { margin-bottom: 0; }
+
+    .control-section {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      border: 2px solid #e9ecef;
+    }
+    .control-section h3 {
+      color: var(--msu-green);
+      font-size: 1.05rem;
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-weight: 600;
+      color: var(--text-mid);
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 6px;
+    }
+    input[type="range"] {
+      flex: 1;
+      height: 8px;
+      border-radius: 5px;
+      background: #dee2e6;
+      outline: none;
+      cursor: pointer;
+      -webkit-appearance: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: var(--msu-green);
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: var(--msu-green);
+      cursor: pointer;
+      border: none;
+    }
+    .value-badge {
+      min-width: 56px;
+      padding: 6px 12px;
+      background: white;
+      border: 2px solid var(--msu-green);
+      border-radius: 7px;
+      font-weight: 700;
+      color: var(--msu-green);
+      text-align: center;
+      font-size: 1rem;
+    }
+
+
+    /* ── Outcome cards ── */
+    .outcome-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .outcome-card {
+      background: #f8f9fa;
+      border: 2px solid #e9ecef;
+      border-radius: 9px;
+      padding: 13px;
+      text-align: center;
+    }
+    .outcome-card .oc-label {
+      font-size: 0.82rem;
+      color: #555;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    .outcome-card .oc-value {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--msu-green);
+    }
+
+    /* ── Graph panel ── */
+    .graph-panel {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .graph-wrapper {
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      overflow: hidden;
+      background: white;
+    }
+    .graph-title {
+      padding: 12px 18px;
+      background: #f8f9fa;
+      border-bottom: 2px solid #e9ecef;
+      font-weight: 700;
+      color: var(--msu-green);
+      font-size: 0.95rem;
+    }
+
+    /* ── Insight boxes ── */
+    .insight-box {
+      background: #fff8e1;
+      border: 2px solid #f0c040;
+      border-radius: 9px;
+      padding: 15px 18px;
+      margin-bottom: 14px;
+    }
+    .insight-box h4 { color: #7a5c00; margin-bottom: 6px; font-size: 0.95rem; }
+    .insight-box p  { color: #5a4000; font-size: 0.9rem; line-height: 1.65; }
+
+    .key-insight {
+      background: #e7f3ff;
+      border: 2px solid #0066cc;
+      border-radius: 9px;
+      padding: 15px 18px;
+      margin-bottom: 14px;
+    }
+    .key-insight h4 { color: #004080; margin-bottom: 6px; font-size: 0.95rem; }
+    .key-insight p  { color: #003060; font-size: 0.9rem; line-height: 1.65; }
+
+    /* ── Accessible data table ── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid #e9ecef;
+      margin-top: 16px;
+    }
+    .data-table caption {
+      padding: 10px 14px;
+      font-weight: 700;
+      color: var(--msu-green);
+      text-align: left;
+      background: #f8f9fa;
+      border-bottom: 2px solid #e9ecef;
+      caption-side: top;
+    }
+    .data-table th, .data-table td {
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid #e9ecef;
+      font-size: 0.9rem;
+    }
+    .data-table th {
+      background: #f8f9fa;
+      font-weight: 700;
+      color: var(--msu-green);
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: #f8f9fa; }
+
+    /* Graph text description (for SR) */
+    .graph-desc {
+      padding: 10px 16px;
+      background: #f8f9fa;
+      border-top: 1px solid #e9ecef;
+      font-size: 0.82rem;
+      color: #555;
+    }
+
+    @media (max-width: 1024px) {
+      .content-wrapper { grid-template-columns: 1fr; }
+      .control-panel { border-right: none; border-bottom: 3px solid #e9ecef; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <div id="live-updates" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+  <div class="wrapper">
+    <!-- Header -->
+    <header class="header">
+      <h1>⚖️ Cartel Formation and Stability Simulator</h1>
+      <p>Explore the economics of collusion, incentives to cheat, and cartel enforcement</p>
+    </header>
+
+    <!-- Scenario Selector -->
+    <nav class="scenario-bar" aria-label="Scenario selection">
+      <h2 id="scenario-label">Choose a Scenario</h2>
+      <div class="scenario-buttons" role="group" aria-labelledby="scenario-label">
+        <button class="scenario-btn active" id="btn-cooperate"
+                aria-pressed="true"
+                onclick="setScenario('cooperate')">
+          🤝 All Firms Cooperate
+        </button>
+        <button class="scenario-btn" id="btn-cheat"
+                aria-pressed="false"
+                onclick="setScenario('cheat')">
+          📈 One Firm Cheats
+        </button>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main id="main-content">
+      <div class="content-wrapper">
+
+        <!-- ── Control Panel ── -->
+        <aside class="control-panel" aria-label="Controls and analysis">
+
+          <div class="instructions" role="note">
+            <h3>📖 Learning Objectives</h3>
+            <p><strong>Understanding Cartel Dynamics:</strong> When firms collude to form a cartel, they agree to restrict output and act like a monopoly. However, each individual firm has an incentive to "cheat" on the agreement by secretly producing more than its quota.</p>
+            <p>Use the controls below to explore how the number of firms and the cooperate/cheat decision affect profits and market outcomes.</p>
+          </div>
+
+          <!-- Market Parameters -->
+          <div class="control-section">
+            <h3>Market Parameters</h3>
+
+            <div>
+              <label class="form-label" for="num-firms-slider">
+                Number of Firms in Cartel:
+                <span id="num-firms-display" aria-live="polite">4</span>
+              </label>
+              <div class="slider-row">
+                <input type="range" id="num-firms-slider"
+                       min="3" max="8" value="4" step="1"
+                       aria-valuemin="3" aria-valuemax="8" aria-valuenow="4"
+                       aria-label="Number of firms, currently 4"
+                       oninput="onSliderChange(this)">
+                <div class="value-badge" aria-hidden="true" id="firms-badge">4</div>
+              </div>
+              <p class="sr-only" id="firms-hint">Use arrow keys to adjust number of firms.</p>
+            </div>
+
+          </div>
+
+          <!-- Outcome Cards -->
+          <div class="control-section" aria-label="Market outcomes">
+            <h3>Market Outcomes</h3>
+            <div class="outcome-grid">
+              <div class="outcome-card">
+                <div class="oc-label">Total Quantity</div>
+                <div class="oc-value" id="val-total-q" aria-live="polite">--</div>
+              </div>
+              <div class="outcome-card">
+                <div class="oc-label">Market Price</div>
+                <div class="oc-value" id="val-price" aria-live="polite">--</div>
+              </div>
+              <div class="outcome-card">
+                <div class="oc-label">Cooperator Profit</div>
+                <div class="oc-value" id="val-coop-profit" aria-live="polite">--</div>
+              </div>
+              <div class="outcome-card">
+                <div class="oc-label" id="cheat-label">Cheater Profit</div>
+                <div class="oc-value" id="val-cheat-profit" aria-live="polite">--</div>
+              </div>
+            </div>
+
+            <!-- Accessible data table (same info as outcome cards) -->
+            <table class="data-table" aria-label="Cartel outcomes summary">
+              <caption>Detailed Market Outcomes</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Measure</th>
+                  <th scope="col">Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Total Market Quantity</td><td id="tbl-total-q">--</td></tr>
+                <tr><td>Market Price</td><td id="tbl-price">--</td></tr>
+                <tr><td>Output per Cooperating Firm</td><td id="tbl-q-per-firm">--</td></tr>
+                <tr><td>Output: Cheating Firm</td><td id="tbl-q-cheat">--</td></tr>
+                <tr><td>Profit per Cooperating Firm</td><td id="tbl-coop-profit">--</td></tr>
+                <tr><td>Cheater's Profit</td><td id="tbl-cheat-profit">--</td></tr>
+                <tr><td>Gain from Cheating</td><td id="tbl-gain">--</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Interpretation -->
+          <div class="insight-box" role="region" aria-label="Economic interpretation">
+            <h4>💡 Economic Interpretation</h4>
+            <p id="text-interpretation">Adjust the controls to see how the scenario unfolds.</p>
+          </div>
+
+          <div class="key-insight" role="region" aria-label="Key insight about cartel stability">
+            <h4>🔑 Key Insight: The Cartel Instability Problem</h4>
+            <p id="text-instability">Select a scenario above to reveal the core tension in cartel theory.</p>
+          </div>
+        </aside>
+
+        <!-- ── Graph Panel ── -->
+        <section class="graph-panel" aria-label="Economic graphs">
+
+          <!-- Market View Graph -->
+          <div class="graph-wrapper">
+            <div class="graph-title" id="market-graph-title">Market View: Profit Distribution</div>
+            <div id="market-graph"
+                 role="img"
+                 aria-labelledby="market-graph-title"
+                 aria-describedby="market-graph-desc"></div>
+            <div id="market-graph-desc" class="graph-desc" aria-live="polite">
+              Graph loading…
+            </div>
+          </div>
+
+          <!-- Residual Demand Graph -->
+          <div class="graph-wrapper">
+            <div class="graph-title" id="residual-graph-title">Cheater's Perspective: Residual Demand</div>
+            <div id="residual-graph"
+                 role="img"
+                 aria-labelledby="residual-graph-title"
+                 aria-describedby="residual-graph-desc"></div>
+            <div id="residual-graph-desc" class="graph-desc" aria-live="polite">
+              Graph loading…
+            </div>
+          </div>
+
+        </section>
+      </div><!-- end content-wrapper -->
+    </main>
+  </div><!-- end wrapper -->
+
+  <script>
+    // ── Constants ──
+    const A  = 100;  // demand intercept  P = A - Q
+    const MC = 10;   // constant marginal cost
+    const GRAPH_W = 580;
+    const GRAPH_H = 400;
+
+    let currentScenario = 'cooperate';
+
+    // ── Announce helper ──
+    function announce(msg) {
+      const el = document.getElementById('live-updates');
+      el.textContent = '';
+      setTimeout(() => { el.textContent = msg; }, 50);
+    }
+
+    // ── Slider handler ──
+    function onSliderChange(slider) {
+      const v = parseInt(slider.value);
+      document.getElementById('num-firms-display').textContent = v;
+      document.getElementById('firms-badge').textContent = v;
+      slider.setAttribute('aria-valuenow', v);
+      slider.setAttribute('aria-label', `Number of firms, currently ${v}`);
+      update();
+    }
+
+    // ── Scenario selector ──
+    function setScenario(s) {
+      currentScenario = s;
+
+      // Scenario bar buttons
+      document.getElementById('btn-cooperate').classList.toggle('active', s === 'cooperate');
+      document.getElementById('btn-cooperate').setAttribute('aria-pressed', s === 'cooperate');
+      document.getElementById('btn-cheat').classList.toggle('active', s === 'cheat');
+      document.getElementById('btn-cheat').setAttribute('aria-pressed', s === 'cheat');
+
+      // Cheat label
+      document.getElementById('cheat-label').textContent =
+        s === 'cheat' ? "Cheater's Profit" : 'Potential Cheater Profit';
+
+      update();
+    }
+
+    // ── Core calculation ──
+    function calcCartel(n) {
+      const totalCartelQ = (A - MC) / 2;          // monopoly Q
+      const qPerFirm     = totalCartelQ / n;
+      const cartelPrice  = A - totalCartelQ;
+      const coopProfit   = (cartelPrice - MC) * qPerFirm;
+
+      // If one firm cheats: best-response to others' combined output
+      const othersOutput = (n - 1) * qPerFirm;
+      const qCheat       = (A - MC - othersOutput) / 2;
+      const totalQCheat  = othersOutput + qCheat;
+      const priceCheat   = A - totalQCheat;
+      const cheatProfit  = (priceCheat - MC) * qCheat;
+      const coopIfCheated = (priceCheat - MC) * qPerFirm;
+      const gain         = (cheatProfit - coopProfit) / coopProfit * 100;
+
+      return {
+        n, qPerFirm, totalCartelQ, cartelPrice, coopProfit,
+        othersOutput, qCheat, totalQCheat, priceCheat,
+        cheatProfit, coopIfCheated, gain
+      };
+    }
+
+    // ── Main update ──
+    function update() {
+      const n = parseInt(document.getElementById('num-firms-slider').value);
+      const r = calcCartel(n);
+      const isCheating = (currentScenario === 'cheat');
+
+      const displayQ     = isCheating ? r.totalQCheat  : r.totalCartelQ;
+      const displayP     = isCheating ? r.priceCheat   : r.cartelPrice;
+      const displayCoop  = isCheating ? r.coopIfCheated : r.coopProfit;
+      const displayCheat = r.cheatProfit;
+
+      // Outcome cards
+      document.getElementById('val-total-q').textContent    = displayQ.toFixed(1);
+      document.getElementById('val-price').textContent      = '$' + displayP.toFixed(2);
+      document.getElementById('val-coop-profit').textContent= '$' + displayCoop.toFixed(2);
+      document.getElementById('val-cheat-profit').textContent='$' + displayCheat.toFixed(2);
+
+      // Data table
+      document.getElementById('tbl-total-q').textContent     = displayQ.toFixed(1) + ' units';
+      document.getElementById('tbl-price').textContent       = '$' + displayP.toFixed(2);
+      document.getElementById('tbl-q-per-firm').textContent  = r.qPerFirm.toFixed(2) + ' units';
+      document.getElementById('tbl-q-cheat').textContent     = r.qCheat.toFixed(2) + ' units';
+      document.getElementById('tbl-coop-profit').textContent = '$' + displayCoop.toFixed(2);
+      document.getElementById('tbl-cheat-profit').textContent= '$' + r.cheatProfit.toFixed(2);
+      document.getElementById('tbl-gain').textContent        = r.gain.toFixed(1) + '% higher than cooperating';
+
+      // Interpretations
+      buildInterpretation(r, isCheating);
+
+      // Graphs
+      drawMarketGraph(r, n, isCheating);
+      drawResidualGraph(r, n);
+
+      // Announce
+      const scenarioLabel = isCheating ? 'One firm cheats' : 'All firms cooperate';
+      announce(`${scenarioLabel}. ${n} firms. Market price $${displayP.toFixed(2)}. Cooperator profit $${displayCoop.toFixed(2)}. Cheater profit $${r.cheatProfit.toFixed(2)}.`);
+    }
+
+    // ── Text interpretations ──
+    function buildInterpretation(r, isCheating) {
+      let interp, instab;
+      const n = r.n;
+
+      if (!isCheating) {
+        interp = `When all ${n} firms cooperate with the cartel agreement, they collectively produce ${r.totalCartelQ.toFixed(1)} units (each firm produces ${r.qPerFirm.toFixed(1)} units). This restricts output like a monopoly, raising the price to $${r.cartelPrice.toFixed(2)}. Each firm earns $${r.coopProfit.toFixed(2)} in profit.`;
+        instab = `Each firm has a strong temptation to cheat. If one firm secretly increases production to ${r.qCheat.toFixed(1)} units while the others hold their quotas, that firm would earn $${r.cheatProfit.toFixed(2)}—a ${r.gain.toFixed(1)}% increase. This prisoner's dilemma explains why cartels are inherently unstable without enforcement mechanisms such as monitoring, punishment schemes, or legal contracts.`;
+      } else {
+        interp = `When one firm cheats by producing ${r.qCheat.toFixed(1)} units (instead of the cartel quota of ${r.qPerFirm.toFixed(1)} units), total market output rises to ${r.totalQCheat.toFixed(1)} units. This drives the price down from $${r.cartelPrice.toFixed(2)} to $${r.priceCheat.toFixed(2)}. The cheating firm captures $${r.cheatProfit.toFixed(2)}, while cooperating firms see profits fall to $${r.coopIfCheated.toFixed(2)} each.`;
+        instab = `The cheater benefits at the expense of compliant firms. If multiple firms cheat simultaneously, the market collapses toward competitive levels where everyone is worse off. Real-world cartels attempt to maintain stability through geographic market division, sales monitoring, penalty clauses, or (as with OPEC) government coordination.`;
+      }
+
+      document.getElementById('text-interpretation').textContent = interp;
+      document.getElementById('text-instability').textContent    = instab;
+    }
+
+    // ── Market Graph ──
+    function drawMarketGraph(r, n, isCheating) {
+      const price      = isCheating ? r.priceCheat   : r.cartelPrice;
+      const qPerFirm   = r.qPerFirm;
+      const qCheat     = r.qCheat;
+
+      // Build profit rectangles and labels
+      const shapes      = [];
+      const annotations = [];
+      let xOffset       = 0;
+
+      for (let i = 0; i < n; i++) {
+        const isCheater  = isCheating && i === 0;
+        const w          = isCheater ? qCheat   : qPerFirm;
+        const h          = price - MC;
+        const fill       = isCheater ? 'rgba(220,53,69,0.55)'  : 'rgba(40,167,69,0.5)';
+        const border     = isCheater ? '#dc3545' : '#28a745';
+
+        shapes.push({
+          type: 'rect',
+          x0: xOffset, x1: xOffset + w,
+          y0: MC, y1: price,
+          fillcolor: fill,
+          line: { color: border, width: 2 }
+        });
+        annotations.push({
+          x: xOffset + w / 2,
+          y: MC + h / 2,
+          text: isCheater ? 'Firm 1<br>(Cheater)' : `Firm ${i+1}`,
+          showarrow: false,
+          font: { size: 10, color: '#fff', weight: 'bold' }
+        });
+        xOffset += w;
+      }
+
+      const demandTrace = {
+        x: [0, A], y: [A, 0], mode: 'lines', name: 'Demand (P = 100 − Q)',
+        line: { color: '#0066cc', width: 3 }
+      };
+      const mrTrace = {
+        x: [0, A/2], y: [A, 0], mode: 'lines', name: 'Marginal Revenue',
+        line: { color: '#9933ff', width: 3, dash: 'dash' }
+      };
+      const mcTrace = {
+        x: [0, A], y: [MC, MC], mode: 'lines', name: 'Marginal Cost',
+        line: { color: '#ff6600', width: 3 }
+      };
+      const priceTrace = {
+        x: [0, isCheating ? r.totalQCheat : r.totalCartelQ],
+        y: [price, price],
+        mode: 'lines', name: 'Market Price',
+        line: { color: '#333', width: 2, dash: 'dot' }
+      };
+
+      const layout = {
+        title: { text: isCheating ? 'Market with One Cheater' : 'Cartel: All Firms Cooperate', font: { size: 15 } },
+        xaxis: { title: 'Quantity', range: [0, A],   showgrid: true, gridcolor: '#e9ecef' },
+        yaxis: { title: 'Price ($)', range: [0, A*1.1], showgrid: true, gridcolor: '#e9ecef' },
+        shapes, annotations,
+        showlegend: true,
+        legend: { x: 0.65, y: 0.98, bgcolor: 'rgba(255,255,255,0.85)', bordercolor: '#dee2e6', borderwidth: 1 },
+        margin: { l: 60, r: 30, t: 55, b: 55 },
+        autosize: false,
+        width: GRAPH_W,
+        height: GRAPH_H
+      };
+
+      Plotly.newPlot('market-graph', [demandTrace, mrTrace, mcTrace, priceTrace], layout, {
+        responsive: false,
+        displayModeBar: false,
+        staticPlot: true
+      });
+
+      // Screen-reader description
+      const cooperation = isCheating ? 'one firm cheats' : 'all firms cooperate';
+      document.getElementById('market-graph-desc').textContent =
+        `Market graph showing ${cooperation}. Price = $${price.toFixed(2)}, total quantity = ${(isCheating ? r.totalQCheat : r.totalCartelQ).toFixed(1)} units. Colored rectangles show each firm's profit area.`;
+    }
+
+    // ── Residual Demand Graph ──
+    function drawResidualGraph(r, n) {
+      const residualIntercept = A - r.othersOutput;   // vertical intercept of residual demand
+      // Residual demand: P = residualIntercept − q  (q is cheater's output)
+      // MR of residual: P = residualIntercept − 2q
+      // Profit-max: MC = residualIntercept − 2q  →  q* = (residualIntercept − MC) / 2
+
+      const qMax  = residualIntercept;                     // x-axis max for residual demand
+      const qStar = r.qCheat;
+      const pStar = r.priceCheat;
+
+      const residualDemand = {
+        x: [0, qMax], y: [residualIntercept, 0],
+        mode: 'lines', name: 'Residual Demand',
+        line: { color: '#0066cc', width: 3 }
+      };
+      const residualMR = {
+        x: [0, qMax/2], y: [residualIntercept, 0],
+        mode: 'lines', name: 'Residual MR',
+        line: { color: '#9933ff', width: 3, dash: 'dash' }
+      };
+      const mcTrace = {
+        x: [0, qMax], y: [MC, MC],
+        mode: 'lines', name: 'Marginal Cost',
+        line: { color: '#ff6600', width: 3 }
+      };
+      const optPoint = {
+        x: [qStar], y: [pStar],
+        mode: 'markers', name: "Cheater's Optimal Output",
+        marker: { color: '#dc3545', size: 13, symbol: 'circle' }
+      };
+
+      // Profit rectangle for cheater
+      const shapes = [{
+        type: 'rect',
+        x0: 0, x1: qStar,
+        y0: MC, y1: pStar,
+        fillcolor: 'rgba(220,53,69,0.35)',
+        line: { color: '#dc3545', width: 2 }
+      }];
+
+      const layout = {
+        title: { text: "Cheater's Profit-Maximizing Decision", font: { size: 15 } },
+        xaxis: { title: "Cheater's Quantity", range: [0, qMax * 1.05], showgrid: true, gridcolor: '#e9ecef' },
+        yaxis: { title: 'Price ($)',          range: [0, residualIntercept * 1.1], showgrid: true, gridcolor: '#e9ecef' },
+        shapes,
+        annotations: [{
+          x: qStar / 2, y: (MC + pStar) / 2,
+          text: `Cheater's<br>Profit = $${r.cheatProfit.toFixed(0)}`,
+          showarrow: false,
+          font: { size: 11, color: '#800' }
+        }],
+        showlegend: true,
+        legend: { x: 0.55, y: 0.98, bgcolor: 'rgba(255,255,255,0.85)', bordercolor: '#dee2e6', borderwidth: 1 },
+        margin: { l: 60, r: 30, t: 55, b: 55 },
+        autosize: false,
+        width: GRAPH_W,
+        height: GRAPH_H
+      };
+
+      Plotly.newPlot('residual-graph', [residualDemand, residualMR, mcTrace, optPoint], layout, {
+        responsive: false,
+        displayModeBar: false,
+        staticPlot: true
+      });
+
+      document.getElementById('residual-graph-desc').textContent =
+        `Residual demand graph. After other firms produce ${r.othersOutput.toFixed(1)} units, the cheating firm faces residual demand with intercept at $${residualIntercept.toFixed(2)}. Profit-maximizing quantity = ${r.qCheat.toFixed(2)} units, generating profit = $${r.cheatProfit.toFixed(2)}.`;
+    }
+
+    // ── Keyboard support for slider ──
+    document.addEventListener('DOMContentLoaded', function() {
+      const slider = document.getElementById('num-firms-slider');
+      slider.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowLeft'  || e.key === 'ArrowDown')  { e.preventDefault(); slider.value = Math.max(3, +slider.value - 1); onSliderChange(slider); }
+        if (e.key === 'ArrowRight' || e.key === 'ArrowUp')    { e.preventDefault(); slider.value = Math.min(8, +slider.value + 1); onSliderChange(slider); }
+        if (e.key === 'Home') { e.preventDefault(); slider.value = 3; onSliderChange(slider); }
+        if (e.key === 'End')  { e.preventDefault(); slider.value = 8; onSliderChange(slider); }
+      });
+
+      // Initial render
+      update();
+    });
+  </script>
+</body>
+</html>

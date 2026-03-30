@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sequential Games &amp; Game Trees</title>
+  <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+  <style>
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Skip Link (WCAG 2.4.1) ── */
+    .skip-link {
+      position: absolute; top: -44px; left: 0;
+      background: #18453B; color: #fff;
+      padding: 10px 18px; font-weight: 700;
+      text-decoration: none; border-radius: 0 0 6px 0;
+      z-index: 9999; transition: top .2s;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ── Screen-reader only (WCAG 1.3.1) ── */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+
+    /* ── Live region ── */
+    .live-region {
+      position: absolute; left: -10000px;
+      width: 1px; height: 1px; overflow: hidden;
+    }
+
+    /* ── Focus ring (WCAG 2.4.11) ── */
+    :focus-visible {
+      outline: 3px solid #C89A2A;
+      outline-offset: 3px;
+    }
+
+    /* ── Root ── */
+    :root {
+      --msu-green:  #18453B;
+      --msu-green2: #2d5a4f;
+      --msu-gold:   #C89A2A;
+      --bg-page:    #f0f4f0;
+      --bg-white:   #ffffff;
+      --border:     #cdd9d6;
+      --text-dark:  #1a1a1a;
+      --eq-green:   #10b981;
+      --node-blue:  #1d4ed8;
+      --node-amber: #d97706;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg-page);
+      color: var(--text-dark);
+      min-height: 100vh;
+      padding: 16px;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    /* ── Wrapper ── */
+    .wrapper {
+      max-width: 1400px; margin: 0 auto;
+      background: var(--bg-white);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.12);
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, var(--msu-green), var(--msu-green2));
+      color: #fff; padding: 28px 32px; text-align: center;
+    }
+    .header h1 { font-size: clamp(1.4rem,3vw,2rem); margin-bottom: 6px; }
+    .header p  { font-size: 1rem; opacity: .9; }
+
+    /* ── Scenario bar ── */
+    .scenario-bar {
+      background: #f8f9fa;
+      padding: 18px 28px;
+      border-bottom: 3px solid var(--msu-green);
+    }
+    .scenario-bar h2 {
+      color: var(--msu-green); font-size: 1.1rem; margin-bottom: 12px;
+    }
+    .scenario-btns {
+      display: flex; gap: 12px; flex-wrap: wrap;
+    }
+    .scenario-btn {
+      flex: 1; min-width: 170px;
+      padding: 12px 16px;
+      font-size: .95rem; font-weight: 600;
+      border: 3px solid var(--msu-green);
+      background: #fff; color: var(--msu-green);
+      border-radius: 8px; cursor: pointer;
+      transition: background .2s, color .2s, transform .15s, box-shadow .15s;
+    }
+    .scenario-btn:hover,
+    .scenario-btn:focus-visible {
+      background: var(--msu-green); color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(24,69,59,.25);
+    }
+    .scenario-btn[aria-pressed="true"] {
+      background: var(--msu-green); color: #fff;
+    }
+
+    /* ── Main two-column layout ── */
+    .content-wrap {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 0;
+      min-height: 600px;
+    }
+
+    /* ── Left panel ── */
+    .left-panel {
+      background: #f8f9fa;
+      padding: 28px;
+      border-right: 3px solid #e9ecef;
+      overflow-y: auto;
+    }
+
+    .panel-section { margin-bottom: 24px; }
+    .panel-section h3 {
+      color: var(--msu-green);
+      font-size: 1.05rem;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    /* ── Info box ── */
+    .info-box {
+      background: #fff;
+      border-left: 4px solid var(--msu-green);
+      padding: 14px 16px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 16px;
+      font-size: .92rem;
+    }
+    .info-box h4 { color: var(--msu-green); margin-bottom: 8px; font-size: 1rem; }
+    .info-box ul { padding-left: 18px; }
+    .info-box li { margin-bottom: 4px; }
+
+    /* ── Concept box ── */
+    .concept-box {
+      background: #e7f3ff;
+      border: 2px solid #1565C0;
+      padding: 14px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: .92rem;
+    }
+    .concept-box h4 { color: #003c8f; margin-bottom: 8px; }
+
+    /* ── Steps ── */
+    .steps-section { margin-top: 8px; }
+    .step-card {
+      background: #fff;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 10px;
+      font-size: .9rem;
+      display: none;
+    }
+    .step-card.visible { display: block; }
+    .step-card h4 { color: var(--msu-green); margin-bottom: 6px; font-size: .95rem; }
+
+    .step-btn-row {
+      display: flex; gap: 10px; flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      padding: 10px 20px;
+      font-size: .95rem; font-weight: 600;
+      border: none; border-radius: 8px;
+      cursor: pointer;
+      transition: background .2s, transform .15s;
+    }
+    .btn-primary {
+      background: var(--msu-green); color: #fff;
+    }
+    .btn-primary:hover, .btn-primary:focus-visible {
+      background: var(--msu-green2); transform: translateY(-1px);
+    }
+    .btn-secondary {
+      background: #6c757d; color: #fff;
+    }
+    .btn-secondary:hover, .btn-secondary:focus-visible {
+      background: #5a6268;
+    }
+    .btn-gold {
+      background: var(--msu-gold); color: #1a1a1a;
+    }
+    .btn-gold:hover, .btn-gold:focus-visible {
+      background: #a87c20;
+    }
+    .btn[disabled] {
+      opacity: .5; cursor: not-allowed; transform: none !important;
+    }
+
+    /* ── Right panel ── */
+    .right-panel {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* ── Graph container ── */
+    .graph-wrap {
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .graph-wrap h3 {
+      color: var(--msu-green);
+      padding: 14px 18px 0;
+      font-size: 1.05rem;
+    }
+
+    /* ── Legend ── */
+    .legend {
+      display: flex; gap: 20px; flex-wrap: wrap;
+      padding: 10px 18px 14px;
+      font-size: .85rem;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── Payoff table ── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: .9rem;
+    }
+    .data-table caption {
+      font-weight: 700; color: var(--msu-green);
+      text-align: left; padding: 10px 12px;
+      background: #f8f9fa;
+      border-bottom: 2px solid #e9ecef;
+      caption-side: top;
+    }
+    .data-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: var(--msu-green);
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e9ecef;
+    }
+    .data-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #e9ecef;
+    }
+    .data-table tr.eq-row { background: #d1fae5; font-weight: 700; }
+    .data-table tr:last-child td { border-bottom: none; }
+
+    /* ── Quiz ── */
+    .quiz-section {
+      background: #fff;
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .quiz-section h3 { color: var(--msu-green); margin-bottom: 14px; }
+    .quiz-q { font-weight: 600; margin-bottom: 14px; font-size: .95rem; }
+    .quiz-opts { display: flex; flex-direction: column; gap: 8px; }
+    .quiz-opt {
+      display: flex; align-items: flex-start; gap: 10px;
+      background: #f8f9fa;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      padding: 12px 14px;
+      cursor: pointer;
+      font-size: .9rem;
+      transition: background .15s, border-color .15s;
+    }
+    .quiz-opt:hover, .quiz-opt:focus-within {
+      background: #eef2ff; border-color: var(--msu-green);
+    }
+    .quiz-opt input[type="radio"] {
+      margin-top: 2px; flex-shrink: 0;
+      width: 18px; height: 18px; cursor: pointer;
+      accent-color: var(--msu-green);
+    }
+    .quiz-opt.correct { background: #d1fae5; border-color: var(--eq-green); }
+    .quiz-opt.incorrect { background: #fee2e2; border-color: #dc2626; }
+    .quiz-feedback {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: 8px;
+      font-size: .9rem;
+      display: none;
+    }
+    .quiz-feedback.show { display: block; }
+    .quiz-feedback.correct-fb {
+      background: #d1fae5; border: 2px solid var(--eq-green);
+    }
+    .quiz-feedback.incorrect-fb {
+      background: #fee2e2; border: 2px solid #dc2626;
+    }
+    .quiz-nav { display: flex; gap: 10px; margin-top: 14px; align-items: center; }
+    .quiz-counter { font-size: .9rem; color: #6c757d; }
+
+    /* ── Insight box ── */
+    .insight-box {
+      background: #fff8e1;
+      border: 2px solid var(--msu-gold);
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-size: .9rem;
+    }
+    .insight-box strong { color: #7c4f00; }
+
+    /* ── Responsive ── */
+    @media (max-width: 960px) {
+      .content-wrap { grid-template-columns: 1fr; }
+      .left-panel { border-right: none; border-bottom: 3px solid #e9ecef; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Skip link (WCAG 2.4.1) -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Live region for announcements (WCAG 4.1.3) -->
+<div id="live-announce" class="live-region" role="status" aria-live="polite" aria-atomic="true"></div>
+<div id="live-alert"    class="live-region" role="alert"  aria-live="assertive" aria-atomic="true"></div>
+
+<div class="wrapper">
+
+  <!-- Header -->
+  <header class="header" role="banner">
+    <h1>Sequential Games &amp; Game Trees</h1>
+    <p>Strategic Decision-Making with Backward Induction</p>
+  </header>
+
+  <!-- Scenario selector -->
+  <nav class="scenario-bar" aria-label="Game scenario selection">
+    <h2 id="scenario-label">Choose a Game Scenario</h2>
+    <div class="scenario-btns" role="group" aria-labelledby="scenario-label">
+      <button class="scenario-btn" aria-pressed="true"  onclick="selectGame('stackelberg')" id="btn-stackelberg">
+        Stackelberg Duopoly
+      </button>
+      <button class="scenario-btn" aria-pressed="false" onclick="selectGame('entry')"       id="btn-entry">
+        Entry Deterrence
+      </button>
+      <button class="scenario-btn" aria-pressed="false" onclick="selectGame('pricing')"     id="btn-pricing">
+        Sequential Pricing
+      </button>
+      <button class="scenario-btn" aria-pressed="false" onclick="selectGame('investment')"  id="btn-investment">
+        R&amp;D Investment
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main id="main-content" class="content-wrap">
+
+    <!-- ── LEFT PANEL ── -->
+    <aside class="left-panel" aria-label="Game information and analysis">
+
+      <!-- Description -->
+      <div class="panel-section">
+        <h3 id="game-title-heading">Game Description</h3>
+        <div class="info-box" id="game-desc-box" aria-live="polite" aria-atomic="true">
+          <!-- filled by JS -->
+        </div>
+      </div>
+
+      <!-- Key concepts -->
+      <div class="panel-section">
+        <h3>Key Concepts</h3>
+        <div class="concept-box">
+          <h4>Vocabulary</h4>
+          <ul>
+            <li><strong>Sequential Game:</strong> Players move in order, observing prior moves</li>
+            <li><strong>Game Tree:</strong> Visual map of sequential decisions and payoffs</li>
+            <li><strong>Backward Induction:</strong> Solve by reasoning from end outcomes backward</li>
+            <li><strong>Subgame Perfect Equilibrium:</strong> Nash equilibrium in every subgame</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Step-by-step backward induction -->
+      <div class="panel-section">
+        <h3>Backward Induction Steps</h3>
+        <div class="step-btn-row">
+          <button class="btn btn-primary" id="next-step-btn" onclick="advanceStep()" aria-describedby="step-progress">
+            Begin Analysis
+          </button>
+          <button class="btn btn-secondary" onclick="resetSteps()">Reset</button>
+        </div>
+        <p id="step-progress" class="sr-only" aria-live="polite"></p>
+        <div id="steps-container" class="steps-section" aria-label="Analysis steps">
+          <!-- filled by JS -->
+        </div>
+      </div>
+
+      <!-- How to use -->
+      <div class="panel-section">
+        <div class="info-box">
+          <h4>How to Use</h4>
+          <ol style="padding-left:18px;">
+            <li>Select a game scenario above</li>
+            <li>Study the game tree diagram</li>
+            <li>Click <em>Begin Analysis</em> to step through backward induction</li>
+            <li>Read the payoff table for all outcomes</li>
+            <li>Test yourself with the quiz questions</li>
+          </ol>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ── RIGHT PANEL ── -->
+    <section class="right-panel" aria-label="Game tree visualization and quiz">
+
+      <!-- Graph -->
+      <div class="graph-wrap">
+        <h3 id="tree-heading">Game Tree</h3>
+        <div
+          id="game-tree"
+          role="img"
+          aria-labelledby="tree-heading"
+          aria-describedby="tree-desc"
+          style="width:700px; height:420px; margin: 0 auto;"
+        ></div>
+        <p id="tree-desc" class="sr-only" aria-live="polite"></p>
+        <div class="legend" aria-label="Graph legend">
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#1d4ed8;" aria-hidden="true"></div>
+            <span>First mover</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#d97706;" aria-hidden="true"></div>
+            <span>Second mover</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#10b981;" aria-hidden="true"></div>
+            <span>Equilibrium path</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#94a3b8;" aria-hidden="true"></div>
+            <span>Non-equilibrium path</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payoff table -->
+      <div>
+        <table class="data-table" id="payoff-table" aria-live="polite" aria-atomic="true">
+          <caption id="payoff-caption">Outcome Payoffs</caption>
+          <thead>
+            <tr>
+              <th scope="col">Path / Outcome</th>
+              <th scope="col" id="p1-col">Player 1 Payoff</th>
+              <th scope="col" id="p2-col">Player 2 Payoff</th>
+              <th scope="col">Notes</th>
+            </tr>
+          </thead>
+          <tbody id="payoff-tbody">
+            <!-- filled by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Insight -->
+      <div class="insight-box" id="game-insight" aria-live="polite" aria-atomic="true">
+        <!-- filled by JS -->
+      </div>
+
+      <!-- Quiz -->
+      <section class="quiz-section" aria-labelledby="quiz-heading">
+        <h3 id="quiz-heading">Check Your Understanding</h3>
+        <div id="quiz-area" aria-live="polite">
+          <!-- filled by JS -->
+        </div>
+      </section>
+
+    </section>
+  </main>
+</div><!-- .wrapper -->
+
+<script>
+// ─────────────────────────────────────────────
+//  GAME DATA
+// ─────────────────────────────────────────────
+const GAMES = {
+
+  stackelberg: {
+    name: 'Stackelberg Duopoly',
+    description: '<strong>Scenario:</strong> Two firms compete on quantity. Firm 1 (leader) chooses output first; Firm 2 (follower) observes and responds. Market inverse demand: P = 120 − Q. Both firms have constant marginal cost = $30.',
+    players: ['Firm 1 (Leader)', 'Firm 2 (Follower)'],
+    steps: [
+      { title: 'Step 1 – Follower\'s best response', content: 'Firm 2 chooses q₂ to maximise π₂ = (120 − q₁ − q₂ − 30)q₂. Taking the derivative and setting it to zero gives Firm 2\'s best-response function: <strong>q₂* = (90 − q₁)/2</strong>.' },
+      { title: 'Step 2 – Leader solves forward', content: 'Firm 1 substitutes Firm 2\'s best response into its own profit. π₁ = (120 − q₁ − q₂* − 30)q₁ = (45 − q₁/2)q₁. Maximising gives <strong>q₁* = 45</strong>.' },
+      { title: 'Step 3 – Follower responds', content: 'Plugging q₁* = 45 into the best-response function: q₂* = (90 − 45)/2 = <strong>22.5</strong>.' },
+      { title: 'Step 4 – Equilibrium', content: 'Total output Q = 67.5; price P = $52.50. Firm 1 earns $1,012 and Firm 2 earns $506. The leader enjoys a first-mover advantage—it produces more and earns more.' },
+    ],
+    insight: '<strong>First-Mover Advantage:</strong> In quantity competition, moving first lets the leader commit to a high output level, forcing the follower to produce less. The leader earns roughly twice the follower\'s profit.',
+    tree: {
+      nodes: [
+        { id:0, label:'Firm 1\n(Leader)', x:1,   y:5,   color:'#1d4ed8', size:22 },
+        { id:1, label:'q₁=30',           x:3,   y:7,   color:'#d97706', size:16 },
+        { id:2, label:'q₁=45',           x:3,   y:5,   color:'#d97706', size:16 },
+        { id:3, label:'q₁=60',           x:3,   y:3,   color:'#d97706', size:16 },
+        { id:4, label:'q₂=30\n(900,900)',  x:5.5, y:8,   color:'#94a3b8', size:13 },
+        { id:5, label:'q₂=30\n(1350,450)',x:5.5, y:6,   color:'#94a3b8', size:13 },
+        { id:6, label:'q₂=22.5\n(1013,506)',x:5.5,y:4,  color:'#10b981', size:15 },
+        { id:7, label:'q₂=15\n(1350,225)',x:5.5, y:2,   color:'#94a3b8', size:13 },
+      ],
+      edges: [
+        { from:0, to:1, eq:false },
+        { from:0, to:2, eq:false },
+        { from:0, to:3, eq:true  },
+        { from:1, to:4, eq:false },
+        { from:1, to:5, eq:false },
+        { from:2, to:6, eq:true  },
+        { from:3, to:7, eq:false },
+      ]
+    },
+    payoffs: [
+      { path:'q₁=30, q₂=30', p1:900,   p2:900, note:'Low leader output' },
+      { path:'q₁=45, q₂=22.5 ★', p1:1013, p2:506, note:'Subgame Perfect Equilibrium', eq:true },
+      { path:'q₁=60, q₂=15', p1:1350,  p2:225, note:'Aggressive leader' },
+    ],
+    quiz: [
+      {
+        q:'In the Stackelberg equilibrium, how does the leader\'s output compare to the Cournot outcome (where each firm would produce 30)?',
+        opts:[
+          { text:'The leader produces less than 30', correct:false },
+          { text:'The leader produces exactly 30', correct:false },
+          { text:'The leader produces more than 30 (q₁=45)', correct:true },
+          { text:'Both firms produce 45', correct:false },
+        ],
+        explanation:'Correct! The Stackelberg leader produces <strong>45 units</strong>—50% more than the Cournot outcome. By committing to high output first, the leader forces the follower to scale back, extracting higher profit through the first-mover advantage.'
+      },
+      {
+        q:'Why does the follower earn only about half what the leader earns?',
+        opts:[
+          { text:'The follower has higher costs', correct:false },
+          { text:'The leader acts as a monopolist', correct:false },
+          { text:'The follower is constrained by the leader\'s large output—residual demand is smaller', correct:true },
+          { text:'The follower chooses to produce less for strategic reasons', correct:false },
+        ],
+        explanation:'The follower faces smaller residual demand because the leader already claims half the market with q₁=45. The follower simply optimises given what is left.'
+      }
+    ]
+  },
+
+  entry: {
+    name: 'Entry Deterrence',
+    description: '<strong>Scenario:</strong> An incumbent monopolist can invest in capacity to deter entry. A potential rival then decides whether to enter. Payoffs show (Incumbent, Rival) profits in $000s.',
+    players: ['Incumbent', 'Rival'],
+    steps: [
+      { title: 'Step 1 – Rival\'s second-stage decision (Build path)', content: 'If the incumbent built capacity, the rival\'s options are: Enter (4, −1) or Stay Out (8, 0). Rival prefers Stay Out. <strong>Rival stays out when capacity is built.</strong>' },
+      { title: 'Step 2 – Rival\'s second-stage decision (No-Build path)', content: 'If the incumbent did NOT build capacity, the rival\'s options are: Enter (6, 4) or Stay Out (10, 0). Rival prefers Enter. <strong>Rival enters when no capacity is built.</strong>' },
+      { title: 'Step 3 – Incumbent\'s first-stage decision', content: 'Looking ahead: Build → rival stays out → Incumbent earns 8. Don\'t Build → rival enters → Incumbent earns 6. <strong>Incumbent builds capacity (earns 8 &gt; 6).</strong>' },
+      { title: 'Step 4 – Subgame Perfect Equilibrium', content: '<strong>Equilibrium:</strong> Incumbent builds capacity; Rival stays out. This is credible because investment is a sunk cost commitment—the incumbent would still prefer competition to no-entry deterrence after building.' },
+    ],
+    insight: '<strong>Strategic Commitment:</strong> Sunk investments can credibly deter entry. Patents, excess capacity, and long-term contracts work by changing the incumbent\'s post-entry payoffs so that aggressive response becomes rational.',
+    tree: {
+      nodes: [
+        { id:0, label:'Incumbent', x:1,   y:5,   color:'#1d4ed8', size:22 },
+        { id:1, label:'Build\nCapacity', x:3, y:7,  color:'#d97706', size:16 },
+        { id:2, label:'No Build',  x:3,   y:3,   color:'#d97706', size:16 },
+        { id:3, label:'Enter\n(4,−1)',   x:5.5, y:8, color:'#94a3b8', size:12 },
+        { id:4, label:'Stay Out\n(8,0)', x:5.5, y:6, color:'#10b981', size:14 },
+        { id:5, label:'Enter\n(6,4)',    x:5.5, y:4, color:'#94a3b8', size:12 },
+        { id:6, label:'Stay Out\n(10,0)',x:5.5, y:2, color:'#94a3b8', size:12 },
+      ],
+      edges: [
+        { from:0, to:1, eq:true  },
+        { from:0, to:2, eq:false },
+        { from:1, to:3, eq:false },
+        { from:1, to:4, eq:true  },
+        { from:2, to:5, eq:false },
+        { from:2, to:6, eq:false },
+      ]
+    },
+    payoffs: [
+      { path:'Build → Enter',           p1:4,  p2:-1, note:'Rival enters anyway' },
+      { path:'Build → Stay Out ★',      p1:8,  p2:0,  note:'Equilibrium — entry deterred', eq:true },
+      { path:'No Build → Enter',        p1:6,  p2:4,  note:'Rival enters' },
+      { path:'No Build → Stay Out',     p1:10, p2:0,  note:'Rival voluntarily stays (off-path)' },
+    ],
+    quiz: [
+      {
+        q:'Why is "Build Capacity → entry deterred" a subgame perfect equilibrium but "No Build → entry deterred" is NOT?',
+        opts:[
+          { text:'Because the rival prefers to stay out regardless', correct:false },
+          { text:'Because after No Build, the rival\'s best response is to Enter, so the threat "I\'ll retaliate" is not credible', correct:true },
+          { text:'Because the incumbent always prefers to build', correct:false },
+          { text:'Because No Build leads to higher total profits', correct:false },
+        ],
+        explanation:'"No Build → Stay Out" requires the rival to believe the incumbent will punish entry—but after No Build the incumbent has already conceded. The rival\'s rational move is to enter. That makes any "entry deterrence without investment" promise non-credible.'
+      }
+    ]
+  },
+
+  pricing: {
+    name: 'Sequential Pricing Game',
+    description: '<strong>Scenario:</strong> Two firms sell differentiated substitute products. Firm A sets price P_A first; Firm B observes and sets P_B. Products are strategic complements—when one firm raises price the other benefits from doing the same.',
+    players: ['Firm A (Leader)', 'Firm B (Follower)'],
+    steps: [
+      { title: 'Step 1 – Firm B\'s best-response function', content: 'Firm B maximises profit given P_A. Because products are substitutes (strategic complements in price), Firm B\'s optimal price rises with P_A: <strong>P_B* = 10 + 0.5·P_A</strong>.' },
+      { title: 'Step 2 – Firm A anticipates B\'s response', content: 'Firm A substitutes P_B*(P_A) into its own demand and maximises. The solution yields <strong>P_A* = $42</strong>.' },
+      { title: 'Step 3 – Firm B responds', content: 'P_B* = 10 + 0.5·42 = <strong>$31</strong>. Both prices are above the simultaneous Nash equilibrium.' },
+      { title: 'Step 4 – Equilibrium & first vs. second mover', content: 'In <em>price</em> leadership the follower benefits more because it can perfectly tailor its price to the leader\'s choice. The follower advantage in pricing is the mirror image of the leader advantage in quantity competition.' },
+    ],
+    insight: '<strong>Strategic Complements vs Substitutes:</strong> Quantities are strategic substitutes (Cournot—leader wins). Prices are strategic complements (Bertrand-differentiated—follower wins). Knowing which applies tells you whether moving first is an advantage.',
+    tree: {
+      nodes: [
+        { id:0, label:'Firm A',      x:1, y:5,   color:'#1d4ed8', size:22 },
+        { id:1, label:'P_A=38',      x:3, y:7,   color:'#d97706', size:16 },
+        { id:2, label:'P_A=42 ★',    x:3, y:5,   color:'#10b981', size:16 },
+        { id:3, label:'P_A=46',      x:3, y:3,   color:'#d97706', size:16 },
+        { id:4, label:'P_B=29\n(π_A=1480)', x:5.5, y:8,  color:'#94a3b8', size:12 },
+        { id:5, label:'P_B=31\n(π_A=1720)', x:5.5, y:5.5, color:'#10b981', size:14 },
+        { id:6, label:'P_B=33\n(π_A=1560)', x:5.5, y:2.5, color:'#94a3b8', size:12 },
+      ],
+      edges: [
+        { from:0, to:1, eq:false },
+        { from:0, to:2, eq:true  },
+        { from:0, to:3, eq:false },
+        { from:1, to:4, eq:false },
+        { from:2, to:5, eq:true  },
+        { from:3, to:6, eq:false },
+      ]
+    },
+    payoffs: [
+      { path:'P_A=38, P_B=29',    p1:1480, p2:1540, note:'Low price pair' },
+      { path:'P_A=42, P_B=31 ★', p1:1720, p2:1860, note:'Subgame Perfect Equilibrium', eq:true },
+      { path:'P_A=46, P_B=33',   p1:1560, p2:1980, note:'High price pair — follower gains more' },
+    ],
+    quiz: [
+      {
+        q:'In sequential pricing, who earns more in equilibrium—the leader or the follower?',
+        opts:[
+          { text:'The leader, because committing first is always advantageous', correct:false },
+          { text:'The follower, because it can tailor its price perfectly to the leader\'s choice', correct:true },
+          { text:'They earn identical profits', correct:false },
+          { text:'It depends on which firm has lower costs', correct:false },
+        ],
+        explanation:'With price competition and differentiated products (strategic complements), the follower has the advantage. It sets its price <em>after</em> observing the leader\'s choice, letting it exploit the leader\'s commitment. This is the opposite of quantity competition where the leader wins.'
+      }
+    ]
+  },
+
+  investment: {
+    name: 'R&D Investment Game',
+    description: '<strong>Scenario:</strong> Firm 1 can invest $3M in R&D, cutting its marginal cost and improving market position. Firm 2 observes this and decides whether to invest $3M. After investment decisions both firms compete for market share.',
+    players: ['Firm 1', 'Firm 2'],
+    steps: [
+      { title: 'Step 1 – Firm 2\'s decision if Firm 1 invests', content: 'If Firm 1 invested: Firm 2 invests → payoffs (5, 2). Firm 2 doesn\'t invest → payoffs (7, 1). Firm 2 prefers <strong>not to invest</strong> (earns 1 but investment would only give 2 − 3 = −1 net).' },
+      { title: 'Step 2 – Firm 2\'s decision if Firm 1 does NOT invest', content: 'If Firm 1 didn\'t invest: Firm 2 invests → payoffs (2, 5). Firm 2 doesn\'t invest → payoffs (4, 4). Firm 2 prefers to <strong>invest</strong> (net payoff 5 − 3 = 2 vs 4 − 0 = 4)… wait—reevaluate: net invest = 5−3=2, net stay=4. Firm 2 stays out.' },
+      { title: 'Step 3 – Firm 1\'s first-stage decision', content: 'Invest: Firm 2 won\'t invest → Firm 1 earns 7. Don\'t Invest: Firm 2 won\'t invest either → Firm 1 earns 4. <strong>Firm 1 invests</strong> (7 > 4).' },
+      { title: 'Step 4 – Equilibrium', content: '<strong>Equilibrium:</strong> Firm 1 invests; Firm 2 does not invest. R&D pays off for Firm 1 because its cost advantage discourages Firm 2 from matching it.' },
+    ],
+    insight: '<strong>First-Mover Advantage via Cost Leadership:</strong> Investing in R&D first can be self-reinforcing—the lead firm\'s lower costs make the follower\'s investment less attractive. This is a version of entry deterrence through technology.',
+    tree: {
+      nodes: [
+        { id:0, label:'Firm 1',         x:1,   y:5,   color:'#1d4ed8', size:22 },
+        { id:1, label:'Invest',          x:3,   y:7,   color:'#d97706', size:16 },
+        { id:2, label:'Don\'t Invest',   x:3,   y:3,   color:'#d97706', size:16 },
+        { id:3, label:'Invest\n(5,2)',   x:5.5, y:8,   color:'#94a3b8', size:13 },
+        { id:4, label:'No Invest\n(7,1)',x:5.5, y:6,   color:'#10b981', size:14 },
+        { id:5, label:'Invest\n(2,5)',   x:5.5, y:4,   color:'#94a3b8', size:13 },
+        { id:6, label:'No Invest\n(4,4)',x:5.5, y:2,   color:'#94a3b8', size:13 },
+      ],
+      edges: [
+        { from:0, to:1, eq:true  },
+        { from:0, to:2, eq:false },
+        { from:1, to:3, eq:false },
+        { from:1, to:4, eq:true  },
+        { from:2, to:5, eq:false },
+        { from:2, to:6, eq:false },
+      ]
+    },
+    payoffs: [
+      { path:'Both Invest',                  p1:5, p2:2, note:'Arms-race outcome' },
+      { path:'Firm 1 Invests, Firm 2 Doesn\'t ★', p1:7, p2:1, note:'Equilibrium', eq:true },
+      { path:'Firm 2 Invests, Firm 1 Doesn\'t', p1:2, p2:5, note:'Reversed advantage' },
+      { path:'Neither Invests',              p1:4, p2:4, note:'Symmetric outcome' },
+    ],
+    quiz: [
+      {
+        q:'What makes R&D investment a credible strategic commitment in this game?',
+        opts:[
+          { text:'The investment is reversible at no cost', correct:false },
+          { text:'The investment changes future payoffs so that Firm 1 genuinely prefers to compete aggressively regardless of Firm 2\'s choice', correct:true },
+          { text:'Firm 2 cannot observe whether Firm 1 invested', correct:false },
+          { text:'Government subsidies make investment costless', correct:false },
+        ],
+        explanation:'A commitment is credible when it is <em>irreversible</em> and changes the committing player\'s incentives. After Firm 1 sinks the R&D cost, its lower marginal cost means it will rationally produce more—and Firm 2 knows this. The investment is self-enforcing.'
+      }
+    ]
+  }
+};
+
+// ─────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────
+let currentGame = 'stackelberg';
+let currentStep  = 0;   // 0 = not started
+let quizIndex    = 0;
+let quizAnswered = false;
+
+// ─────────────────────────────────────────────
+//  ACCESSIBILITY HELPERS
+// ─────────────────────────────────────────────
+function announce(msg, urgent) {
+  const el = document.getElementById(urgent ? 'live-alert' : 'live-announce');
+  el.textContent = '';
+  setTimeout(() => { el.textContent = msg; }, 50);
+}
+
+// ─────────────────────────────────────────────
+//  GAME SELECTION
+// ─────────────────────────────────────────────
+function selectGame(key) {
+  currentGame  = key;
+  currentStep  = 0;
+  quizIndex    = 0;
+  quizAnswered = false;
+
+  // Update button states
+  ['stackelberg','entry','pricing','investment'].forEach(k => {
+    const b = document.getElementById('btn-' + k);
+    b.setAttribute('aria-pressed', k === key ? 'true' : 'false');
+  });
+
+  const game = GAMES[key];
+
+  // Description
+  document.getElementById('game-desc-box').innerHTML =
+    `<strong>${game.name}</strong><br>${game.description}`;
+
+  // Steps reset
+  renderStepCards(game);
+  updateStepBtn();
+
+  // Table
+  renderPayoffTable(game);
+
+  // Insight
+  document.getElementById('game-insight').innerHTML =
+    `<p>${game.insight}</p>`;
+
+  // Graph
+  renderGameTree(game);
+
+  // Quiz
+  renderQuiz(game, 0);
+
+  announce(`Loaded game: ${game.name}`);
+}
+
+// ─────────────────────────────────────────────
+//  STEP CARDS
+// ─────────────────────────────────────────────
+function renderStepCards(game) {
+  const container = document.getElementById('steps-container');
+  container.innerHTML = '';
+  game.steps.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'step-card';
+    div.id = 'step-' + i;
+    div.setAttribute('aria-label', s.title);
+    div.innerHTML = `<h4>${s.title}</h4><p>${s.content}</p>`;
+    container.appendChild(div);
+  });
+}
+
+function advanceStep() {
+  const game = GAMES[currentGame];
+  if (currentStep < game.steps.length) {
+    document.getElementById('step-' + currentStep).classList.add('visible');
+    currentStep++;
+    updateStepBtn();
+    const prog = `Step ${currentStep} of ${game.steps.length} revealed: ${game.steps[currentStep-1].title}`;
+    document.getElementById('step-progress').textContent = prog;
+    announce(prog);
+
+    // Highlight equilibrium path after final step
+    if (currentStep === game.steps.length) renderGameTree(game, true);
+  }
+}
+
+function resetSteps() {
+  currentStep = 0;
+  document.querySelectorAll('.step-card').forEach(c => c.classList.remove('visible'));
+  updateStepBtn();
+  announce('Analysis reset. Click Begin Analysis to start.');
+  renderGameTree(GAMES[currentGame], false);
+}
+
+function updateStepBtn() {
+  const game = GAMES[currentGame];
+  const btn = document.getElementById('next-step-btn');
+  if (currentStep === 0) {
+    btn.textContent = 'Begin Analysis';
+    btn.disabled = false;
+  } else if (currentStep < game.steps.length) {
+    btn.textContent = `Next Step (${currentStep + 1}/${game.steps.length})`;
+    btn.disabled = false;
+  } else {
+    btn.textContent = 'Analysis Complete ✓';
+    btn.disabled = true;
+  }
+}
+
+// ─────────────────────────────────────────────
+//  PAYOFF TABLE
+// ─────────────────────────────────────────────
+function renderPayoffTable(game) {
+  const cap = document.getElementById('payoff-caption');
+  cap.textContent = `Outcome Payoffs — ${game.name}`;
+
+  const p1Col = document.getElementById('p1-col');
+  const p2Col = document.getElementById('p2-col');
+  p1Col.textContent = game.players[0] + ' Payoff';
+  p2Col.textContent = game.players[1] + ' Payoff';
+
+  const tbody = document.getElementById('payoff-tbody');
+  tbody.innerHTML = '';
+  game.payoffs.forEach(row => {
+    const tr = document.createElement('tr');
+    if (row.eq) tr.classList.add('eq-row');
+    tr.innerHTML = `
+      <td>${row.path}</td>
+      <td>${row.p1}</td>
+      <td>${row.p2}</td>
+      <td>${row.note}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ─────────────────────────────────────────────
+//  GAME TREE (Plotly – fixed 700×420, Method 1)
+// ─────────────────────────────────────────────
+function renderGameTree(game, highlightEq) {
+  const tree = game.tree;
+  const traces = [];
+
+  // Edge traces
+  tree.edges.forEach(edge => {
+    const from = tree.nodes.find(n => n.id === edge.from);
+    const to   = tree.nodes.find(n => n.id === edge.to);
+    const isEq = edge.eq;
+    traces.push({
+      x: [from.x, to.x],
+      y: [from.y, to.y],
+      mode: 'lines',
+      line: {
+        color: isEq ? '#10b981' : '#94a3b8',
+        width: isEq ? 4 : 1.5,
+        dash:  isEq ? 'solid' : 'dot'
+      },
+      hoverinfo: 'skip',
+      showlegend: false
+    });
+  });
+
+  // Node trace
+  traces.push({
+    x: tree.nodes.map(n => n.x),
+    y: tree.nodes.map(n => n.y),
+    mode: 'markers+text',
+    marker: {
+      size:  tree.nodes.map(n => n.size),
+      color: tree.nodes.map(n => n.color),
+      line:  { color: '#fff', width: 2 }
+    },
+    text:      tree.nodes.map(n => n.label),
+    textposition: tree.nodes.map(n => n.x > 4 ? 'middle right' : 'top center'),
+    textfont:  { size: 11, color: '#1a1a1a' },
+    hoverinfo: 'text',
+    hovertext: tree.nodes.map(n => n.label.replace('\n', ' ')),
+    showlegend: false
+  });
+
+  const layout = {
+    autosize:  false,
+    width:     700,
+    height:    420,
+    margin:    { l: 30, r: 100, t: 20, b: 20 },
+    xaxis: { visible: false, range: [0, 7] },
+    yaxis: { visible: false, range: [0.5, 9.5] },
+    plot_bgcolor:  '#ffffff',
+    paper_bgcolor: '#ffffff',
+  };
+
+  const config = {
+    responsive:     false,
+    displayModeBar: false,
+    staticPlot:     false
+  };
+
+  Plotly.newPlot('game-tree', traces, layout, config);
+
+  // Accessible text description
+  const eqEdge = tree.edges.find(e => e.eq);
+  const eqFrom = eqEdge ? tree.nodes.find(n => n.id === eqEdge.from) : null;
+  const eqTo   = eqEdge ? tree.nodes.find(n => n.id === eqEdge.to)   : null;
+  const eqPayoff = game.payoffs.find(p => p.eq);
+  let desc = `Game tree for ${game.name}. ${game.players[0]} is the first mover. `;
+  if (eqPayoff) {
+    desc += `Equilibrium path: ${eqPayoff.path}. ${game.players[0]} earns ${eqPayoff.p1}, ${game.players[1]} earns ${eqPayoff.p2}. `;
+  }
+  desc += 'The payoff table below lists all outcomes.';
+  document.getElementById('tree-desc').textContent = desc;
+}
+
+// ─────────────────────────────────────────────
+//  QUIZ
+// ─────────────────────────────────────────────
+function renderQuiz(game, idx) {
+  quizIndex    = idx;
+  quizAnswered = false;
+  const qs = game.quiz;
+  if (!qs || qs.length === 0) {
+    document.getElementById('quiz-area').innerHTML = '<p>No quiz questions for this scenario.</p>';
+    return;
+  }
+  const q = qs[idx];
+  const total = qs.length;
+
+  const fieldsetId = 'quiz-fieldset-' + idx;
+  const legendId   = 'quiz-legend-' + idx;
+
+  let optsHTML = q.opts.map((o, i) => `
+    <label class="quiz-opt" id="opt-label-${i}">
+      <input type="radio" name="quiz-opt" value="${i}"
+        aria-describedby="${legendId}"
+        onchange="selectOpt(${i})"
+      >
+      <span>${o.text}</span>
+    </label>
+  `).join('');
+
+  const html = `
+    <fieldset id="${fieldsetId}" style="border:none;padding:0;">
+      <legend id="${legendId}" class="quiz-q">
+        Question ${idx + 1} of ${total}: ${q.q}
+      </legend>
+      <div class="quiz-opts" role="group" aria-labelledby="${legendId}">
+        ${optsHTML}
+      </div>
+    </fieldset>
+    <div id="quiz-feedback" class="quiz-feedback" role="alert" aria-live="assertive"></div>
+    <div class="quiz-nav">
+      <button class="btn btn-primary" onclick="submitQuiz()" id="submit-quiz-btn" disabled>Submit Answer</button>
+      ${idx + 1 < total ? `<button class="btn btn-secondary" onclick="nextQuizQ()" id="next-quiz-btn" style="display:none;">Next Question</button>` : ''}
+      <span class="quiz-counter" aria-live="polite" id="quiz-counter">${idx+1} / ${total}</span>
+    </div>
+  `;
+  document.getElementById('quiz-area').innerHTML = html;
+}
+
+function selectOpt(i) {
+  if (!quizAnswered) {
+    document.getElementById('submit-quiz-btn').disabled = false;
+  }
+}
+
+function submitQuiz() {
+  if (quizAnswered) return;
+  quizAnswered = true;
+  const game = GAMES[currentGame];
+  const q    = game.quiz[quizIndex];
+  const selected = document.querySelector('input[name="quiz-opt"]:checked');
+  if (!selected) return;
+
+  const chosenIdx = parseInt(selected.value);
+  const correct   = q.opts[chosenIdx].correct;
+
+  // Style options
+  q.opts.forEach((o, i) => {
+    const label = document.getElementById('opt-label-' + i);
+    if (o.correct) label.classList.add('correct');
+    else if (i === chosenIdx && !o.correct) label.classList.add('incorrect');
+  });
+
+  // Feedback
+  const fb = document.getElementById('quiz-feedback');
+  fb.className = 'quiz-feedback show ' + (correct ? 'correct-fb' : 'incorrect-fb');
+  fb.innerHTML = (correct ? '<strong>✓ Correct!</strong> ' : '<strong>✗ Not quite.</strong> ') + q.explanation;
+
+  document.getElementById('submit-quiz-btn').disabled = true;
+
+  const nxtBtn = document.getElementById('next-quiz-btn');
+  if (nxtBtn) nxtBtn.style.display = 'inline-block';
+
+  announce(correct ? 'Correct answer!' : 'Incorrect. See explanation below.', true);
+}
+
+function nextQuizQ() {
+  const game = GAMES[currentGame];
+  if (quizIndex + 1 < game.quiz.length) {
+    renderQuiz(game, quizIndex + 1);
+  }
+}
+
+// ─────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  selectGame('stackelberg');
+});
+</script>
+</body>
+</html>
