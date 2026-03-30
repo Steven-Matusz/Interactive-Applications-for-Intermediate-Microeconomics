@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Two-Part Pricing Interactive</title>
+  <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      line-height: 1.6;
+    }
+
+    /* ── Skip Link ── */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: #18453B;
+      color: white;
+      padding: 8px 16px;
+      text-decoration: none;
+      border-radius: 0 0 4px 0;
+      z-index: 100;
+      font-weight: 700;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ── Screen-reader only ── */
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border-width: 0;
+    }
+
+    /* ── Live region ── */
+    .live-region {
+      position: absolute;
+      left: -10000px;
+      width: 1px; height: 1px;
+      overflow: hidden;
+    }
+
+    /* ── Focus ── */
+    *:focus-visible {
+      outline: 3px solid #C89A2A;
+      outline-offset: 2px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #18453B 0%, #2d5a4f 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 { font-size: 2em; margin-bottom: 8px; }
+    .header p  { font-size: 1.05em; opacity: 0.9; }
+
+    /* ── Scenario selector ── */
+    .scenario-selector {
+      background: #f8f9fa;
+      padding: 20px 30px;
+      border-bottom: 3px solid #18453B;
+    }
+    .scenario-selector h2 {
+      color: #18453B;
+      margin-bottom: 12px;
+      font-size: 1.2em;
+    }
+    .scenario-buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .scenario-btn {
+      flex: 1;
+      min-width: 160px;
+      padding: 12px 16px;
+      font-size: 1em;
+      border: 3px solid #18453B;
+      background: white;
+      color: #18453B;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      font-weight: 600;
+    }
+    .scenario-btn:hover { background: #e8f4f0; }
+    .scenario-btn.active,
+    .scenario-btn[aria-pressed="true"] {
+      background: #18453B;
+      color: white;
+    }
+    .scenario-btn:focus-visible {
+      outline: 3px solid #C89A2A;
+      outline-offset: 2px;
+    }
+
+    /* ── Main two-column layout ── */
+    .content-wrapper {
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      gap: 0;
+      min-height: 600px;
+    }
+
+    /* ── Control panel ── */
+    .control-panel {
+      background: #f8f9fa;
+      padding: 28px;
+      border-right: 3px solid #e9ecef;
+      overflow-y: auto;
+    }
+
+    .control-section {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      border: 2px solid #e9ecef;
+      margin-bottom: 20px;
+    }
+    .control-section h3 {
+      color: #18453B;
+      margin-bottom: 14px;
+      font-size: 1.15em;
+      border-bottom: 2px solid #18453B;
+      padding-bottom: 6px;
+    }
+
+    /* ── Slider ── */
+    .form-label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 600;
+      font-size: 0.97em;
+    }
+    .price-slider {
+      width: 100%;
+      height: 8px;
+      border-radius: 5px;
+      background: #d3d3d3;
+      outline: none;
+      margin: 10px 0 6px;
+      cursor: pointer;
+      accent-color: #18453B;
+    }
+    .price-slider:focus-visible {
+      outline: 3px solid #C89A2A;
+      outline-offset: 4px;
+    }
+    .slider-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.82em;
+      color: #666;
+      margin-bottom: 4px;
+    }
+    .current-val {
+      display: block;
+      text-align: center;
+      font-size: 1.3em;
+      font-weight: 700;
+      color: #18453B;
+      margin: 4px 0 8px;
+    }
+
+    .reset-btn {
+      width: 100%;
+      padding: 10px;
+      background: white;
+      border: 2px solid #18453B;
+      color: #18453B;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95em;
+      transition: all 0.25s;
+      margin-top: 6px;
+    }
+    .reset-btn:hover { background: #18453B; color: white; }
+    .reset-btn:focus-visible { outline: 3px solid #C89A2A; outline-offset: 2px; }
+
+    .randomize-btn {
+      width: 100%;
+      padding: 10px;
+      background: #18453B;
+      border: none;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95em;
+      transition: background 0.25s;
+      margin-top: 4px;
+    }
+    .randomize-btn:hover { background: #2d5a4f; }
+    .randomize-btn:focus-visible { outline: 3px solid #C89A2A; outline-offset: 2px; }
+
+    /* ── Metric cards ── */
+    .metrics-container { margin-top: 6px; }
+    .metrics-container h4 {
+      color: #18453B;
+      margin-bottom: 10px;
+      font-size: 1.05em;
+    }
+    .metrics-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .metrics-row.single { display: block; }
+    .metric-card {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      border: 2px solid;
+    }
+    .metric-card.cs     { background: rgba(255,215,0,0.12); border-color: #DAA520; }
+    .metric-card.profit-sales { background: rgba(0,0,200,0.08); border-color: #0000cc; }
+    .metric-card.cover  { background: rgba(160,160,0,0.12); border-color: #808000; }
+    .metric-card.total  { background: rgba(40,167,69,0.1);  border-color: #28a745; }
+    .metric-card.dwl    { background: rgba(220,53,69,0.1);  border-color: #dc3545; }
+    .metric-label { font-size: 0.82em; color: #495057; margin-bottom: 4px; font-weight: 600; }
+    .metric-value { font-size: 1.3em; font-weight: bold; color: #18453B; }
+
+    /* ── Alert box ── */
+    .optimal-alert {
+      background: #d4edda;
+      border: 2px solid #28a745;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.9em;
+      color: #155724;
+      margin-bottom: 12px;
+      display: none;
+    }
+    .optimal-alert.visible { display: block; }
+
+    /* ── Insight / concept boxes ── */
+    .market-insight {
+      background: #fff3cd;
+      border: 2px solid #ffc107;
+      padding: 12px 14px;
+      border-radius: 8px;
+      margin-top: 12px;
+      font-size: 0.9em;
+      color: #856404;
+    }
+    .concept-box {
+      background: #e7f3ff;
+      border: 2px solid #007bff;
+      padding: 12px 14px;
+      border-radius: 8px;
+      margin-top: 12px;
+      font-size: 0.88em;
+    }
+    .concept-box h5 { color: #004085; margin-bottom: 6px; }
+
+    /* ── Data table ── */
+    .data-table {
+      width: 100%;
+      margin-top: 14px;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid #e9ecef;
+      font-size: 0.9em;
+    }
+    .data-table caption {
+      padding: 8px 10px;
+      font-weight: bold;
+      color: #18453B;
+      text-align: left;
+      background: #f8f9fa;
+      border-bottom: 2px solid #e9ecef;
+    }
+    .data-table th, .data-table td {
+      padding: 9px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e9ecef;
+    }
+    .data-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: #18453B;
+    }
+    .data-table tr:last-child td,
+    .data-table tr:last-child th { border-bottom: none; }
+
+    /* ── Legend ── */
+    .legend-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 12px 16px;
+      background: #f8f9fa;
+      border-bottom: 2px solid #e9ecef;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.88em;
+    }
+    .legend-swatch {
+      width: 18px; height: 18px;
+      border-radius: 3px;
+      border: 1px solid rgba(0,0,0,0.25);
+      flex-shrink: 0;
+    }
+
+    /* ── Graph panel ── */
+    .graph-panel {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .graph-wrapper {
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      overflow: hidden;
+      background: white;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 1024px) {
+      .content-wrapper { grid-template-columns: 1fr; }
+      .control-panel { border-right: none; border-bottom: 3px solid #e9ecef; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<div id="live-updates" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+<div class="container">
+
+  <!-- Header -->
+  <header class="header">
+    <h1>🍺 Two-Part Pricing</h1>
+    <p>Explore how a firm uses a fixed fee plus a per-unit price to capture consumer surplus</p>
+  </header>
+
+  <!-- Scenario selector -->
+  <section class="scenario-selector" aria-label="Pricing scenario selection">
+    <h2 id="scenario-heading">Choose a Scenario:</h2>
+    <div class="scenario-buttons" role="group" aria-labelledby="scenario-heading">
+      <button class="scenario-btn active" aria-pressed="true"
+              aria-describedby="desc-bar"
+              onclick="selectScenario('bar', this)">🍺 Campus Bar</button>
+      <button class="scenario-btn" aria-pressed="false"
+              aria-describedby="desc-golf"
+              onclick="selectScenario('golf', this)">⛳ Golf Club</button>
+      <button class="scenario-btn" aria-pressed="false"
+              aria-describedby="desc-costco"
+              onclick="selectScenario('costco', this)">🛒 Warehouse Store</button>
+    </div>
+    <span id="desc-bar" class="sr-only">Campus bar that charges a cover charge plus per-drink price</span>
+    <span id="desc-golf" class="sr-only">Golf club with annual membership fee and green fee per round</span>
+    <span id="desc-costco" class="sr-only">Warehouse retailer with annual membership and low per-unit prices</span>
+    <div id="scenario-info" class="control-section" style="margin-top:14px; margin-bottom:0;"
+         aria-live="polite" role="status"></div>
+  </section>
+
+  <main id="main-content">
+    <div class="content-wrapper">
+
+      <!-- ── Control panel ── -->
+      <aside class="control-panel" aria-label="Pricing controls and outcomes">
+
+        <!-- Sliders -->
+        <div class="control-section">
+          <h3 id="controls-heading">🎯 Set Your Pricing Strategy</h3>
+
+          <!-- MC badge — visible immediately so users know their target -->
+          <div id="mc-badge" style="
+            background: #e8f4f0; border: 2px solid #18453B; border-radius: 8px;
+            padding: 8px 14px; margin-bottom: 14px; display: flex;
+            align-items: center; justify-content: space-between;">
+            <span style="color:#18453B; font-weight:600; font-size:0.95em;">Marginal Cost (MC):</span>
+            <span id="mc-display" style="color:#18453B; font-size:1.3em; font-weight:700;">$3.00</span>
+          </div>
+
+          <label for="price-slider" class="form-label" id="price-label">
+            Per-Unit Price: <strong><span id="price-display">$5.00</span></strong>
+          </label>
+          <input type="range" class="price-slider" id="price-slider"
+                 min="0.5" max="13" step="0.5" value="5"
+                 aria-label="Per-unit price"
+                 aria-describedby="price-help"
+                 aria-valuemin="0.5" aria-valuemax="13" aria-valuenow="5"
+                 aria-valuetext="Per-unit price: $5.00">
+          <div class="slider-labels">
+            <span id="price-min-label">$0.50</span><span id="price-max-label">$13.00</span>
+          </div>
+          <div id="price-help" class="sr-only">
+            Adjust the per-unit price charged for each unit sold. Setting this equal to marginal cost (shown above) eliminates deadweight loss. Use arrow keys for fine adjustment.
+          </div>
+
+          <label for="cover-slider" class="form-label" id="cover-label" style="margin-top:14px;">
+            Cover Charge (Fixed Fee): <strong><span id="cover-display">$0.00</span></strong>
+          </label>
+          <input type="range" class="price-slider" id="cover-slider"
+                 min="0" max="50" step="0.5" value="0"
+                 aria-label="Cover charge fixed fee"
+                 aria-describedby="cover-help"
+                 aria-valuemin="0" aria-valuemax="50" aria-valuenow="0"
+                 aria-valuetext="Cover charge: $0.00">
+          <div class="slider-labels">
+            <span>$0</span><span id="cover-max-label">$50</span>
+          </div>
+          <div id="cover-help" class="sr-only">
+            Adjust the fixed cover charge or membership fee. The maximum effective cover charge equals consumer surplus at the current per-unit price. Any amount above that drives customers away. Use arrow keys for fine adjustment.
+          </div>
+
+          <button class="reset-btn" aria-label="Reset to monopoly pricing (MR = MC)"
+                  onclick="resetToMonopoly()">Reset to Monopoly Pricing</button>
+          <button class="randomize-btn" aria-label="Generate a new random scenario"
+                  onclick="randomizeParameters()">🎲 New Random Scenario</button>
+        </div>
+
+        <!-- Optimal alert -->
+        <div id="optimal-alert" class="optimal-alert" role="status" aria-live="polite">
+          ✅ <strong>Perfect Two-Part Pricing:</strong> P = MC eliminates deadweight loss!
+        </div>
+
+        <!-- Outcome metrics -->
+        <div class="control-section">
+          <h3>📊 Pricing Outcomes</h3>
+          <div class="metrics-container" aria-label="Pricing outcome metrics">
+            <div class="metrics-row">
+              <div class="metric-card cs" role="region" aria-label="Consumer surplus">
+                <div class="metric-label">Consumer Surplus</div>
+                <div class="metric-value" id="m-cs" aria-live="polite">$0</div>
+              </div>
+              <div class="metric-card dwl" role="region" aria-label="Deadweight loss">
+                <div class="metric-label">Deadweight Loss</div>
+                <div class="metric-value" id="m-dwl" aria-live="polite">$0</div>
+              </div>
+            </div>
+            <div class="metrics-row">
+              <div class="metric-card profit-sales" role="region" aria-label="Profit from sales">
+                <div class="metric-label">Profit from Sales</div>
+                <div class="metric-value" id="m-profit-sales" aria-live="polite">$0</div>
+              </div>
+              <div class="metric-card cover" role="region" aria-label="Revenue from cover charge">
+                <div class="metric-label">Cover Charge Revenue</div>
+                <div class="metric-value" id="m-cover-rev" aria-live="polite">$0</div>
+              </div>
+            </div>
+            <div class="metrics-row single">
+              <div class="metric-card total" role="region" aria-label="Total firm profit">
+                <div class="metric-label">Total Firm Profit</div>
+                <div class="metric-value" id="m-total-profit" aria-live="polite">$0</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Data table (accessible alternative) -->
+        <table class="data-table" aria-label="Detailed pricing data">
+          <caption>Detailed Market Conditions</caption>
+          <thead>
+            <tr>
+              <th scope="col">Measure</th>
+              <th scope="col">Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">Per-Unit Price</th><td id="t-price">—</td></tr>
+            <tr><th scope="row">Cover Charge</th><td id="t-cover">—</td></tr>
+            <tr><th scope="row">Quantity Sold</th><td id="t-qty">—</td></tr>
+            <tr><th scope="row">Competitive Quantity</th><td id="t-qcomp">—</td></tr>
+            <tr><th scope="row">Marginal Cost</th><td id="t-mc">—</td></tr>
+            <tr><th scope="row">Max Cover Charge</th><td id="t-max-cover">—</td></tr>
+          </tbody>
+        </table>
+
+        <!-- Insight box -->
+        <div class="market-insight" role="status" aria-live="polite" id="insight-box"></div>
+
+        <!-- Concept box -->
+        <div class="concept-box">
+          <h5>💡 Key Concept</h5>
+          <p>A <strong>two-part tariff</strong> has two pieces: (1) a fixed fee (cover charge / membership) and (2) a per-unit price. Setting the per-unit price equal to MC maximizes total output and eliminates deadweight loss. The fixed fee then captures some or all consumer surplus as profit.</p>
+        </div>
+
+      </aside>
+
+      <!-- ── Graph panel ── -->
+      <section class="graph-panel" aria-label="Two-part pricing visualization">
+        <div class="graph-wrapper">
+          <!-- Color legend -->
+          <div class="legend-container" aria-label="Graph color legend" role="img">
+            <div class="legend-item">
+              <div class="legend-swatch" style="background:rgba(255,215,0,0.55);"></div>
+              <span>Consumer Surplus (retained)</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-swatch" style="background:rgba(160,160,0,0.55);"></div>
+              <span>Cover Charge Revenue</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-swatch" style="background:rgba(0,0,200,0.45);"></div>
+              <span>Profit from Sales</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-swatch" style="background:rgba(220,53,69,0.5);"></div>
+              <span>Deadweight Loss</span>
+            </div>
+          </div>
+          <!-- Plotly graph -->
+          <div id="two-part-graph"
+               role="img"
+               aria-label="Supply and demand graph showing two-part pricing welfare areas"></div>
+          <!-- Screen-reader text description -->
+          <div id="graph-description" class="sr-only" aria-live="polite"></div>
+        </div>
+      </section>
+
+    </div><!-- .content-wrapper -->
+  </main>
+</div><!-- .container -->
+
+<script>
+// ─────────────────────────────────────────────────────────────
+//  Scenarios
+// ─────────────────────────────────────────────────────────────
+const scenarios = {
+  bar: {
+    name: 'Campus Bar',
+    icon: '🍺',
+    description: 'A campus bar has a linear demand for drinks: each customer\'s willingness to pay decreases with each drink. The bar can charge a cover fee at the door and a price per drink.',
+    a: 11, mc: 3, b: 2,
+    unit: 'drinks', unitPrice: 'per drink', feeLabel: 'Cover Charge'
+  },
+  golf: {
+    name: 'Golf Club',
+    icon: '⛳',
+    description: 'A private golf club sells rounds of golf. Members pay an annual membership fee plus a green fee per round. Demand is linear in rounds played.',
+    a: 90, mc: 10, b: 8,
+    unit: 'rounds', unitPrice: 'per round', feeLabel: 'Annual Membership Fee'
+  },
+  costco: {
+    name: 'Warehouse Store',
+    icon: '🛒',
+    description: 'A warehouse retailer (like Costco) charges an annual membership fee and sells goods at low markups, often near cost. Shoppers vary in how much they buy per year.',
+    a: 200, mc: 20, b: 18,
+    unit: 'units', unitPrice: 'per unit', feeLabel: 'Annual Membership Fee'
+  }
+};
+
+let currentKey = 'bar';
+let scenario   = scenarios[currentKey];
+
+// ─────────────────────────────────────────────────────────────
+//  Helpers
+// ─────────────────────────────────────────────────────────────
+function fmt(v) { return '$' + v.toFixed(2); }
+
+function computeAll(price, cover) {
+  const { a, mc, b } = scenario;
+  const qSold   = Math.max(0, (a - price) / b);
+  const qComp   = (a - mc)    / b;
+  const csTotal = 0.5 * qSold * (a - price);          // CS at chosen price (before fee)
+  const effCover= Math.min(cover, csTotal);            // can't extract more than CS
+  const csNet   = Math.max(0, csTotal - effCover);
+  const profitS = (price - mc) * qSold;
+  const totalP  = profitS + effCover;
+  const dwl     = Math.max(0, 0.5 * (qComp - qSold) * (price - mc));
+  const maxCover= csTotal;
+  return { qSold, qComp, csTotal, effCover, csNet, profitS, totalP, dwl, maxCover };
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Update everything
+// ─────────────────────────────────────────────────────────────
+function update() {
+  const price = parseFloat(document.getElementById('price-slider').value);
+  const cover = parseFloat(document.getElementById('cover-slider').value);
+  const { a, mc, b } = scenario;
+
+  const r = computeAll(price, cover);
+
+  // Update metrics
+  document.getElementById('m-cs').textContent           = fmt(r.csNet);
+  document.getElementById('m-dwl').textContent          = fmt(r.dwl);
+  document.getElementById('m-profit-sales').textContent = fmt(r.profitS);
+  document.getElementById('m-cover-rev').textContent    = fmt(r.effCover);
+  document.getElementById('m-total-profit').textContent = fmt(r.totalP);
+
+  // ARIA value texts
+  document.getElementById('price-slider').setAttribute('aria-valuenow',  price);
+  document.getElementById('price-slider').setAttribute('aria-valuetext', 'Per-unit price: ' + fmt(price));
+  document.getElementById('cover-slider').setAttribute('aria-valuenow',  cover);
+  document.getElementById('cover-slider').setAttribute('aria-valuetext', 'Cover charge: ' + fmt(cover));
+
+  // Table
+  document.getElementById('t-price').textContent    = fmt(price);
+  document.getElementById('t-cover').textContent    = fmt(r.effCover);
+  document.getElementById('t-qty').textContent      = r.qSold.toFixed(2) + ' ' + scenario.unit;
+  document.getElementById('t-qcomp').textContent    = r.qComp.toFixed(2) + ' ' + scenario.unit;
+  document.getElementById('t-mc').textContent       = fmt(mc);
+  document.getElementById('t-max-cover').textContent= fmt(r.maxCover);
+
+  // Cover slider max
+  document.getElementById('cover-slider').max = r.maxCover.toFixed(2);
+  document.getElementById('cover-max-label').textContent = fmt(r.maxCover);
+
+  // Insight box
+  let insight;
+  const atMC   = Math.abs(price - mc) < 0.26;
+  const allOut  = r.effCover >= r.maxCover - 0.1 && r.maxCover > 0.5;
+  if (atMC && allOut) {
+    insight = `<strong>Perfect Two-Part Pricing!</strong> P = MC → no deadweight loss. The full cover charge (${fmt(r.effCover)}) captures all consumer surplus. Total profit = ${fmt(r.totalP)}.`;
+  } else if (atMC) {
+    insight = `P = MC eliminates deadweight loss. But the cover charge (${fmt(r.effCover)}) captures only part of consumer surplus (${fmt(r.csTotal)}). Raise the cover charge to increase profit.`;
+  } else if (price > mc) {
+    insight = `P > MC creates deadweight loss of ${fmt(r.dwl)}. Consider lowering the per-unit price toward MC (${fmt(mc)}) and raising the cover charge to maintain profitability.`;
+  } else {
+    insight = `P < MC means profit from sales is negative. Raise the per-unit price.`;
+  }
+  document.getElementById('insight-box').innerHTML = insight;
+
+  // Optimal alert
+  const alertEl = document.getElementById('optimal-alert');
+  if (atMC) {
+    alertEl.classList.add('visible');
+  } else {
+    alertEl.classList.remove('visible');
+  }
+
+  // Graph description for screen readers
+  const descText = `Graph shows demand curve and marginal cost line for ${scenario.name}. ` +
+    `Per-unit price is ${fmt(price)}, cover charge is ${fmt(r.effCover)}. ` +
+    `Quantity sold: ${r.qSold.toFixed(2)} ${scenario.unit}, competitive quantity: ${r.qComp.toFixed(2)}. ` +
+    `Consumer surplus retained: ${fmt(r.csNet)}, cover charge revenue: ${fmt(r.effCover)}, ` +
+    `profit from sales: ${fmt(r.profitS)}, deadweight loss: ${fmt(r.dwl)}.`;
+  document.getElementById('graph-description').textContent = descText;
+
+  // Announce to screen readers on meaningful change
+  announceChange(`Price ${fmt(price)}, cover ${fmt(r.effCover)}. Total profit ${fmt(r.totalP)}, deadweight loss ${fmt(r.dwl)}.`);
+
+  // Plot
+  plotGraph(price, r);
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Plotly graph
+// ─────────────────────────────────────────────────────────────
+function plotGraph(price, r) {
+  const { a, mc, b } = scenario;
+  const qMax   = (a - 0) / b * 1.05;  // x-axis extent
+  const pMax   = a * 1.05;
+
+  // Demand curve
+  const qDem = [0, a / b];
+  const pDem = [a, 0];
+
+  // MC line
+  const qMC  = [0, qMax];
+  const pMC  = [mc, mc];
+
+  // MR line
+  const qMR  = [0, a / (2*b)];
+  const pMR  = [a, mc - (a - mc)];   // MR = a - 2bq → at q=a/2b, MR = mc (and 0 when a-2bq=0)
+
+  const qSold = r.qSold;
+  const qComp = r.qComp;
+
+  // ── Filled areas ──
+  const areas = [];
+
+  // The CS triangle has vertices: (0, a), (0, price), (qSold, price)
+  // Its area = 0.5 * (a - price) * qSold  [= csTotal]
+  //
+  // We divide it with a HORIZONTAL cut at height `dividingH`.
+  // The triangle ABOVE the cut (retained CS) has:
+  //   base along demand curve from (0,a) to ((a-dividingH)/b, dividingH)
+  //   area = 0.5 * (a - dividingH) * qAtDiv  where qAtDiv = (a - dividingH)/b
+  //        = (a - dividingH)^2 / (2b)
+  // Setting this = csNet:  (a - dividingH)^2 = 2*b*csNet
+  //   → dividingH = a - sqrt(2 * b * csNet)
+  //
+  // The region BELOW the cut (cover charge band) is the trapezoid between
+  // dividingH and the price line, bounded on the right by the demand curve.
+
+  if (r.effCover > 0.01 && r.csTotal > 0.01) {
+    if (r.csNet < 0.01) {
+      // All CS extracted: shade entire CS triangle as cover charge (olive)
+      areas.push({
+        x: [0, qSold, 0, 0],
+        y: [price, price, a, price],
+        fill: 'toself', fillcolor: 'rgba(160,160,0,0.50)',
+        line: { color: 'transparent' }, showlegend: false, hoverinfo: 'skip', type: 'scatter'
+      });
+    } else {
+      // Partial extraction: split triangle with horizontal cut
+      const dividingH = a - Math.sqrt(2 * b * r.csNet);
+      const qAtDiv    = (a - dividingH) / b;  // where demand curve hits dividingH
+
+      // Top sub-triangle = retained CS (yellow)
+      areas.push({
+        x: [0, qAtDiv, 0, 0],
+        y: [dividingH, dividingH, a, dividingH],
+        fill: 'toself', fillcolor: 'rgba(255,215,0,0.50)',
+        line: { color: 'transparent' }, showlegend: false, hoverinfo: 'skip', type: 'scatter'
+      });
+      // Lower trapezoid = cover charge revenue (olive)
+      // Vertices: (0, dividingH), (qAtDiv, dividingH), (qSold, price), (0, price)
+      areas.push({
+        x: [0, qAtDiv, qSold, 0, 0],
+        y: [dividingH, dividingH, price, price, dividingH],
+        fill: 'toself', fillcolor: 'rgba(160,160,0,0.50)',
+        line: { color: 'transparent' }, showlegend: false, hoverinfo: 'skip', type: 'scatter'
+      });
+    }
+  } else if (r.csTotal > 0.01) {
+    // No cover charge: shade entire CS triangle as yellow
+    areas.push({
+      x: [0, qSold, 0, 0],
+      y: [price, price, a, price],
+      fill: 'toself', fillcolor: 'rgba(255,215,0,0.50)',
+      line: { color: 'transparent' }, showlegend: false, hoverinfo: 'skip', type: 'scatter'
+    });
+  }
+
+  // 2. Profit from sales: rectangle between price and MC
+  if (price > mc && qSold > 0) {
+    areas.push({
+      x: [0, qSold, qSold, 0, 0],
+      y: [mc, mc, price, price, mc],
+      fill: 'toself', fillcolor: 'rgba(0,0,200,0.35)',
+      line: { color: 'transparent' }, showlegend: false, hoverinfo: 'skip', type: 'scatter'
+    });
+  }
+
+  // 3. Deadweight loss: triangle between price, MC, and qComp
+  if (r.dwl > 0.01) {
+    areas.push({
+      x: [qSold, qSold, qComp, qSold],
+      y: [mc, price, mc, mc],
+      fill: 'toself', fillcolor: 'rgba(220,53,69,0.45)',
+      line: { color: 'transparent' }, showlegend: false, hoverinfo: 'skip', type: 'scatter'
+    });
+  }
+
+  // ── Curves ──
+  const nPts = 200;
+  const qArr = Array.from({length: nPts}, (_, i) => i * qMax / (nPts - 1));
+  const dArr = qArr.map(q => a - b * q);
+  const mrArr= qArr.map(q => a - 2 * b * q);
+
+  const traces = [
+    ...areas,
+    // Demand
+    { x: qArr, y: dArr, mode: 'lines', line: { color: '#1a1a1a', width: 2.5 },
+      name: 'Demand', showlegend: false, hoverinfo: 'skip', type: 'scatter' },
+    // MC
+    { x: qMC, y: pMC, mode: 'lines', line: { color: '#18453B', width: 2.5, dash: 'dot' },
+      name: 'MC', showlegend: false, hoverinfo: 'skip', type: 'scatter' },
+    // MR
+    { x: qArr.filter(q => a - 2*b*q >= 0), y: qArr.filter(q => a - 2*b*q >= 0).map(q => a - 2*b*q),
+      mode: 'lines', line: { color: '#c00', width: 2, dash: 'dash' },
+      name: 'MR', showlegend: false, hoverinfo: 'skip', type: 'scatter' },
+    // Price horizontal line
+    { x: [0, qSold], y: [price, price],
+      mode: 'lines', line: { color: '#333', width: 1.2, dash: 'dot' },
+      showlegend: false, hoverinfo: 'skip', type: 'scatter' },
+    // Quantity vertical line
+    { x: [qSold, qSold], y: [0, price],
+      mode: 'lines', line: { color: '#333', width: 1.2, dash: 'dot' },
+      showlegend: false, hoverinfo: 'skip', type: 'scatter' },
+    // Competitive qty vertical (dotted)
+    { x: [qComp, qComp], y: [0, mc],
+      mode: 'lines', line: { color: '#18453B', width: 1, dash: 'dot' },
+      showlegend: false, hoverinfo: 'skip', type: 'scatter' }
+  ];
+
+  const layout = {
+    xaxis: {
+      title: { text: 'Quantity (' + scenario.unit + ')', font: { size: 13 } },
+      range: [0, qMax],
+      fixedrange: true
+    },
+    yaxis: {
+      title: { text: 'Price ($)', font: { size: 13 } },
+      range: [0, pMax],
+      fixedrange: true
+    },
+    annotations: [
+      { x: qMax * 0.92, y: a - b * qMax * 0.92 + 0.5,
+        text: 'D', showarrow: false, font: { size: 15, color: '#1a1a1a' } },
+      { x: qMax * 0.85, y: mc + 1.2,
+        text: 'MC', showarrow: false, font: { size: 13, color: '#18453B' } },
+      { x: qMax * 0.28, y: a - 2*b*qMax*0.28 - 1.5,
+        text: 'MR', showarrow: false, font: { size: 13, color: '#c00' } }
+    ],
+    margin: { l: 65, r: 30, t: 30, b: 60 },
+    autosize: false,
+    width: 680,
+    height: 490,
+    showlegend: false,
+    plot_bgcolor: 'white',
+    paper_bgcolor: 'white'
+  };
+
+  const config = { responsive: false, displayModeBar: false, staticPlot: true };
+
+  Plotly.newPlot('two-part-graph', traces, layout, config);
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Scenario selection
+// ─────────────────────────────────────────────────────────────
+function selectScenario(key, btn) {
+  currentKey = key;
+  scenario   = scenarios[key];
+
+  // Update button states
+  document.querySelectorAll('.scenario-btn').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-pressed', 'false');
+  });
+  if (btn) {
+    btn.classList.add('active');
+    btn.setAttribute('aria-pressed', 'true');
+  }
+
+  // Update scenario info
+  document.getElementById('scenario-info').innerHTML =
+    `<strong>${scenario.icon} ${scenario.name}</strong><br>${scenario.description}`;
+
+  // Re-configure sliders for this scenario
+  const { a, mc, b } = scenario;
+  const pSlider = document.getElementById('price-slider');
+  const cSlider = document.getElementById('cover-slider');
+  const pMono   = (a + mc) / 2;   // monopoly price
+  const qMono   = (a - pMono) / b;
+  const csMono  = 0.5 * qMono * (a - pMono);
+
+  // Step must divide evenly into (mc - pMin) so MC is always a reachable stop.
+  const pMin    = parseFloat((mc * 0.5).toFixed(2));
+  const rawStep = (a - mc) / 20;
+  function gcd2(x, y) {
+    x = Math.round(x * 100); y = Math.round(y * 100);
+    while (y) { const t = y; y = x % y; x = t; }
+    return x / 100;
+  }
+  const mcDist  = parseFloat((mc - pMin).toFixed(2));
+  const step    = gcd2(mcDist, parseFloat(rawStep.toFixed(2)));
+  const pMax    = parseFloat((a * 0.99).toFixed(2));
+
+  pSlider.min   = pMin.toFixed(2);
+  pSlider.max   = pMax.toFixed(2);
+  pSlider.step  = step.toFixed(2);
+  pSlider.value = pMono.toFixed(2);
+  pSlider.setAttribute('aria-valuemin', pSlider.min);
+  pSlider.setAttribute('aria-valuemax', pSlider.max);
+
+  // Update MC badge and slider endpoint labels
+  document.getElementById('mc-display').textContent = fmt(mc);
+  document.getElementById('price-min-label').textContent = fmt(pMin);
+  document.getElementById('price-max-label').textContent = fmt(pMax);
+
+  cSlider.min   = 0;
+  cSlider.max   = csMono.toFixed(2);
+  cSlider.step  = (csMono / 40).toFixed(2);
+  cSlider.value = 0;
+
+  document.getElementById('price-display').textContent = fmt(pMono);
+  document.getElementById('cover-display').textContent = '$0.00';
+
+  // Update label
+  document.getElementById('cover-label').innerHTML =
+    scenario.feeLabel + ' (Fixed Fee): <strong><span id="cover-display">$0.00</span></strong>';
+
+  update();
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Reset / randomize
+// ─────────────────────────────────────────────────────────────
+function resetToMonopoly() {
+  const { a, mc, b } = scenario;
+  const pMono = (a + mc) / 2;
+  document.getElementById('price-slider').value = pMono.toFixed(2);
+  document.getElementById('cover-slider').value = 0;
+  document.getElementById('price-display').textContent = fmt(pMono);
+  document.getElementById('cover-display').textContent = '$0.00';
+  update();
+  announceChange('Reset to traditional monopoly pricing. Per-unit price ' + fmt(pMono) + ', no cover charge.');
+}
+
+function randomizeParameters() {
+  const keys = Object.keys(scenarios);
+  const k    = keys[Math.floor(Math.random() * keys.length)];
+  const btn  = document.querySelectorAll('.scenario-btn')[keys.indexOf(k)];
+  selectScenario(k, btn);
+  announceChange('New random scenario: ' + scenarios[k].name);
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Live-region announcement
+// ─────────────────────────────────────────────────────────────
+let announceTimer = null;
+function announceChange(msg) {
+  clearTimeout(announceTimer);
+  announceTimer = setTimeout(() => {
+    const el = document.getElementById('live-updates');
+    el.textContent = '';
+    requestAnimationFrame(() => { el.textContent = msg; });
+  }, 400);
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Event listeners
+// ─────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+
+  const pSlider = document.getElementById('price-slider');
+  const cSlider = document.getElementById('cover-slider');
+
+  pSlider.addEventListener('input', function() {
+    const price = parseFloat(this.value);
+    document.getElementById('price-display').textContent = fmt(price);
+    // Clamp cover charge to new max
+    const { a, b } = scenario;
+    const qSold = Math.max(0, (a - price) / b);
+    const maxC  = 0.5 * qSold * (a - price);
+    if (parseFloat(cSlider.value) > maxC) { cSlider.value = maxC.toFixed(2); }
+    update();
+  });
+
+  // Arrow-key fine control for price slider
+  pSlider.addEventListener('keydown', function(e) {
+    if (e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      e.preventDefault();
+      const step = parseFloat(this.step) / 4;
+      this.value = Math.min(parseFloat(this.max),
+                   Math.max(parseFloat(this.min),
+                   parseFloat(this.value) + (e.key === 'ArrowRight' ? step : -step)));
+      document.getElementById('price-display').textContent = fmt(parseFloat(this.value));
+      update();
+    }
+  });
+
+  cSlider.addEventListener('input', function() {
+    document.getElementById('cover-display').textContent = fmt(parseFloat(this.value));
+    update();
+  });
+
+  // Arrow-key fine control for cover slider
+  cSlider.addEventListener('keydown', function(e) {
+    if (e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      e.preventDefault();
+      const step = parseFloat(this.step) / 4;
+      this.value = Math.min(parseFloat(this.max),
+                   Math.max(0,
+                   parseFloat(this.value) + (e.key === 'ArrowRight' ? step : -step)));
+      document.getElementById('cover-display').textContent = fmt(parseFloat(this.value));
+      update();
+    }
+  });
+
+  // Initial render
+  selectScenario('bar', document.querySelector('.scenario-btn.active'));
+});
+</script>
+</body>
+</html>

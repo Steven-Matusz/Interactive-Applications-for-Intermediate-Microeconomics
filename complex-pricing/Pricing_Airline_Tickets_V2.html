@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Airline Price Discrimination – Third-Degree Pricing</title>
+  <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+  <style>
+    /* ── Reset & Root ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --msu-green:   #18453B;
+      --msu-green2:  #2d5a4f;
+      --msu-gold:    #C89A2A;
+      --blue:        #1e3c72;
+      --red:         #c0392b;
+      --bg-page:     #f0f4f0;
+      --bg-white:    #ffffff;
+      --border:      #cdd9d6;
+      --text-dark:   #1a1a1a;
+      --focus-ring:  #C89A2A;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg-page);
+      color: var(--text-dark);
+      min-height: 100vh;
+      padding: 16px;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    /* ── Skip Link ── */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: var(--msu-green);
+      color: white;
+      padding: 8px 16px;
+      z-index: 9999;
+      font-weight: 700;
+      text-decoration: none;
+      border-radius: 0 0 6px 0;
+      transition: top 0.2s;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ── Screen-reader only ── */
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ── Live region ── */
+    .live-region {
+      position: absolute;
+      left: -10000px;
+      width: 1px; height: 1px;
+      overflow: hidden;
+    }
+
+    /* ── Focus visible ── */
+    :focus-visible {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 3px;
+    }
+
+    /* ── Wrapper ── */
+    .wrapper {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: var(--bg-white);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, var(--msu-green), var(--msu-green2));
+      color: white;
+      padding: 24px 32px;
+      text-align: center;
+    }
+    .header h1 { font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 700; margin-bottom: 6px; }
+    .header p  { font-size: 1rem; opacity: 0.9; }
+
+    /* ── Scenario selector ── */
+    .scenario-bar {
+      background: #f8f9fa;
+      padding: 18px 24px;
+      border-bottom: 3px solid var(--msu-green);
+    }
+    .scenario-bar h2 { color: var(--msu-green); font-size: 1.1rem; margin-bottom: 12px; }
+    .scenario-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+    .scenario-btn {
+      flex: 1; min-width: 170px;
+      padding: 12px 18px;
+      font-size: 1rem; font-weight: 600;
+      border: 3px solid var(--msu-green);
+      background: white; color: var(--msu-green);
+      border-radius: 10px; cursor: pointer;
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+    }
+    .scenario-btn:hover,
+    .scenario-btn:focus-visible {
+      background: var(--msu-green); color: white;
+    }
+    .scenario-btn[aria-pressed="true"] {
+      background: var(--msu-green); color: white;
+    }
+
+    /* ── Main layout ── */
+    .content-wrapper {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      min-height: 600px;
+    }
+
+    /* ── Control panel ── */
+    .control-panel {
+      background: #f8f9fa;
+      padding: 28px 24px;
+      border-right: 3px solid #e9ecef;
+      overflow-y: auto;
+    }
+
+    .control-panel h3 {
+      color: var(--msu-green);
+      font-size: 1.15rem;
+      margin-bottom: 14px;
+      border-bottom: 2px solid var(--msu-green);
+      padding-bottom: 6px;
+    }
+
+    /* ── Info box ── */
+    .info-box {
+      background: white;
+      padding: 14px;
+      border-radius: 8px;
+      border-left: 4px solid var(--msu-green);
+      margin-bottom: 14px;
+      font-size: 0.95rem;
+    }
+    .info-box p { margin: 6px 0; }
+
+    /* ── Slider group ── */
+    .slider-group { margin-bottom: 20px; }
+    .slider-group label {
+      display: block;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+    }
+    .slider-row { display: flex; align-items: center; gap: 10px; }
+    .slider-row input[type="range"] {
+      flex: 1;
+      height: 8px;
+      border-radius: 5px;
+      background: #d3d3d3;
+      outline: none;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .slider-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--msu-green);
+      cursor: pointer;
+    }
+    .slider-row input[type="range"]::-moz-range-thumb {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--msu-green);
+      cursor: pointer;
+      border: none;
+    }
+    .val-badge {
+      min-width: 52px;
+      text-align: center;
+      background: var(--msu-green);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 5px;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .slider-minmax {
+      display: flex; justify-content: space-between;
+      font-size: 0.8rem; color: #666; margin-top: 4px;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      width: 100%; margin-top: 10px;
+      padding: 12px 20px;
+      font-size: 1rem; font-weight: 700;
+      border: none; border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.15s;
+    }
+    .btn:hover, .btn:focus-visible {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+    }
+    .btn-primary   { background: var(--msu-green); color: white; }
+    .btn-secondary { background: #6c757d; color: white; }
+
+    /* ── Capacity warning ── */
+    .capacity-alert {
+      background: #fff3cd;
+      border: 2px solid #ffc107;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-top: 12px;
+      font-size: 0.9rem;
+      display: none;
+    }
+    .capacity-alert.show { display: block; }
+
+    /* ── Metric cards ── */
+    .metrics-section { margin-top: 20px; }
+    .metrics-section h3 { margin-bottom: 12px; }
+    .metric-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .metric-card {
+      padding: 14px;
+      border-radius: 8px;
+      text-align: center;
+      border: 2px solid;
+    }
+    .metric-card.business { background: rgba(30,60,114,0.08); border-color: var(--blue); }
+    .metric-card.leisure  { background: rgba(192,57,43,0.08);  border-color: var(--red); }
+    .metric-card.total    { background: rgba(24,69,59,0.08);   border-color: var(--msu-green); }
+    .metric-label { font-size: 0.8rem; font-weight: 600; color: #555; margin-bottom: 4px; }
+    .metric-value { font-size: 1.3rem; font-weight: 700; color: var(--msu-green); }
+    .metric-card-full { grid-column: 1 / -1; }
+
+    /* ── Optimization feedback ── */
+    .optim-box {
+      background: white;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 14px;
+      font-size: 0.9rem;
+    }
+    .optim-box h4 { color: var(--msu-green); margin-bottom: 8px; }
+    .check-good { color: #27ae60; font-weight: 700; }
+    .check-bad  { color: #c0392b; font-weight: 700; }
+
+    /* ── Data table ── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 18px;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid #e9ecef;
+      font-size: 0.9rem;
+    }
+    .data-table caption {
+      padding: 10px;
+      font-weight: 700;
+      color: var(--msu-green);
+      text-align: left;
+      background: #f8f9fa;
+      border-bottom: 2px solid #e9ecef;
+    }
+    .data-table th, .data-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e9ecef;
+    }
+    .data-table th { background: #f8f9fa; font-weight: 600; color: var(--msu-green); }
+    .data-table tbody tr:last-child td,
+    .data-table tbody tr:last-child th { border-bottom: none; font-weight: 700; background: #eaf2ef; }
+
+    /* ── Concept box ── */
+    .concept-box {
+      background: #e7f3ff;
+      border: 2px solid #1565C0;
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 16px;
+      font-size: 0.88rem;
+    }
+    .concept-box h4 { color: #1565C0; margin-bottom: 6px; }
+
+    /* ── Graph panel ── */
+    .graph-panel {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .graph-wrapper {
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      overflow: hidden;
+      background: white;
+    }
+
+    /* ── Market insight ── */
+    .market-insight {
+      background: #fff3cd;
+      border: 2px solid #ffc107;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 0.92rem;
+      role: status;
+    }
+    .market-insight strong { color: #856404; }
+
+    /* ── Responsive ── */
+    @media (max-width: 1060px) {
+      .content-wrapper { grid-template-columns: 1fr; }
+      .control-panel { border-right: none; border-bottom: 3px solid #e9ecef; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Skip Navigation -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Live region for screen reader announcements -->
+<div id="live-updates" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+<div class="wrapper">
+
+  <!-- Header -->
+  <header class="header">
+    <h1>✈️ Pricing Airline Tickets</h1>
+    <p>Third-Degree Price Discrimination — Charging Different Groups Different Prices</p>
+  </header>
+
+  <!-- Scenario Selector -->
+  <section class="scenario-bar" aria-label="Market scenario selection">
+    <h2 id="scenario-heading">Choose a Scenario:</h2>
+    <div class="scenario-buttons" role="group" aria-labelledby="scenario-heading">
+      <button class="scenario-btn" aria-pressed="true"
+              aria-describedby="desc-standard"
+              onclick="selectScenario('standard', this)">
+        ✈️ Standard Market
+      </button>
+      <button class="scenario-btn" aria-pressed="false"
+              aria-describedby="desc-elastic"
+              onclick="selectScenario('elastic', this)">
+        📉 Elastic Leisure Demand
+      </button>
+      <button class="scenario-btn" aria-pressed="false"
+              aria-describedby="desc-premium"
+              onclick="selectScenario('premium', this)">
+        💼 High Business WTP
+      </button>
+    </div>
+    <span id="desc-standard" class="sr-only">Standard market with typical business and leisure demand curves</span>
+    <span id="desc-elastic"  class="sr-only">Leisure travelers are more price-sensitive; their demand is more elastic</span>
+    <span id="desc-premium"  class="sr-only">Business travelers have higher willingness to pay; demand shifts upward</span>
+    <div id="scenario-info" class="sr-only" aria-live="polite"></div>
+  </section>
+
+  <!-- Main content -->
+  <main id="main-content">
+    <div class="content-wrapper">
+
+      <!-- ── Control Panel ── -->
+      <aside class="control-panel" aria-label="Pricing controls and results">
+
+        <!-- Market parameters -->
+        <section aria-labelledby="params-heading">
+          <h3 id="params-heading">📋 Market Parameters</h3>
+          <div class="info-box" id="params-box" aria-live="polite">
+            <p><strong>Capacity:</strong> <span id="display-capacity">440</span> seats total</p>
+            <p><strong>Marginal Cost:</strong> $<span id="display-mc">100</span> per ticket</p>
+            <p><strong>Business Demand:</strong> P = <span id="display-biz-demand">1,400 − 4Q</span></p>
+            <p><strong>Leisure Demand:</strong>  P = <span id="display-lei-demand">600 − 1.4Q</span></p>
+          </div>
+          <div class="concept-box">
+            <h4>💡 How to find optimal quantities</h4>
+            <p>For each segment, derive MR (twice as steep as demand). Set MR = MC and solve for Q. Then read the price off the demand curve.</p>
+          </div>
+        </section>
+
+        <!-- Sliders -->
+        <section aria-labelledby="sliders-heading" style="margin-top:20px;">
+          <h3 id="sliders-heading">🎯 Your Pricing Strategy</h3>
+
+          <div class="slider-group">
+            <label for="biz-qty">
+              Business Tickets Sold
+              <span id="biz-qty-desc" class="sr-only">Use arrow keys for fine control. Current value shown to the right.</span>
+            </label>
+            <div class="slider-row">
+              <input type="range" id="biz-qty"
+                     min="0" max="440" step="1" value="190"
+                     aria-label="Business tickets quantity"
+                     aria-describedby="biz-qty-desc"
+                     aria-valuemin="0" aria-valuemax="440" aria-valuenow="190"
+                     aria-valuetext="190 business tickets"
+                     oninput="updatePricing()">
+              <span class="val-badge" id="biz-qty-display" aria-hidden="true">190</span>
+            </div>
+            <div class="slider-minmax"><span>0</span><span>440</span></div>
+          </div>
+
+          <div class="slider-group">
+            <label for="lei-qty">
+              Leisure Tickets Sold
+              <span id="lei-qty-desc" class="sr-only">Use arrow keys for fine control. Combined total cannot exceed aircraft capacity.</span>
+            </label>
+            <div class="slider-row">
+              <input type="range" id="lei-qty"
+                     min="0" max="440" step="1" value="250"
+                     aria-label="Leisure tickets quantity"
+                     aria-describedby="lei-qty-desc"
+                     aria-valuemin="0" aria-valuemax="440" aria-valuenow="250"
+                     aria-valuetext="250 leisure tickets"
+                     oninput="updatePricing()">
+              <span class="val-badge" id="lei-qty-display" aria-hidden="true">250</span>
+            </div>
+            <div class="slider-minmax"><span>0</span><span>440</span></div>
+          </div>
+
+          <!-- Capacity alert -->
+          <div id="capacity-alert" class="capacity-alert" role="alert" aria-live="assertive">
+            ⚠️ Combined tickets cannot exceed aircraft capacity of <span id="cap-display">440</span> seats.
+            Leisure quantity has been adjusted automatically.
+          </div>
+
+          <p style="font-size:0.85rem;color:#555;margin-top:6px;">
+            Seats used: <strong id="seats-used">440</strong> / <strong id="seats-cap">440</strong>
+          </p>
+
+          <button class="btn btn-primary" onclick="calculateResults()"
+                  aria-label="Calculate profit and check optimization">
+            📊 Calculate Profit
+          </button>
+          <button class="btn btn-secondary" onclick="showOptimalSolution()"
+                  aria-label="Reveal the mathematically optimal ticket quantities">
+            💡 Show Optimal Solution
+          </button>
+        </section>
+
+        <!-- Results / Metrics -->
+        <section class="metrics-section" aria-label="Profit results" aria-live="polite">
+          <h3>📈 Results</h3>
+
+          <div class="metric-cards">
+            <div class="metric-card business" role="region" aria-label="Business segment profit">
+              <div class="metric-label">Business Profit</div>
+              <div class="metric-value" id="biz-profit">—</div>
+            </div>
+            <div class="metric-card leisure" role="region" aria-label="Leisure segment profit">
+              <div class="metric-label">Leisure Profit</div>
+              <div class="metric-value" id="lei-profit">—</div>
+            </div>
+            <div class="metric-card total metric-card-full" role="region" aria-label="Total profit both segments">
+              <div class="metric-label">Total Profit</div>
+              <div class="metric-value" id="total-profit">—</div>
+            </div>
+          </div>
+
+          <!-- Optimization check -->
+          <div class="optim-box" id="optim-box" aria-live="polite">
+            <h4>Optimization Check (MR vs MC)</h4>
+            <p id="optim-biz">Business MR: —</p>
+            <p id="optim-lei">Leisure MR: —</p>
+            <p id="optim-verdict" style="margin-top:8px;font-weight:600;">Adjust quantities to see results.</p>
+          </div>
+
+          <!-- Data table: accessible alternative to graph -->
+          <table class="data-table" aria-label="Detailed pricing results by segment">
+            <caption>Ticket Pricing Summary</caption>
+            <thead>
+              <tr>
+                <th scope="col">Measure</th>
+                <th scope="col">Business</th>
+                <th scope="col">Leisure</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Quantity Sold</th>
+                <td id="tbl-biz-q">—</td>
+                <td id="tbl-lei-q">—</td>
+              </tr>
+              <tr>
+                <th scope="row">Price Charged</th>
+                <td id="tbl-biz-p">—</td>
+                <td id="tbl-lei-p">—</td>
+              </tr>
+              <tr>
+                <th scope="row">Marginal Revenue</th>
+                <td id="tbl-biz-mr">—</td>
+                <td id="tbl-lei-mr">—</td>
+              </tr>
+              <tr>
+                <th scope="row">Marginal Cost</th>
+                <td id="tbl-biz-mc">—</td>
+                <td id="tbl-lei-mc">—</td>
+              </tr>
+              <tr>
+                <th scope="row">Segment Profit</th>
+                <td id="tbl-biz-profit">—</td>
+                <td id="tbl-lei-profit">—</td>
+              </tr>
+              <tr>
+                <th scope="row">Total Profit</th>
+                <td id="tbl-total" colspan="2">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- Insight box -->
+        <div class="market-insight" id="market-insight" aria-live="polite" style="margin-top:16px;">
+          <strong>📌 Insight:</strong>
+          <span id="insight-text">Select a scenario and adjust quantities to explore how price discrimination works.</span>
+        </div>
+
+      </aside>
+
+      <!-- ── Graph Panel ── -->
+      <section class="graph-panel" aria-label="Demand and marginal revenue visualization">
+        <div class="graph-wrapper">
+          <div id="demand-graph"
+               role="img"
+               aria-label="Demand and marginal revenue curves for business and leisure travelers, with marginal cost line">
+          </div>
+          <!-- Hidden text description updated dynamically -->
+          <div id="graph-description" class="sr-only" aria-live="polite"></div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div><!-- /wrapper -->
+
+<script>
+// ─────────────────────────────────────────────
+// DATA
+// ─────────────────────────────────────────────
+const SCENARIOS = {
+  standard: {
+    label: 'Standard Market',
+    capacity: 440,
+    mc: 100,
+    bizA: 1400, bizB: 4,
+    leiA: 600,  leiB: 1.4,
+    insight: 'In the standard market, business travelers have much higher willingness to pay ($1,400 max) than leisure travelers ($600 max). The airline profits by charging each group a different price based on MR = MC in each segment.'
+  },
+  elastic: {
+    label: 'Elastic Leisure Demand',
+    capacity: 440,
+    mc: 100,
+    bizA: 1400, bizB: 4,
+    leiA: 500,  leiB: 1.0,
+    insight: 'With more elastic leisure demand (flatter curve), leisure travelers are very price-sensitive. The optimal leisure price falls and the airline sells more leisure tickets at a lower price while keeping business pricing unchanged.'
+  },
+  premium: {
+    label: 'High Business WTP',
+    capacity: 440,
+    mc: 100,
+    bizA: 1600, bizB: 4,
+    leiA: 600,  leiB: 1.4,
+    insight: 'When business travelers\' willingness to pay increases, the business demand curve shifts up. The optimal business quantity is unchanged (MR = MC logic), but the price rises because travelers pay more at the same quantity. Leisure pricing is unaffected.'
+  }
+};
+
+let current = SCENARIOS.standard;
+
+// ─────────────────────────────────────────────
+// ACCESSIBILITY HELPERS
+// ─────────────────────────────────────────────
+function announce(msg) {
+  const el = document.getElementById('live-updates');
+  el.textContent = '';
+  requestAnimationFrame(() => { el.textContent = msg; });
+}
+
+// ─────────────────────────────────────────────
+// SCENARIO SELECTION
+// ─────────────────────────────────────────────
+function selectScenario(key, btn) {
+  current = SCENARIOS[key];
+
+  // Update aria-pressed on all buttons
+  document.querySelectorAll('.scenario-btn').forEach(b => b.setAttribute('aria-pressed', 'false'));
+  if (btn) btn.setAttribute('aria-pressed', 'true');
+
+  // Update parameter display
+  document.getElementById('display-capacity').textContent = current.capacity;
+  document.getElementById('display-mc').textContent = current.mc;
+  document.getElementById('display-biz-demand').textContent =
+    `${current.bizA.toLocaleString()} − ${current.bizB}Q`;
+  document.getElementById('display-lei-demand').textContent =
+    `${current.leiA.toLocaleString()} − ${current.leiB}Q`;
+
+  // Update capacity badge and cap in slider limits
+  document.getElementById('cap-display').textContent = current.capacity;
+  document.getElementById('seats-cap').textContent  = current.capacity;
+  document.getElementById('biz-qty').max = current.capacity;
+  document.getElementById('lei-qty').max = current.capacity;
+
+  // Compute and pre-set optimal quantities as defaults
+  const optBiz = Math.round((current.bizA - current.mc) / (2 * current.bizB));
+  let   optLei = Math.round((current.leiA - current.mc) / (2 * current.leiB));
+  const total  = optBiz + optLei;
+  const adjBiz = total > current.capacity ? Math.round(optBiz * current.capacity / total) : optBiz;
+  const adjLei = total > current.capacity ? current.capacity - adjBiz : optLei;
+
+  setSlider('biz-qty', Math.max(0, Math.min(adjBiz, current.capacity)));
+  setSlider('lei-qty', Math.max(0, Math.min(adjLei, current.capacity)));
+
+  // Update insight
+  document.getElementById('insight-text').textContent = current.insight;
+  document.getElementById('scenario-info').textContent =
+    `Scenario loaded: ${current.label}. Business demand P = ${current.bizA}−${current.bizB}Q. Leisure demand P = ${current.leiA}−${current.leiB}Q. Marginal cost $${current.mc}.`;
+
+  // Clear results
+  resetResults();
+  updateSeatsUsed();
+  drawGraph();
+  announce(`Scenario changed to ${current.label}.`);
+}
+
+function setSlider(id, val) {
+  const el = document.getElementById(id);
+  el.value = val;
+  el.setAttribute('aria-valuenow', val);
+  el.setAttribute('aria-valuetext', `${val} ${id === 'biz-qty' ? 'business' : 'leisure'} tickets`);
+  document.getElementById(id + '-display').textContent = val;
+}
+
+// ─────────────────────────────────────────────
+// SLIDER INTERACTION
+// ─────────────────────────────────────────────
+function updatePricing() {
+  let biz = parseInt(document.getElementById('biz-qty').value);
+  let lei = parseInt(document.getElementById('lei-qty').value);
+
+  if (biz + lei > current.capacity) {
+    lei = Math.max(0, current.capacity - biz);
+    setSlider('lei-qty', lei);
+    document.getElementById('capacity-alert').classList.add('show');
+    announce(`Leisure quantity reduced to ${lei} to stay within capacity of ${current.capacity} seats.`);
+  } else {
+    document.getElementById('capacity-alert').classList.remove('show');
+  }
+
+  document.getElementById('biz-qty-display').textContent = biz;
+  document.getElementById('lei-qty-display').textContent = lei;
+  document.getElementById('biz-qty').setAttribute('aria-valuenow', biz);
+  document.getElementById('biz-qty').setAttribute('aria-valuetext', `${biz} business tickets`);
+  document.getElementById('lei-qty').setAttribute('aria-valuenow', lei);
+  document.getElementById('lei-qty').setAttribute('aria-valuetext', `${lei} leisure tickets`);
+
+  updateSeatsUsed();
+  drawGraph();
+}
+
+function updateSeatsUsed() {
+  const biz = parseInt(document.getElementById('biz-qty').value);
+  const lei = parseInt(document.getElementById('lei-qty').value);
+  document.getElementById('seats-used').textContent = biz + lei;
+}
+
+// ─────────────────────────────────────────────
+// CALCULATE RESULTS
+// ─────────────────────────────────────────────
+function calculateResults() {
+  const biz = parseInt(document.getElementById('biz-qty').value);
+  const lei = parseInt(document.getElementById('lei-qty').value);
+
+  const pBiz = current.bizA - current.bizB * biz;
+  const pLei = current.leiA - current.leiB * lei;
+  const mrBiz = current.bizA - 2 * current.bizB * biz;
+  const mrLei = current.leiA - 2 * current.leiB * lei;
+  const profBiz = (pBiz - current.mc) * biz;
+  const profLei = (pLei - current.mc) * lei;
+  const profTotal = profBiz + profLei;
+
+  // Metric cards
+  document.getElementById('biz-profit').textContent   = fmt(profBiz);
+  document.getElementById('lei-profit').textContent   = fmt(profLei);
+  document.getElementById('total-profit').textContent  = fmt(profTotal);
+
+  // Table
+  document.getElementById('tbl-biz-q').textContent     = biz;
+  document.getElementById('tbl-lei-q').textContent     = lei;
+  document.getElementById('tbl-biz-p').textContent     = fmt(pBiz);
+  document.getElementById('tbl-lei-p').textContent     = fmt(pLei);
+  document.getElementById('tbl-biz-mr').textContent    = fmt(mrBiz);
+  document.getElementById('tbl-lei-mr').textContent    = fmt(mrLei);
+  document.getElementById('tbl-biz-mc').textContent    = fmt(current.mc);
+  document.getElementById('tbl-lei-mc').textContent    = fmt(current.mc);
+  document.getElementById('tbl-biz-profit').textContent = fmt(profBiz);
+  document.getElementById('tbl-lei-profit').textContent = fmt(profLei);
+  document.getElementById('tbl-total').textContent     = fmt(profTotal);
+
+  // Optimization check
+  const bizOK = Math.abs(mrBiz - current.mc) < 15;
+  const leiOK = Math.abs(mrLei - current.mc) < 15;
+  document.getElementById('optim-biz').innerHTML =
+    `Business MR: <strong>${fmt(mrBiz)}</strong> — MC: ${fmt(current.mc)} ` +
+    `<span class="${bizOK ? 'check-good' : 'check-bad'}">${bizOK ? '✓ Near optimal' : '✗ Not optimal'}</span>`;
+  document.getElementById('optim-lei').innerHTML =
+    `Leisure MR: <strong>${fmt(mrLei)}</strong> — MC: ${fmt(current.mc)} ` +
+    `<span class="${leiOK ? 'check-good' : 'check-bad'}">${leiOK ? '✓ Near optimal' : '✗ Not optimal'}</span>`;
+  document.getElementById('optim-verdict').textContent =
+    bizOK && leiOK
+      ? '✅ Both segments near optimal! Profit is close to maximum.'
+      : '📐 Try adjusting quantities so both MR values equal MC = $' + current.mc + '.';
+
+  // Graph description for screen readers
+  document.getElementById('graph-description').textContent =
+    `Graph shows business demand (P = ${current.bizA}−${current.bizB}Q, blue), ` +
+    `business MR (dashed blue), leisure demand (P = ${current.leiA}−${current.leiB}Q, red), ` +
+    `leisure MR (dashed red), and marginal cost at $${current.mc} (green dotted). ` +
+    `Current selections: ${biz} business tickets at price ${fmt(pBiz)}, ` +
+    `${lei} leisure tickets at price ${fmt(pLei)}. Total profit: ${fmt(profTotal)}.`;
+
+  drawGraph();
+  announce(
+    `Results calculated. Business profit ${fmt(profBiz)}, leisure profit ${fmt(profLei)}, ` +
+    `total profit ${fmt(profTotal)}. ` +
+    (bizOK && leiOK ? 'Both segments near optimal.' : 'Adjust quantities to improve optimization.')
+  );
+}
+
+// ─────────────────────────────────────────────
+// OPTIMAL SOLUTION
+// ─────────────────────────────────────────────
+function showOptimalSolution() {
+  const optBiz = Math.round((current.bizA - current.mc) / (2 * current.bizB));
+  let   optLei = Math.round((current.leiA - current.mc) / (2 * current.leiB));
+
+  let adjBiz = optBiz, adjLei = optLei;
+  if (optBiz + optLei > current.capacity) {
+    adjBiz = Math.round(optBiz * current.capacity / (optBiz + optLei));
+    adjLei = current.capacity - adjBiz;
+  }
+
+  setSlider('biz-qty', adjBiz);
+  setSlider('lei-qty', adjLei);
+  updateSeatsUsed();
+  calculateResults();
+
+  const pBiz = current.bizA - current.bizB * adjBiz;
+  const pLei = current.leiA - current.leiB * adjLei;
+  announce(
+    `Optimal solution set. Business: ${adjBiz} tickets at ${fmt(pBiz)}. ` +
+    `Leisure: ${adjLei} tickets at ${fmt(pLei)}.`
+  );
+}
+
+// ─────────────────────────────────────────────
+// RESET RESULTS
+// ─────────────────────────────────────────────
+function resetResults() {
+  ['biz-profit','lei-profit','total-profit'].forEach(id => document.getElementById(id).textContent = '—');
+  ['tbl-biz-q','tbl-lei-q','tbl-biz-p','tbl-lei-p','tbl-biz-mr','tbl-lei-mr',
+   'tbl-biz-mc','tbl-lei-mc','tbl-biz-profit','tbl-lei-profit','tbl-total']
+    .forEach(id => document.getElementById(id).textContent = '—');
+  document.getElementById('optim-biz').textContent = 'Business MR: —';
+  document.getElementById('optim-lei').textContent = 'Leisure MR: —';
+  document.getElementById('optim-verdict').textContent = 'Adjust quantities to see results.';
+}
+
+// ─────────────────────────────────────────────
+// FORMAT HELPERS
+// ─────────────────────────────────────────────
+function fmt(val) {
+  if (val < 0) return '−$' + Math.abs(val).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  return '$' + val.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+// ─────────────────────────────────────────────
+// PLOTLY GRAPH  (Method 1: fixed dimensions)
+// ─────────────────────────────────────────────
+function drawGraph() {
+  const q = [];
+  for (let i = 0; i <= 500; i += 5) q.push(i);
+
+  const bizQ = parseInt(document.getElementById('biz-qty').value);
+  const leiQ = parseInt(document.getElementById('lei-qty').value);
+
+  const yMax = Math.max(current.bizA, current.leiA) * 1.05;
+
+  const traces = [
+    // Business demand
+    {
+      x: q, y: q.map(v => Math.max(0, current.bizA - current.bizB * v)),
+      mode: 'lines', name: 'Business Demand',
+      line: { color: '#1e3c72', width: 3 }
+    },
+    // Business MR
+    {
+      x: q, y: q.map(v => Math.max(0, current.bizA - 2 * current.bizB * v)),
+      mode: 'lines', name: 'Business MR',
+      line: { color: '#1e3c72', width: 2, dash: 'dash' }
+    },
+    // Leisure demand
+    {
+      x: q, y: q.map(v => Math.max(0, current.leiA - current.leiB * v)),
+      mode: 'lines', name: 'Leisure Demand',
+      line: { color: '#c0392b', width: 3 }
+    },
+    // Leisure MR
+    {
+      x: q, y: q.map(v => Math.max(0, current.leiA - 2 * current.leiB * v)),
+      mode: 'lines', name: 'Leisure MR',
+      line: { color: '#c0392b', width: 2, dash: 'dash' }
+    },
+    // MC
+    {
+      x: [0, 500], y: [current.mc, current.mc],
+      mode: 'lines', name: `MC = $${current.mc}`,
+      line: { color: '#27ae60', width: 2.5, dash: 'dot' }
+    },
+    // Business selected point
+    {
+      x: [bizQ], y: [Math.max(0, current.bizA - current.bizB * bizQ)],
+      mode: 'markers', name: 'Business (selected)',
+      marker: { color: '#1e3c72', size: 13, symbol: 'circle',
+                line: { color: 'white', width: 2 } }
+    },
+    // Leisure selected point
+    {
+      x: [leiQ], y: [Math.max(0, current.leiA - current.leiB * leiQ)],
+      mode: 'markers', name: 'Leisure (selected)',
+      marker: { color: '#c0392b', size: 13, symbol: 'circle',
+                line: { color: 'white', width: 2 } }
+    }
+  ];
+
+  const layout = {
+    title: { text: 'Demand & Marginal Revenue — Both Passenger Segments', font: { size: 14, color: '#18453B' } },
+    xaxis: { title: 'Quantity (tickets)', range: [0, 500], gridcolor: '#e9ecef', zeroline: true },
+    yaxis: { title: 'Price ($)', range: [0, yMax], gridcolor: '#e9ecef', zeroline: true },
+    showlegend: true,
+    legend: { x: 0.60, y: 1, bgcolor: 'rgba(255,255,255,0.9)', bordercolor: '#dee2e6', borderwidth: 1 },
+    margin: { l: 65, r: 30, t: 55, b: 65 },
+    autosize: false,
+    width: 720,
+    height: 500,
+    plot_bgcolor: '#fafafa',
+    paper_bgcolor: 'white'
+  };
+
+  Plotly.newPlot('demand-graph', traces, layout, {
+    responsive: false,
+    displayModeBar: false,
+    staticPlot: false
+  });
+}
+
+// ─────────────────────────────────────────────
+// KEYBOARD SUPPORT for sliders
+// ─────────────────────────────────────────────
+['biz-qty', 'lei-qty'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      const dir = e.key === 'ArrowRight' ? 1 : -1;
+      const step = e.shiftKey ? 10 : 1;
+      this.value = Math.max(0, Math.min(current.capacity, parseInt(this.value) + dir * step));
+      updatePricing();
+    }
+  });
+});
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  // Activate first scenario button
+  const firstBtn = document.querySelector('.scenario-btn');
+  selectScenario('standard', firstBtn);
+});
+</script>
+</body>
+</html>

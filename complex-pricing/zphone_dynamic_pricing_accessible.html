@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dynamic Pricing: The Z-Phone Challenge</title>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <style>
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --msu-green:  #18453B;
+      --msu-green2: #2d5a4f;
+      --msu-gold:   #C89A2A;
+      --focus-ring: #C89A2A;
+      --bg-page:    #f0f4f0;
+      --border:     #cdd9d6;
+      --text-dark:  #1a1a1a;
+      --text-mid:   #444444;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #18453B 0%, #2d5a4f 100%);
+      padding: 20px;
+      min-height: 100vh;
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--text-dark);
+    }
+
+    /* ── Skip Link ── */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: var(--msu-green);
+      color: white;
+      padding: 8px 16px;
+      text-decoration: none;
+      border-radius: 0 0 4px 0;
+      z-index: 9999;
+      font-weight: 700;
+      transition: top 0.2s;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ── Focus visible ── */
+    :focus-visible {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
+
+    /* ── Screen-reader only ── */
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ── Live region ── */
+    .live-region {
+      position: absolute;
+      left: -10000px;
+      width: 1px; height: 1px;
+      overflow: hidden;
+    }
+
+    /* ── Container ── */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, var(--msu-green) 0%, var(--msu-green2) 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 { font-size: 2em; margin-bottom: 8px; }
+    .header p  { font-size: 1.1em; opacity: 0.9; }
+
+    /* ── Scenario info bar ── */
+    .scenario-bar {
+      background: #f8f9fa;
+      padding: 18px 30px;
+      border-bottom: 3px solid var(--msu-green);
+      display: flex;
+      align-items: center;
+      gap: 30px;
+      flex-wrap: wrap;
+    }
+    .scenario-bar h2 {
+      color: var(--msu-green);
+      font-size: 1.1em;
+      white-space: nowrap;
+    }
+    .scenario-info-text {
+      font-size: 1em;
+      color: var(--text-mid);
+    }
+    .scenario-info-text strong { color: var(--msu-green); }
+    .btn-new-scenario {
+      margin-left: auto;
+      padding: 10px 20px;
+      background: var(--msu-gold);
+      color: #1a1a1a;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95em;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .btn-new-scenario:hover, .btn-new-scenario:focus {
+      background: #b8891e;
+      color: white;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    /* ── Two-column layout ── */
+    .content-wrapper {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 0;
+      min-height: 600px;
+    }
+
+    /* ── Control Panel ── */
+    .control-panel {
+      background: #f8f9fa;
+      padding: 28px;
+      border-right: 3px solid #e9ecef;
+      overflow-y: auto;
+      max-height: 820px;
+    }
+
+    .period-nav {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 22px;
+    }
+    .period-btn {
+      padding: 10px 6px;
+      border: 2px solid var(--msu-green);
+      background: white;
+      color: var(--msu-green);
+      border-radius: 8px;
+      font-size: 0.9em;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .period-btn:hover, .period-btn:focus {
+      background: #e8f0ee;
+    }
+    .period-btn.active {
+      background: var(--msu-green);
+      color: white;
+    }
+    .period-btn.completed {
+      background: #d4edda;
+      border-color: #28a745;
+      color: #155724;
+    }
+    .period-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    /* ── Period card ── */
+    .period-card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      border: 2px solid #e9ecef;
+      margin-bottom: 18px;
+    }
+    .period-card h3 {
+      color: var(--msu-green);
+      margin-bottom: 12px;
+      font-size: 1.15em;
+    }
+    .info-box {
+      background: #f8f9fa;
+      padding: 12px 14px;
+      border-left: 4px solid var(--msu-green);
+      border-radius: 4px;
+      margin-bottom: 14px;
+      font-size: 0.95em;
+    }
+    .info-box p { margin: 4px 0; }
+    .info-box strong { color: var(--msu-green); }
+
+    /* ── Slider ── */
+    .form-label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 700;
+      color: var(--text-dark);
+      font-size: 0.95em;
+    }
+    .price-slider {
+      width: 100%;
+      height: 8px;
+      border-radius: 5px;
+      background: #d3d3d3;
+      outline: none;
+      margin: 14px 0 6px;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .price-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: var(--msu-green);
+      cursor: pointer;
+      border: 3px solid white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+    .price-slider::-moz-range-thumb {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: var(--msu-green);
+      cursor: pointer;
+      border: 3px solid white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+    .price-slider:focus {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 3px;
+    }
+    .slider-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85em;
+      color: #6c757d;
+      margin-bottom: 4px;
+    }
+    .current-price-display {
+      text-align: center;
+      font-size: 1.6em;
+      font-weight: 700;
+      color: var(--msu-green);
+      margin: 6px 0 14px;
+    }
+
+    /* ── Buttons ── */
+    .btn-confirm {
+      width: 100%;
+      padding: 13px;
+      background: var(--msu-green);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1em;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 6px;
+    }
+    .btn-confirm:hover, .btn-confirm:focus {
+      background: #0f2d26;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .btn-confirm:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .btn-secondary {
+      width: 100%;
+      padding: 11px;
+      background: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+    .btn-secondary:hover, .btn-secondary:focus {
+      background: #5a6268;
+      transform: translateY(-1px);
+    }
+    .btn-gold {
+      width: 100%;
+      padding: 12px;
+      background: var(--msu-gold);
+      color: #1a1a1a;
+      border: none;
+      border-radius: 8px;
+      font-size: 1em;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+    .btn-gold:hover, .btn-gold:focus {
+      background: #b8891e;
+      color: white;
+      transform: translateY(-1px);
+    }
+
+    /* ── Results ── */
+    .results-panel {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      border: 2px solid #28a745;
+      margin-top: 4px;
+    }
+    .results-panel h3 {
+      color: var(--msu-green);
+      margin-bottom: 14px;
+      font-size: 1.1em;
+    }
+
+    /* ── Data Table ── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid #e9ecef;
+      margin-top: 6px;
+    }
+    .data-table caption {
+      padding: 10px 12px;
+      font-weight: 700;
+      color: var(--msu-green);
+      text-align: left;
+      background: #f8f9fa;
+      border-bottom: 2px solid #e9ecef;
+      font-size: 0.95em;
+    }
+    .data-table th, .data-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e9ecef;
+      font-size: 0.9em;
+    }
+    .data-table th {
+      background: #f8f9fa;
+      font-weight: 700;
+      color: var(--msu-green);
+    }
+    .data-table td { font-weight: 600; color: var(--text-dark); }
+    .data-table tr:last-child th,
+    .data-table tr:last-child td { border-bottom: none; }
+
+    /* ── Metric cards ── */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .metric-card {
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      border: 2px solid;
+    }
+    .metric-card.period-1 { background: rgba(16,185,129,0.1); border-color: #10b981; }
+    .metric-card.period-2 { background: rgba(245,158,11,0.1);  border-color: #f59e0b; }
+    .metric-card.period-3 { background: rgba(139,92,246,0.1);  border-color: #8b5cf6; }
+    .metric-card.total    { background: rgba(24,69,59,0.1);    border-color: var(--msu-green); }
+    .metric-label { font-size: 0.8em; color: #495057; font-weight: 600; margin-bottom: 4px; }
+    .metric-value { font-size: 1.2em; font-weight: 700; color: var(--msu-green); }
+
+    /* ── Insight boxes ── */
+    .insight-box {
+      background: #fff8e1;
+      border: 2px solid var(--msu-gold);
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 14px;
+      font-size: 0.9em;
+      line-height: 1.5;
+    }
+    .insight-box strong { color: #7a5c00; }
+    .concept-box {
+      background: #e8f0ee;
+      border: 2px solid var(--msu-green);
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 14px;
+      font-size: 0.9em;
+      line-height: 1.5;
+    }
+    .concept-box strong { color: var(--msu-green); }
+
+    /* ── Graph Panel ── */
+    .graph-panel {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .graph-wrapper {
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      overflow: hidden;
+      background: white;
+    }
+
+    /* ── Optimal strategy table ── */
+    .optimal-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9em;
+      margin: 10px 0;
+    }
+    .optimal-table th {
+      background: var(--msu-green);
+      color: white;
+      padding: 8px 10px;
+      text-align: left;
+    }
+    .optimal-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e9ecef;
+    }
+    .optimal-table tr:last-child td {
+      border-bottom: none;
+      font-weight: 700;
+      background: #f8f9fa;
+    }
+
+    .hidden { display: none; }
+
+    @media (max-width: 1100px) {
+      .content-wrapper { grid-template-columns: 1fr; }
+      .control-panel { border-right: none; border-bottom: 3px solid #e9ecef; max-height: none; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<div id="live-updates" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+<div class="container">
+
+  <!-- Header -->
+  <header class="header">
+    <h1>📱 Dynamic Pricing: The Z-Phone Challenge</h1>
+    <p>Explore intertemporal price discrimination and the Coase conjecture</p>
+  </header>
+
+  <!-- Scenario bar -->
+  <section class="scenario-bar" aria-label="Market scenario information">
+    <h2>📊 Market Scenario</h2>
+    <div class="scenario-info-text" id="scenario-info-text" aria-live="polite">
+      <strong>Demand:</strong> P = <span id="display-A">3000</span> − <span id="display-b">125</span>Q &nbsp;|&nbsp;
+      <strong>Marginal Cost:</strong> $<span id="display-MC">500</span> &nbsp;|&nbsp;
+      <strong>Q in millions of units</strong>
+    </div>
+    <button class="btn-new-scenario" id="btn-new-scenario" onclick="generateNewScenario()">
+      🔄 New Scenario
+    </button>
+  </section>
+
+  <!-- Main -->
+  <main id="main-content">
+    <div class="content-wrapper">
+
+      <!-- ── Control Panel ── -->
+      <aside class="control-panel" aria-label="Pricing controls and results">
+
+        <!-- Period navigation -->
+        <div role="group" aria-label="Select pricing period">
+          <p class="sr-only" id="period-nav-desc">Navigate between the three pricing periods. Complete each period in order.</p>
+          <div class="period-nav" aria-describedby="period-nav-desc">
+            <button class="period-btn active" id="nav-btn-1" aria-pressed="true"
+                    aria-label="Period 1: Early adopters" onclick="selectPeriod(1)">Period 1</button>
+            <button class="period-btn" id="nav-btn-2" aria-pressed="false" disabled
+                    aria-label="Period 2: Remaining buyers" onclick="selectPeriod(2)">Period 2</button>
+            <button class="period-btn" id="nav-btn-3" aria-pressed="false" disabled
+                    aria-label="Period 3: Price-sensitive buyers" onclick="selectPeriod(3)">Period 3</button>
+          </div>
+        </div>
+
+        <!-- Period 1 -->
+        <div id="panel-period-1" class="period-card" role="region" aria-labelledby="heading-period-1">
+          <h3 id="heading-period-1">Period 1 — Early Adopters</h3>
+          <div class="info-box" aria-label="Period 1 market information">
+            <p><strong>Demand:</strong> P = <span id="p1-intercept">3000</span> − <span id="p1-slope">125</span>Q</p>
+            <p>Set your introductory price to capture high-WTP customers</p>
+          </div>
+          <label for="slider-1" class="form-label" id="label-slider-1">
+            Period 1 Price:
+          </label>
+          <div class="current-price-display" id="display-price-1" aria-live="polite" aria-atomic="true">$500</div>
+          <input type="range" class="price-slider" id="slider-1"
+                 min="500" max="3000" value="500" step="25"
+                 aria-label="Period 1 price"
+                 aria-describedby="slider-1-desc"
+                 aria-valuemin="500" aria-valuemax="3000"
+                 aria-valuenow="500" aria-valuetext="$500"
+                 oninput="onSliderInput(1)">
+          <div class="slider-labels">
+            <span id="slider-1-min">$500 (MC)</span>
+            <span id="slider-1-max">$3,000</span>
+          </div>
+          <div id="slider-1-desc" class="sr-only">Drag or use arrow keys to set the Period 1 price. Shift+Arrow for fine control. Price range from marginal cost to demand intercept.</div>
+          <button class="btn-confirm" id="confirm-1" onclick="confirmPeriod(1)"
+                  aria-label="Confirm Period 1 price and advance to Period 2">
+            Confirm Price &amp; Continue →
+          </button>
+        </div>
+
+        <!-- Period 2 (hidden initially) -->
+        <div id="panel-period-2" class="period-card hidden" role="region" aria-labelledby="heading-period-2">
+          <h3 id="heading-period-2">Period 2 — Remaining Buyers</h3>
+          <div class="info-box" aria-label="Period 2 market information">
+            <p><strong>Demand:</strong> P = <span id="p2-intercept">—</span> − <span id="p2-slope">125</span>Q</p>
+            <p>Early adopters have already purchased at Period 1 price</p>
+          </div>
+          <label for="slider-2" class="form-label" id="label-slider-2">Period 2 Price:</label>
+          <div class="current-price-display" id="display-price-2" aria-live="polite" aria-atomic="true">$500</div>
+          <input type="range" class="price-slider" id="slider-2"
+                 min="500" max="3000" value="500" step="25"
+                 aria-label="Period 2 price"
+                 aria-describedby="slider-2-desc"
+                 aria-valuemin="500" aria-valuemax="3000"
+                 aria-valuenow="500" aria-valuetext="$500"
+                 oninput="onSliderInput(2)">
+          <div class="slider-labels">
+            <span id="slider-2-min">$500 (MC)</span>
+            <span id="slider-2-max">—</span>
+          </div>
+          <div id="slider-2-desc" class="sr-only">Set Period 2 price for remaining buyers. Demand intercept equals Period 1 price.</div>
+          <button class="btn-confirm" id="confirm-2" onclick="confirmPeriod(2)"
+                  aria-label="Confirm Period 2 price and advance to Period 3">
+            Confirm Price &amp; Continue →
+          </button>
+        </div>
+
+        <!-- Period 3 (hidden initially) -->
+        <div id="panel-period-3" class="period-card hidden" role="region" aria-labelledby="heading-period-3">
+          <h3 id="heading-period-3">Period 3 — Price-Sensitive Buyers</h3>
+          <div class="info-box" aria-label="Period 3 market information">
+            <p><strong>Demand:</strong> P = <span id="p3-intercept">—</span> − <span id="p3-slope">125</span>Q</p>
+            <p>Only the most price-sensitive consumers remain</p>
+          </div>
+          <label for="slider-3" class="form-label" id="label-slider-3">Period 3 Price:</label>
+          <div class="current-price-display" id="display-price-3" aria-live="polite" aria-atomic="true">$500</div>
+          <input type="range" class="price-slider" id="slider-3"
+                 min="500" max="3000" value="500" step="25"
+                 aria-label="Period 3 price"
+                 aria-describedby="slider-3-desc"
+                 aria-valuemin="500" aria-valuemax="3000"
+                 aria-valuenow="500" aria-valuetext="$500"
+                 oninput="onSliderInput(3)">
+          <div class="slider-labels">
+            <span id="slider-3-min">$500 (MC)</span>
+            <span id="slider-3-max">—</span>
+          </div>
+          <div id="slider-3-desc" class="sr-only">Set Period 3 price for price-sensitive buyers. Demand intercept equals Period 2 price.</div>
+          <button class="btn-confirm" id="confirm-3" onclick="confirmPeriod(3)"
+                  aria-label="Confirm Period 3 price and complete your strategy">
+            Complete Strategy ✓
+          </button>
+        </div>
+
+        <!-- Results (hidden until period 3 confirmed) -->
+        <div id="results-panel" class="results-panel hidden" role="region" aria-labelledby="results-heading" aria-live="polite">
+          <h3 id="results-heading">📈 Your Strategy Results</h3>
+
+          <!-- Metric cards -->
+          <div class="metrics-grid" aria-label="Period-by-period profit summary">
+            <div class="metric-card period-1" role="group" aria-label="Period 1 profit">
+              <div class="metric-label">Period 1 Profit</div>
+              <div class="metric-value" id="result-profit-1">—</div>
+            </div>
+            <div class="metric-card period-2" role="group" aria-label="Period 2 profit">
+              <div class="metric-label">Period 2 Profit</div>
+              <div class="metric-value" id="result-profit-2">—</div>
+            </div>
+            <div class="metric-card period-3" role="group" aria-label="Period 3 profit">
+              <div class="metric-label">Period 3 Profit</div>
+              <div class="metric-value" id="result-profit-3">—</div>
+            </div>
+            <div class="metric-card total" role="group" aria-label="Total profit all periods">
+              <div class="metric-label">Total Profit</div>
+              <div class="metric-value" id="result-profit-total">—</div>
+            </div>
+          </div>
+
+          <!-- Accessible data table -->
+          <table class="data-table" aria-label="Summary of your pricing strategy">
+            <caption>Your Pricing Strategy Summary</caption>
+            <thead>
+              <tr>
+                <th scope="col">Period</th>
+                <th scope="col">Your Price</th>
+                <th scope="col">Quantity (M)</th>
+                <th scope="col">Profit ($M)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Period 1</th>
+                <td id="tbl-p1">—</td>
+                <td id="tbl-q1">—</td>
+                <td id="tbl-pi1">—</td>
+              </tr>
+              <tr>
+                <th scope="row">Period 2</th>
+                <td id="tbl-p2">—</td>
+                <td id="tbl-q2">—</td>
+                <td id="tbl-pi2">—</td>
+              </tr>
+              <tr>
+                <th scope="row">Period 3</th>
+                <td id="tbl-p3">—</td>
+                <td id="tbl-q3">—</td>
+                <td id="tbl-pi3">—</td>
+              </tr>
+              <tr>
+                <th scope="row">Total</th>
+                <td>—</td>
+                <td id="tbl-qtotal">—</td>
+                <td id="tbl-pitotal">—</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <button class="btn-gold" onclick="showOptimalStrategy()"
+                  aria-label="Reveal the optimal pricing strategy for comparison">
+            💡 Show Optimal Strategy
+          </button>
+          <button class="btn-secondary" onclick="resetSimulation()"
+                  aria-label="Reset and try a new pricing strategy">
+            🔄 Try Again
+          </button>
+
+          <!-- Optimal strategy comparison (hidden until revealed) -->
+          <div id="optimal-panel" class="hidden" role="region" aria-labelledby="optimal-heading" aria-live="polite">
+            <h4 id="optimal-heading" style="color:var(--msu-green); margin: 14px 0 8px; font-size:1em;">Optimal vs. Your Strategy</h4>
+            <table class="optimal-table" aria-label="Comparison of your strategy versus the optimal strategy">
+              <thead>
+                <tr>
+                  <th scope="col">Period</th>
+                  <th scope="col">Your Price</th>
+                  <th scope="col">Optimal Price</th>
+                  <th scope="col">Your Profit</th>
+                  <th scope="col">Optimal Profit</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">1</th>
+                  <td id="opt-your-p1">—</td><td id="opt-p1">—</td>
+                  <td id="opt-your-pi1">—</td><td id="opt-pi1">—</td>
+                </tr>
+                <tr>
+                  <th scope="row">2</th>
+                  <td id="opt-your-p2">—</td><td id="opt-p2">—</td>
+                  <td id="opt-your-pi2">—</td><td id="opt-pi2">—</td>
+                </tr>
+                <tr>
+                  <th scope="row">3</th>
+                  <td id="opt-your-p3">—</td><td id="opt-p3">—</td>
+                  <td id="opt-your-pi3">—</td><td id="opt-pi3">—</td>
+                </tr>
+                <tr>
+                  <th scope="row">Total</th>
+                  <td colspan="2"></td>
+                  <td id="opt-your-total">—</td><td id="opt-total">—</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="insight-box" role="status" id="performance-insight" aria-live="polite"></div>
+            <div class="concept-box" style="margin-top:10px;">
+              <p><strong>Optimal rule:</strong> Each period, set P* = (demand intercept + MC) / 2. This is the midpoint between the current demand intercept and marginal cost—the profit-maximizing price given that period's residual demand.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Coase Conjecture box (always visible in control panel) -->
+        <div class="concept-box" style="margin-top: 16px;" role="complementary" aria-label="Coase conjecture explanation">
+          <p><strong>💡 The Coase Conjecture:</strong> If consumers anticipate that prices will fall, they wait to buy later. This forces the monopolist to cut prices faster, potentially driving price toward marginal cost. Real firms combat this with price guarantees, annual model refreshes, and leasing.</p>
+        </div>
+
+      </aside>
+
+      <!-- ── Graph Panel ── -->
+      <section class="graph-panel" aria-label="Dynamic pricing graph visualization">
+
+        <div class="graph-wrapper">
+          <div id="pricing-graph"
+               role="img"
+               aria-label="Demand curve and price strategy graph. Shows original demand, marginal cost line, and your pricing decisions across periods.">
+          </div>
+          <!-- Screen-reader text description of graph state -->
+          <div id="graph-description" class="sr-only" aria-live="polite"></div>
+        </div>
+
+        <!-- Accessible data table mirroring the graph -->
+        <table class="data-table" aria-label="Current graph data: demand intercepts and current price by period">
+          <caption>Current Graph Data</caption>
+          <thead>
+            <tr>
+              <th scope="col">Measure</th>
+              <th scope="col">Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">Demand Intercept (Period 1)</th><td id="gt-intercept-1">—</td></tr>
+            <tr><th scope="row">Demand Intercept (Period 2)</th><td id="gt-intercept-2">Not yet set</td></tr>
+            <tr><th scope="row">Demand Intercept (Period 3)</th><td id="gt-intercept-3">Not yet set</td></tr>
+            <tr><th scope="row">Marginal Cost</th><td id="gt-mc">—</td></tr>
+            <tr><th scope="row">Active Period Price</th><td id="gt-active-price">—</td></tr>
+            <tr><th scope="row">Active Period Quantity</th><td id="gt-active-q">—</td></tr>
+          </tbody>
+        </table>
+
+      </section>
+    </div>
+  </main>
+</div><!-- /.container -->
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────
+  let A = 3000, b = 125, MC = 500;
+  let prices = [null, null, null];
+  let quantities = [null, null, null];
+  let profits = [null, null, null];
+  let intercepts = [null, null, null];   // demand intercept for each period
+  let activePeriod = 1;                  // which period is currently being set
+
+  const GRAPH_ID = 'pricing-graph';
+  const PERIOD_COLORS = ['#10b981', '#f59e0b', '#8b5cf6'];
+
+  // ── Helpers ────────────────────────────────────────────────────────
+  function fmt(v)   { return '$' + v.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+  function fmtM(v)  { return '$' + v.toFixed(2) + 'M'; }
+  function fmtQ(v)  { return v.toFixed(2) + 'M'; }
+
+  function announceChange(msg) {
+    const el = document.getElementById('live-updates');
+    el.textContent = '';
+    setTimeout(() => { el.textContent = msg; }, 50);
+  }
+
+  // ── Initialization ─────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', function () {
+    initScenario();
+    setupKeyboardSliders();
+  });
+
+  function initScenario() {
+    activePeriod = 1;
+    prices = [null, null, null];
+    quantities = [null, null, null];
+    profits = [null, null, null];
+    intercepts = [A, null, null];
+
+    // Update scenario bar
+    document.getElementById('display-A').textContent = A;
+    document.getElementById('display-b').textContent = b;
+    document.getElementById('display-MC').textContent = MC;
+
+    // Period 1 setup
+    intercepts[0] = A;
+    document.getElementById('p1-intercept').textContent = A;
+    document.getElementById('p1-slope').textContent = b;
+    setupSlider(1, A);
+
+    // Reset panels
+    document.getElementById('panel-period-1').classList.remove('hidden');
+    document.getElementById('panel-period-2').classList.add('hidden');
+    document.getElementById('panel-period-3').classList.add('hidden');
+    document.getElementById('results-panel').classList.add('hidden');
+    document.getElementById('optimal-panel').classList.add('hidden');
+
+    // Period nav buttons
+    ['1','2','3'].forEach(n => {
+      const btn = document.getElementById('nav-btn-' + n);
+      btn.className = 'period-btn';
+      btn.setAttribute('aria-pressed', 'false');
+      btn.setAttribute('aria-label', `Period ${n}`);
+      btn.disabled = (n !== '1');
+    });
+    document.getElementById('nav-btn-1').classList.add('active');
+    document.getElementById('nav-btn-1').setAttribute('aria-pressed', 'true');
+
+    // Re-enable all confirm buttons (they were disabled at end of previous run)
+    [1, 2, 3].forEach(n => {
+      document.getElementById('confirm-' + n).disabled = false;
+    });
+
+    // Reset period 2 and 3 panel info text back to placeholders
+    document.getElementById('p2-intercept').textContent = '—';
+    document.getElementById('p3-intercept').textContent = '—';
+    document.getElementById('slider-2-max').textContent = '—';
+    document.getElementById('slider-3-max').textContent = '—';
+
+    // Graph table
+    document.getElementById('gt-intercept-1').textContent = fmt(A);
+    document.getElementById('gt-intercept-2').textContent = 'Not yet set';
+    document.getElementById('gt-intercept-3').textContent = 'Not yet set';
+    document.getElementById('gt-mc').textContent = fmt(MC);
+
+    drawGraph();
+  }
+
+  function setupSlider(period, intercept) {
+    const slider = document.getElementById('slider-' + period);
+    slider.min = MC;
+    slider.max = intercept;
+    slider.value = Math.round(MC);
+    slider.step = 25;
+    slider.setAttribute('aria-valuemin', MC);
+    slider.setAttribute('aria-valuemax', intercept);
+    slider.setAttribute('aria-valuenow', MC);
+    slider.setAttribute('aria-valuetext', fmt(MC));
+    document.getElementById('display-price-' + period).textContent = fmt(MC);
+    document.getElementById('slider-' + period + '-min').textContent = fmt(MC) + ' (MC)';
+    document.getElementById('slider-' + period + '-max').textContent = fmt(intercept);
+  }
+
+  function setupKeyboardSliders() {
+    [1, 2, 3].forEach(n => {
+      document.getElementById('slider-' + n).addEventListener('keydown', function (e) {
+        if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && e.shiftKey) {
+          e.preventDefault();
+          const step = 25;
+          const dir = e.key === 'ArrowRight' ? 1 : -1;
+          const newVal = Math.max(MC, Math.min(intercepts[n - 1], parseFloat(this.value) + step * dir));
+          this.value = newVal;
+          this.dispatchEvent(new Event('input'));
+        }
+      });
+    });
+  }
+
+  // ── Slider input ───────────────────────────────────────────────────
+  function onSliderInput(period) {
+    const val = parseFloat(document.getElementById('slider-' + period).value);
+    document.getElementById('display-price-' + period).textContent = fmt(val);
+    const slider = document.getElementById('slider-' + period);
+    slider.setAttribute('aria-valuenow', val);
+    slider.setAttribute('aria-valuetext', fmt(val));
+    updateGraphTable(period, val);
+    drawGraph();
+  }
+
+  function updateGraphTable(period, price) {
+    const q = Math.max(0, (intercepts[period - 1] - price) / b);
+    document.getElementById('gt-active-price').textContent = fmt(price);
+    document.getElementById('gt-active-q').textContent = fmtQ(q) + ' units';
+  }
+
+  // ── Period navigation ──────────────────────────────────────────────
+  function selectPeriod(n) {
+    // Can only go to periods that are active or completed
+    if (n > activePeriod) return;
+    activePeriod = n;
+    // Update nav visuals
+    for (let i = 1; i <= 3; i++) {
+      const btn = document.getElementById('nav-btn-' + i);
+      btn.setAttribute('aria-pressed', i === n ? 'true' : 'false');
+      if (!btn.classList.contains('completed')) {
+        btn.classList.toggle('active', i === n);
+      }
+    }
+    // Show correct panel
+    document.getElementById('panel-period-' + n).classList.remove('hidden');
+    for (let i = 1; i <= 3; i++) {
+      if (i !== n) document.getElementById('panel-period-' + i).classList.add('hidden');
+    }
+    drawGraph();
+  }
+
+  // ── Confirm period ─────────────────────────────────────────────────
+  function confirmPeriod(period) {
+    const price = parseFloat(document.getElementById('slider-' + period).value);
+    const intercept = intercepts[period - 1];
+    const q = Math.max(0, (intercept - price) / b);
+    const profit = (price - MC) * q;
+
+    prices[period - 1] = price;
+    quantities[period - 1] = q;
+    profits[period - 1] = profit;
+
+    // Mark nav button completed
+    const btn = document.getElementById('nav-btn-' + period);
+    btn.classList.remove('active');
+    btn.classList.add('completed');
+    btn.setAttribute('aria-label', `Period ${period}: completed at ${fmt(price)}`);
+
+    // Disable confirm button
+    document.getElementById('confirm-' + period).disabled = true;
+
+    if (period < 3) {
+      // Setup next period
+      const nextIntercept = price;
+      intercepts[period] = nextIntercept;
+
+      const nextPanel = document.getElementById('panel-period-' + (period + 1));
+      nextPanel.classList.remove('hidden');
+      document.getElementById('panel-period-' + period).classList.add('hidden');
+
+      document.getElementById('p' + (period + 1) + '-intercept').textContent = price.toFixed(0);
+      document.getElementById('p' + (period + 1) + '-slope').textContent = b;
+      setupSlider(period + 1, nextIntercept);
+
+      // Update graph table
+      document.getElementById('gt-intercept-' + (period + 1)).textContent = fmt(nextIntercept);
+
+      // Enable next nav button
+      activePeriod = period + 1;
+      const nextBtn = document.getElementById('nav-btn-' + (period + 1));
+      nextBtn.disabled = false;
+      nextBtn.classList.add('active');
+      nextBtn.setAttribute('aria-pressed', 'true');
+
+      announceChange(`Period ${period} confirmed at ${fmt(price)}, selling ${fmtQ(q)} million units. Now set Period ${period + 1} price. New demand intercept is ${fmt(nextIntercept)}.`);
+    } else {
+      // All periods done
+      document.getElementById('panel-period-3').classList.add('hidden');
+      activePeriod = 4; // done
+      showResults();
+      announceChange(`Strategy complete. Total profit: ${fmtM(profits.reduce((s, v) => s + v, 0))}. Review your results below.`);
+    }
+
+    drawGraph();
+  }
+
+  // ── Results ────────────────────────────────────────────────────────
+  function showResults() {
+    const totalQ = quantities.reduce((s, v) => s + v, 0);
+    const totalPi = profits.reduce((s, v) => s + v, 0);
+
+    for (let i = 0; i < 3; i++) {
+      document.getElementById('result-profit-' + (i + 1)).textContent = fmtM(profits[i]);
+      document.getElementById('tbl-p' + (i + 1)).textContent = fmt(prices[i]);
+      document.getElementById('tbl-q' + (i + 1)).textContent = fmtQ(quantities[i]);
+      document.getElementById('tbl-pi' + (i + 1)).textContent = fmtM(profits[i]);
+    }
+    document.getElementById('result-profit-total').textContent = fmtM(totalPi);
+    document.getElementById('tbl-qtotal').textContent = fmtQ(totalQ);
+    document.getElementById('tbl-pitotal').textContent = fmtM(totalPi);
+
+    document.getElementById('results-panel').classList.remove('hidden');
+  }
+
+  function showOptimalStrategy() {
+    // Compute optimal for each period
+    const optP = [], optQ = [], optPi = [];
+    let intercept = A;
+    for (let i = 0; i < 3; i++) {
+      const p = (intercept + MC) / 2;
+      const q = Math.max(0, (intercept - p) / b);
+      optP.push(p);
+      optQ.push(q);
+      optPi.push((p - MC) * q);
+      intercept = p;
+    }
+    const optTotal = optPi.reduce((s, v) => s + v, 0);
+    const yourTotal = profits.reduce((s, v) => s + v, 0);
+    const pct = (yourTotal / optTotal * 100).toFixed(1);
+
+    for (let i = 0; i < 3; i++) {
+      document.getElementById('opt-your-p' + (i + 1)).textContent = fmt(prices[i]);
+      document.getElementById('opt-p' + (i + 1)).textContent = fmt(optP[i]);
+      document.getElementById('opt-your-pi' + (i + 1)).textContent = fmtM(profits[i]);
+      document.getElementById('opt-pi' + (i + 1)).textContent = fmtM(optPi[i]);
+    }
+    document.getElementById('opt-your-total').textContent = fmtM(yourTotal);
+    document.getElementById('opt-total').textContent = fmtM(optTotal);
+
+    let msg = '';
+    if (yourTotal >= optTotal * 0.95) {
+      msg = `🎉 Excellent! You captured ${pct}% of the maximum possible profit — essentially optimal!`;
+    } else if (yourTotal >= optTotal * 0.85) {
+      msg = `✓ Good work! You captured ${pct}% of the maximum possible profit. Close to optimal.`;
+    } else {
+      msg = `You captured ${pct}% of the maximum possible profit. Try using P* = (intercept + MC) / 2 in each period.`;
+    }
+    document.getElementById('performance-insight').innerHTML = `<strong>Performance:</strong> ${msg}`;
+    document.getElementById('optimal-panel').classList.remove('hidden');
+    announceChange(`Optimal strategy revealed. You captured ${pct}% of maximum profit. ${msg}`);
+  }
+
+  function resetSimulation() {
+    initScenario();
+    announceChange('Simulation reset. Set your Period 1 price using the slider.');
+  }
+
+  function generateNewScenario() {
+    const scenarios = [
+      {A: 3000, b: 125, MC: 500},
+      {A: 4000, b: 100, MC: 600},
+      {A: 2500, b: 150, MC: 400},
+      {A: 3500, b: 120, MC: 550},
+      {A: 5000, b: 200, MC: 800}
+    ];
+    const s = scenarios[Math.floor(Math.random() * scenarios.length)];
+    A = s.A; b = s.b; MC = s.MC;
+    initScenario();
+    announceChange(`New scenario loaded. Demand: P = ${A} minus ${b}Q. Marginal cost: ${fmt(MC)}.`);
+  }
+
+  // ── Graph ──────────────────────────────────────────────────────────
+  function drawGraph() {
+    const traces = [];
+    const qMax = (A - 0) / b;   // x-axis max
+
+    // Original demand (dashed reference)
+    traces.push({
+      x: [0, A / b],
+      y: [A, 0],
+      mode: 'lines',
+      name: 'Original Demand',
+      line: { color: '#cbd5e1', width: 2, dash: 'dot' },
+      hovertemplate: 'Original Demand<br>P = %{y:.0f}<extra></extra>'
+    });
+
+    // MC line
+    traces.push({
+      x: [0, qMax * 1.05],
+      y: [MC, MC],
+      mode: 'lines',
+      name: 'Marginal Cost (MC)',
+      line: { color: '#ef4444', width: 2, dash: 'dash' },
+      hovertemplate: 'MC = $' + MC + '<extra></extra>'
+    });
+
+    // ── Profit rectangles first (bottom layer) ──
+    // Draw fills before any lines so demand curves render on top
+    const FILL_COLORS = ['rgba(16,185,129,0.18)', 'rgba(245,158,11,0.18)', 'rgba(139,92,246,0.18)'];
+    let cumQ = 0;
+    for (let i = 0; i < 3; i++) {
+      if (prices[i] === null) break;
+      const p = prices[i];
+      const q = quantities[i];
+      traces.push({
+        x: [cumQ, cumQ + q, cumQ + q, cumQ, cumQ],
+        y: [MC, MC, p, p, MC],
+        mode: 'lines',
+        fill: 'toself',
+        fillcolor: FILL_COLORS[i],
+        line: { color: 'transparent', width: 0 },
+        name: `Period ${i + 1} Profit Area`,
+        showlegend: false,
+        hoverinfo: 'skip'
+      });
+      cumQ += q;
+    }
+
+    // ── Price bars (confirmed periods) ──
+    cumQ = 0;
+    for (let i = 0; i < 3; i++) {
+      if (prices[i] === null) break;
+      const p = prices[i];
+      const q = quantities[i];
+      const color = PERIOD_COLORS[i];
+      traces.push({
+        x: [cumQ, cumQ + q],
+        y: [p, p],
+        mode: 'lines+markers',
+        name: `P${i + 1} = ${fmt(p)}`,
+        line: { color: color, width: 3 },
+        marker: { size: 8, color: color },
+        hovertemplate: 'Period ' + (i + 1) + '<br>Price: $%{y:.0f}<extra></extra>'
+      });
+      cumQ += q;
+    }
+
+    // ── All period demand curves (drawn after fills so they appear on top) ──
+    // Draw completed period curves (dashed, colored)
+    for (let i = 0; i < 3; i++) {
+      if (intercepts[i] === null) break;
+      if (i === activePeriod - 1) continue; // draw active one last (solid, on very top)
+      const ic = intercepts[i];
+      traces.push({
+        x: [0, ic / b],
+        y: [ic, 0],
+        mode: 'lines',
+        name: `Period ${i + 1} Demand`,
+        line: { color: PERIOD_COLORS[i], width: 2, dash: 'dash' },
+        hovertemplate: `Period ${i + 1} Demand<br>P = %{y:.0f}<extra></extra>`
+      });
+    }
+
+    // Active period demand — drawn last so it's on top
+    if (activePeriod <= 3 && intercepts[activePeriod - 1] !== null) {
+      const ic = intercepts[activePeriod - 1];
+      traces.push({
+        x: [0, ic / b],
+        y: [ic, 0],
+        mode: 'lines',
+        name: `Period ${activePeriod} Demand (active)`,
+        line: { color: '#18453B', width: 3 },
+        hovertemplate: 'Period ' + activePeriod + ' Demand<br>P = %{y:.0f}<extra></extra>'
+      });
+    }
+
+    // Active period current price cursor
+    cumQ = quantities.filter(q => q !== null).reduce((s, v) => s + v, 0);
+    if (activePeriod <= 3) {
+      const slider = document.getElementById('slider-' + activePeriod);
+      if (slider) {
+        const curPrice = parseFloat(slider.value);
+        const curIntercept = intercepts[activePeriod - 1];
+        const curQ = Math.max(0, (curIntercept - curPrice) / b);
+        traces.push({
+          x: [cumQ, cumQ + curQ],
+          y: [curPrice, curPrice],
+          mode: 'lines+markers',
+          name: `Current: ${fmt(curPrice)}`,
+          line: { color: '#18453B', width: 3, dash: 'dot' },
+          marker: { size: 10, symbol: 'diamond', color: '#18453B' },
+          hovertemplate: 'Your Price: $%{y:.0f}<br>Q = %{x:.2f}M<extra></extra>'
+        });
+      }
+    }
+
+    const layout = {
+      xaxis: {
+        title: { text: 'Quantity (millions of units)', font: { size: 13 } },
+        range: [0, qMax * 1.12],
+        fixedrange: true,
+        showgrid: true, gridcolor: '#f0f0f0'
+      },
+      yaxis: {
+        title: { text: 'Price ($)', font: { size: 13 } },
+        range: [0, A * 1.12],
+        fixedrange: true,
+        tickprefix: '$',
+        showgrid: true, gridcolor: '#f0f0f0'
+      },
+      showlegend: true,
+      legend: { x: 0.98, y: 0.98, xanchor: 'right', yanchor: 'top', bgcolor: 'rgba(255,255,255,0.85)', bordercolor: '#ccc', borderwidth: 1 },
+      margin: { l: 65, r: 30, t: 40, b: 65 },
+      autosize: false,
+      width: 700,
+      height: 500,
+      plot_bgcolor: '#fafafa',
+      paper_bgcolor: 'white'
+    };
+
+    const config = { responsive: false, displayModeBar: false, staticPlot: false };
+
+    Plotly.newPlot(GRAPH_ID, traces, layout, config);
+    updateGraphTextDescription();
+  }
+
+  function updateGraphTextDescription() {
+    const confirmedPeriods = prices.filter(p => p !== null).length;
+    let desc = `Graph showing dynamic pricing for Z-Phone. Original demand: P = ${A} minus ${b}Q. Marginal cost: $${MC}. `;
+    if (confirmedPeriods === 0) {
+      desc += `No periods confirmed yet. Period 1 demand intercept is $${A}.`;
+    } else {
+      for (let i = 0; i < confirmedPeriods; i++) {
+        desc += `Period ${i + 1}: price $${prices[i].toFixed(0)}, quantity ${quantities[i].toFixed(2)} million units, profit $${profits[i].toFixed(2)} million. `;
+      }
+    }
+    if (activePeriod <= 3) {
+      const slider = document.getElementById('slider-' + activePeriod);
+      if (slider) {
+        const cp = parseFloat(slider.value);
+        const cq = Math.max(0, (intercepts[activePeriod - 1] - cp) / b);
+        desc += `Period ${activePeriod} currently considering price ${fmt(cp)}, implied quantity ${fmtQ(cq)} million units.`;
+      }
+    }
+    document.getElementById('graph-description').textContent = desc;
+  }
+
+</script>
+</body>
+</html>

@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bundle Pricing Strategy Simulator</title>
+  <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+  <style>
+    /* ── Skip Link ── */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: #18453B;
+      color: white;
+      padding: 8px 16px;
+      z-index: 9999;
+      font-weight: 700;
+      text-decoration: none;
+      border-radius: 0 0 6px 0;
+      transition: top 0.2s;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ── Screen-reader only ── */
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ── Live region ── */
+    .live-region {
+      position: absolute;
+      left: -10000px;
+      width: 1px; height: 1px;
+      overflow: hidden;
+    }
+
+    /* ── Root / Reset ── */
+    :root {
+      --msu-green:   #18453B;
+      --msu-green2:  #2d5a4f;
+      --msu-gold:    #C89A2A;
+      --blue:        #2563eb;
+      --orange:      #f97316;
+      --green-acc:   #059669;
+      --red:         #dc2626;
+      --bg-page:     #f0f4f0;
+      --bg-light:    #f8f9fa;
+      --border:      #e2e8f0;
+      --text-dark:   #1a1a1a;
+      --focus-ring:  #C89A2A;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: var(--text-dark);
+      padding: 20px;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ── Focus visible (WCAG 2.4.11) ── */
+    :focus-visible {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 3px;
+    }
+
+    /* ── Container ── */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, var(--msu-green), var(--msu-green2));
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 { font-size: 2em; margin-bottom: 8px; }
+    .header p  { font-size: 1.05em; opacity: 0.9; }
+    .header .assumptions {
+      font-size: 0.9rem;
+      margin-top: 10px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 8px;
+      padding: 10px 16px;
+      display: inline-block;
+    }
+
+    /* ── Scenario strip ── */
+    .scenario-strip {
+      background: var(--bg-light);
+      padding: 18px 28px;
+      border-bottom: 3px solid var(--msu-green);
+    }
+    .scenario-strip h2 {
+      color: var(--msu-green);
+      margin-bottom: 12px;
+      font-size: 1.15em;
+    }
+    .scenario-btns {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .scenario-btn {
+      flex: 1;
+      min-width: 160px;
+      padding: 12px 16px;
+      font-size: 0.95em;
+      font-weight: 600;
+      border: 3px solid var(--msu-green);
+      background: white;
+      color: var(--msu-green);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.25s;
+    }
+    .scenario-btn:hover,
+    .scenario-btn:focus-visible {
+      background: var(--msu-green);
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(24,69,59,0.3);
+    }
+    .scenario-btn[aria-pressed="true"] {
+      background: var(--msu-green);
+      color: white;
+    }
+
+    /* ── Main grid ── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      gap: 0;
+      min-height: 620px;
+    }
+
+    /* ── Left panel ── */
+    .left-panel {
+      background: var(--bg-light);
+      padding: 24px;
+      border-right: 3px solid var(--border);
+      overflow-y: auto;
+      max-height: 860px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ── Reservation price table ── */
+    .wtp-section h3 {
+      color: var(--msu-green);
+      margin-bottom: 12px;
+      font-size: 1.1em;
+    }
+    .wtp-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid var(--border);
+    }
+    .wtp-table caption {
+      text-align: left;
+      padding: 8px 12px;
+      background: var(--bg-light);
+      font-weight: 600;
+      color: var(--msu-green);
+      border-bottom: 2px solid var(--border);
+    }
+    .wtp-table th, .wtp-table td {
+      padding: 10px 12px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .wtp-table th {
+      background: var(--msu-green);
+      color: white;
+      font-weight: 600;
+    }
+    .wtp-table tr:last-child td { border-bottom: none; }
+    .wtp-table tr:hover td { background: #f0f8f5; }
+    .wtp-note {
+      font-size: 0.82rem;
+      color: #6c757d;
+      font-style: italic;
+      margin-top: 6px;
+    }
+
+    /* ── Strategy panel ── */
+    .strategy-section h3 {
+      color: var(--msu-green);
+      margin-bottom: 12px;
+      font-size: 1.1em;
+    }
+    .strategy-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .strategy-btn {
+      padding: 14px 16px;
+      border: 3px solid var(--border);
+      border-radius: 10px;
+      background: white;
+      font-size: 0.97em;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.25s;
+      color: var(--text-dark);
+    }
+    .strategy-btn .strat-sub {
+      font-weight: 400;
+      font-size: 0.88em;
+      color: #555;
+      display: block;
+      margin-top: 2px;
+    }
+    .strategy-btn:hover,
+    .strategy-btn:focus-visible {
+      border-color: var(--msu-green);
+      background: #f0f8f5;
+    }
+    .strategy-btn[aria-pressed="true"] {
+      background: var(--msu-green);
+      color: white;
+      border-color: var(--msu-green);
+    }
+    .strategy-btn[aria-pressed="true"] .strat-sub { color: rgba(255,255,255,0.8); }
+
+    /* ── Price inputs ── */
+    .price-inputs {
+      background: white;
+      border: 2px solid #0891b2;
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .price-inputs h4 {
+      color: #0891b2;
+      margin-bottom: 14px;
+      font-size: 1em;
+    }
+    .input-row {
+      margin-bottom: 14px;
+    }
+    .input-row label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text-dark);
+      font-size: 0.95em;
+    }
+    .price-field {
+      width: 100%;
+      padding: 10px 12px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-size: 1em;
+      transition: border-color 0.2s;
+    }
+    .price-field:focus-visible {
+      border-color: var(--msu-green);
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
+    .calc-btn {
+      width: 100%;
+      padding: 12px;
+      background: var(--green-acc);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1em;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s;
+      margin-top: 4px;
+    }
+    .calc-btn:hover, .calc-btn:focus-visible {
+      background: #047857;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(4,120,87,0.3);
+    }
+
+    /* ── Results ── */
+    .results-box {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      border: 3px solid #d97706;
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .results-box h4 {
+      color: #b45309;
+      margin-bottom: 10px;
+      font-size: 1em;
+    }
+    .profit-big {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--green-acc);
+      text-align: center;
+      margin: 12px 0;
+    }
+    .purchase-list {
+      background: white;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 10px;
+    }
+    .purchase-item {
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.92em;
+    }
+    .purchase-item:last-child { border-bottom: none; }
+    .reset-btn {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      background: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s;
+    }
+    .reset-btn:hover, .reset-btn:focus-visible {
+      background: #5a6268;
+      transform: translateY(-2px);
+    }
+    .optimal-btn {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      background: var(--msu-gold);
+      color: #1a1a1a;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95em;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s;
+    }
+    .optimal-btn:hover, .optimal-btn:focus-visible {
+      background: #a87d1e;
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    /* ── Optimal comparison ── */
+    .optimal-box {
+      background: linear-gradient(135deg, #fef2f2, #fee2e2);
+      border: 3px solid var(--red);
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .optimal-box h4 { color: var(--red); margin-bottom: 12px; }
+    .opt-step {
+      background: white;
+      border-left: 4px solid var(--blue);
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 10px;
+      font-size: 0.92em;
+    }
+    .opt-step.winner {
+      border-left-color: var(--green-acc);
+      background: #d1fae5;
+    }
+
+    /* ── Right panel ── */
+    .right-panel {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ── Graph wrapper ── */
+    .graph-wrapper {
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: white;
+    }
+    .graph-desc-box {
+      background: var(--bg-light);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .graph-desc-box h4 {
+      color: var(--msu-green);
+      margin-bottom: 10px;
+      font-size: 1em;
+    }
+    #graph-description { font-size: 0.93em; line-height: 1.65; }
+
+    /* ── Concept box ── */
+    .concept-box {
+      background: #e7f3ff;
+      border: 2px solid #2563eb;
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .concept-box h4 { color: #1d4ed8; margin-bottom: 10px; font-size: 1em; }
+    .concept-box p, .concept-box li { font-size: 0.93em; }
+    .concept-box ul { padding-left: 18px; }
+    .concept-box li { margin-bottom: 4px; }
+
+    /* ── Data table (accessibility) ── */
+    .data-table-section { margin-top: 10px; }
+    .data-table-section h4 {
+      color: var(--msu-green);
+      margin-bottom: 10px;
+      font-size: 1em;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid var(--border);
+      font-size: 0.92em;
+    }
+    .data-table caption {
+      padding: 8px 12px;
+      font-weight: 700;
+      color: var(--msu-green);
+      text-align: left;
+      background: var(--bg-light);
+      border-bottom: 2px solid var(--border);
+    }
+    .data-table th, .data-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .data-table th {
+      background: var(--bg-light);
+      font-weight: 700;
+      color: var(--msu-green);
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: #f0f8f5; }
+
+    /* ── Utilities ── */
+    .hidden { display: none !important; }
+
+    @media (max-width: 1024px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .left-panel { border-right: none; border-bottom: 3px solid var(--border); max-height: none; }
+    }
+  </style>
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- ARIA live region for screen reader announcements -->
+<div id="live-updates" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+<div class="container" role="main" id="main-content">
+
+  <!-- ── Header ── -->
+  <header class="header">
+    <h1>🎁 Bundle Pricing Strategy Simulator</h1>
+    <p>Explore how bundling products can maximize profit by capturing consumer surplus</p>
+    <p class="assumptions">
+      <strong>Assumptions:</strong> Marginal costs are zero (profit = revenue).
+      Table values are reservation prices — each customer's maximum willingness to pay.
+    </p>
+  </header>
+
+  <!-- ── Scenario selection ── -->
+  <section class="scenario-strip" aria-label="Choose a business scenario">
+    <h2>📊 Select Business Scenario</h2>
+    <div class="scenario-btns" role="group" aria-label="Business scenarios">
+      <button class="scenario-btn" id="btn-fastfood"   aria-pressed="true"  onclick="loadScenario('fastfood')">🍔 Fast Food<br><small>Burger &amp; Fries</small></button>
+      <button class="scenario-btn" id="btn-appliances" aria-pressed="false" onclick="loadScenario('appliances')">🧺 Appliances<br><small>Washer &amp; Dryer</small></button>
+      <button class="scenario-btn" id="btn-software"   aria-pressed="false" onclick="loadScenario('software')">💻 Software<br><small>Word &amp; Spreadsheet</small></button>
+      <button class="scenario-btn" id="btn-streaming"  aria-pressed="false" onclick="loadScenario('streaming')">📺 Streaming<br><small>Video &amp; Music</small></button>
+      <button class="scenario-btn" id="btn-insurance"  aria-pressed="false" onclick="loadScenario('insurance')">🏠 Insurance<br><small>Home &amp; Auto</small></button>
+    </div>
+  </section>
+
+  <!-- ── Main grid ── -->
+  <div class="main-grid">
+
+    <!-- ── LEFT PANEL ── -->
+    <div class="left-panel" role="region" aria-label="Pricing controls">
+
+      <!-- Reservation price table -->
+      <section class="wtp-section" aria-label="Customer willingness to pay">
+        <h3>👥 Customer Reservation Prices</h3>
+        <table class="wtp-table" id="wtp-table" aria-describedby="wtp-note">
+          <caption id="wtp-caption">Fast Food Restaurant</caption>
+          <thead>
+            <tr>
+              <th scope="col">Customer</th>
+              <th scope="col" id="col-p1">Burger</th>
+              <th scope="col" id="col-p2">Fries</th>
+            </tr>
+          </thead>
+          <tbody id="wtp-tbody"></tbody>
+        </table>
+        <p class="wtp-note" id="wtp-note">Values are reservation prices (maximum willingness to pay, in dollars)</p>
+      </section>
+
+      <!-- Strategy selection -->
+      <section class="strategy-section" aria-label="Choose a pricing strategy">
+        <h3>💰 Choose Pricing Strategy</h3>
+        <div class="strategy-group" role="group" aria-label="Pricing strategies">
+          <button class="strategy-btn" id="strat-separate" aria-pressed="false"
+                  onclick="selectStrategy('separate')">
+            Separate Pricing
+            <span class="strat-sub">Sell each product individually at its own price</span>
+          </button>
+          <button class="strategy-btn" id="strat-bundle" aria-pressed="false"
+                  onclick="selectStrategy('bundle')">
+            Pure Bundling
+            <span class="strat-sub">Only sell products together as a bundle</span>
+          </button>
+          <button class="strategy-btn" id="strat-mixed" aria-pressed="false"
+                  onclick="selectStrategy('mixed')">
+            Mixed Bundling
+            <span class="strat-sub">Offer individual items and a bundle discount</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Price inputs (revealed after strategy chosen) -->
+      <section class="price-inputs hidden" id="price-inputs-panel"
+               aria-label="Set prices" aria-live="polite">
+        <h4>💵 Set Your Prices</h4>
+
+        <div class="input-row hidden" id="row-p1">
+          <label for="price1" id="lbl-p1">Burger Price ($):</label>
+          <input type="number" id="price1" class="price-field"
+                 value="0" step="1" min="0" aria-labelledby="lbl-p1"
+                 aria-describedby="hint-p1">
+          <span id="hint-p1" class="sr-only">Enter the price you want to charge for this product</span>
+        </div>
+
+        <div class="input-row hidden" id="row-p2">
+          <label for="price2" id="lbl-p2">Fries Price ($):</label>
+          <input type="number" id="price2" class="price-field"
+                 value="0" step="1" min="0" aria-labelledby="lbl-p2"
+                 aria-describedby="hint-p2">
+          <span id="hint-p2" class="sr-only">Enter the price you want to charge for this product</span>
+        </div>
+
+        <div class="input-row hidden" id="row-bundle">
+          <label for="bundlePrice">Bundle Price ($):</label>
+          <input type="number" id="bundlePrice" class="price-field"
+                 value="0" step="1" min="0"
+                 aria-describedby="hint-bundle">
+          <span id="hint-bundle" class="sr-only">Enter the combined price for the bundle</span>
+        </div>
+
+        <button class="calc-btn" onclick="calculateProfit()"
+                aria-describedby="calc-hint">
+          📊 Calculate Profit
+        </button>
+        <span id="calc-hint" class="sr-only">Calculates which customers buy and total revenue</span>
+      </section>
+
+      <!-- Results (revealed after calculation) -->
+      <section class="results-box hidden" id="results-panel"
+               aria-label="Profit results" aria-live="polite">
+        <h4>📈 Results</h4>
+        <p class="profit-big" id="profit-display" aria-atomic="true">$0</p>
+        <div class="purchase-list" id="purchase-list" aria-label="Customer purchase decisions"></div>
+        <button class="reset-btn" onclick="resetScenario()">🔄 Try Different Prices</button>
+        <button class="optimal-btn" onclick="showOptimal()">💡 Show Optimal Strategy</button>
+      </section>
+
+      <!-- Optimal comparison (revealed on demand) -->
+      <section class="optimal-box hidden" id="optimal-panel"
+               aria-label="Optimal pricing comparison" aria-live="polite">
+        <h4>🏆 Optimal Strategy Comparison</h4>
+        <div id="optimal-content"></div>
+      </section>
+
+    </div><!-- /left-panel -->
+
+    <!-- ── RIGHT PANEL ── -->
+    <div class="right-panel" role="region" aria-label="Visualization and analysis">
+
+      <!-- Plotly graph -->
+      <div class="graph-wrapper" role="img"
+           aria-label="Demand curves for individual products and bundle"
+           aria-describedby="graph-description">
+        <div id="demand-graph"></div>
+      </div>
+
+      <!-- Text description of graph for screen readers / alternative access -->
+      <div class="graph-desc-box" id="graph-desc-section">
+        <h4>📋 Graph Description</h4>
+        <p id="graph-description">
+          Select a scenario to see demand curves for each product and their bundle.
+        </p>
+      </div>
+
+      <!-- Concept explainer -->
+      <div class="concept-box" role="complementary" aria-label="Economic concept explanation">
+        <h4>🎓 Why Does Bundling Work?</h4>
+        <p>Bundling is most profitable when customers have <strong>negatively correlated preferences</strong> — one customer values Product A highly but Product B less, while another has opposite preferences.</p>
+        <ul>
+          <li><strong>Separate pricing</strong> — best when customers have similar, homogeneous preferences.</li>
+          <li><strong>Pure bundling</strong> — smooths out diverse preferences; customers pay similar totals even when individual valuations differ. Captures more surplus.</li>
+          <li><strong>Mixed bundling</strong> — charges premium prices to high-value customers for individual items, while using the bundle to capture customers with moderate valuations for both.</li>
+        </ul>
+        <p style="margin-top:8px">The key insight: bundling <em>aggregates</em> willingness to pay, reducing the variance across customers and letting the firm set a higher price without excluding buyers.</p>
+      </div>
+
+      <!-- Accessible data table (mirrors graph) -->
+      <div class="data-table-section">
+        <h4>📊 Demand Data Table</h4>
+        <table class="data-table" id="demand-data-table" aria-describedby="demand-table-note">
+          <caption>Sorted Willingness to Pay by Product</caption>
+          <thead>
+            <tr>
+              <th scope="col">Rank</th>
+              <th scope="col" id="dt-col-p1">Burger WTP</th>
+              <th scope="col" id="dt-col-p2">Fries WTP</th>
+              <th scope="col">Bundle WTP (Sum)</th>
+            </tr>
+          </thead>
+          <tbody id="demand-table-body"></tbody>
+        </table>
+        <p id="demand-table-note" class="wtp-note">Customers are ranked from highest to lowest willingness to pay for each product independently. The bundle WTP is the sum of both individual values.</p>
+      </div>
+
+    </div><!-- /right-panel -->
+
+  </div><!-- /main-grid -->
+</div><!-- /container -->
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────
+const scenarios = {
+  fastfood: {
+    name: "Fast Food Restaurant",
+    p1: "Burger", p2: "Fries",
+    customers: [
+      { name: "Bob",    p1: 10, p2: 5  },
+      { name: "Frankie",p1: 5,  p2: 10 },
+      { name: "Alex",   p1: 8,  p2: 8  }
+    ],
+    sep:   { p1: 8,   p2: 8,   profit: 32 },
+    pure:  { bp: 15,           profit: 45 },
+    mixed: { p1: 10,  p2: 10,  bp: 16, profit: 36 }
+  },
+  appliances: {
+    name: "Home Appliances Store",
+    p1: "Washer", p2: "Dryer",
+    customers: [
+      { name: "Casey",  p1: 800, p2: 200 },
+      { name: "Jordan", p1: 200, p2: 800 },
+      { name: "Taylor", p1: 550, p2: 550 }
+    ],
+    sep:   { p1: 550, p2: 550, profit: 2200 },
+    pure:  { bp: 1000,         profit: 3000 },
+    mixed: { p1: 800, p2: 800, bp: 1100, profit: 2700 }
+  },
+  software: {
+    name: "Software Company",
+    p1: "Word Processor", p2: "Spreadsheet",
+    customers: [
+      { name: "Writer",  p1: 120, p2: 20  },
+      { name: "Analyst", p1: 20,  p2: 120 },
+      { name: "Manager", p1: 80,  p2: 80  }
+    ],
+    sep:   { p1: 80,  p2: 80,  profit: 320 },
+    pure:  { bp: 140,          profit: 420 },
+    mixed: { p1: 120, p2: 120, bp: 160, profit: 400 }
+  },
+  streaming: {
+    name: "Streaming Service",
+    p1: "Video", p2: "Music",
+    customers: [
+      { name: "Cinephile",  p1: 18, p2: 2  },
+      { name: "Audiophile", p1: 2,  p2: 18 },
+      { name: "Casey",      p1: 12, p2: 12 }
+    ],
+    sep:   { p1: 12, p2: 12, profit: 48 },
+    pure:  { bp: 20,         profit: 60 },
+    mixed: { p1: 18, p2: 18, bp: 24, profit: 60 }
+  },
+  insurance: {
+    name: "Insurance Company",
+    p1: "Home Insurance", p2: "Auto Insurance",
+    customers: [
+      { name: "Alex",   p1: 75, p2: 0  },
+      { name: "Debbie", p1: 0,  p2: 75 },
+      { name: "Bailey", p1: 65, p2: 50 },
+      { name: "Chris",  p1: 50, p2: 65 }
+    ],
+    sep:   { p1: 50, p2: 50, profit: 300 },
+    pure:  { bp: 75,         profit: 300 },
+    mixed: { p1: 75, p2: 75, bp: 115, profit: 380 }
+  }
+};
+
+// ── State ─────────────────────────────────────────────────────────────
+let currentKey      = 'fastfood';
+let currentStrategy = null;
+
+// ── Announce to screen readers ────────────────────────────────────────
+function announce(msg) {
+  const el = document.getElementById('live-updates');
+  el.textContent = '';
+  requestAnimationFrame(() => { el.textContent = msg; });
+}
+
+// ── Load scenario ─────────────────────────────────────────────────────
+function loadScenario(key) {
+  currentKey = key;
+  const sc = scenarios[key];
+
+  // Update scenario button states
+  Object.keys(scenarios).forEach(k => {
+    const btn = document.getElementById('btn-' + k);
+    if (btn) btn.setAttribute('aria-pressed', k === key ? 'true' : 'false');
+  });
+
+  // Update WTP table
+  document.getElementById('wtp-caption').textContent = sc.name;
+  document.getElementById('col-p1').textContent = sc.p1;
+  document.getElementById('col-p2').textContent = sc.p2;
+
+  const tbody = document.getElementById('wtp-tbody');
+  tbody.innerHTML = sc.customers.map(c =>
+    `<tr>
+      <td><strong>${c.name}</strong></td>
+      <td>$${c.p1.toLocaleString()}</td>
+      <td>$${c.p2.toLocaleString()}</td>
+    </tr>`
+  ).join('');
+
+  // Update price input labels
+  document.getElementById('lbl-p1').textContent = sc.p1 + ' Price ($):';
+  document.getElementById('lbl-p2').textContent = sc.p2 + ' Price ($):';
+  document.getElementById('dt-col-p1').textContent = sc.p1 + ' WTP';
+  document.getElementById('dt-col-p2').textContent = sc.p2 + ' WTP';
+
+  // Reset strategy
+  resetScenario();
+  updateGraph();
+  updateDemandTable();
+
+  announce('Scenario changed to ' + sc.name + '. Select a pricing strategy to begin.');
+}
+
+// ── Select strategy ───────────────────────────────────────────────────
+function selectStrategy(strat) {
+  currentStrategy = strat;
+
+  // Update strategy button states
+  ['separate','bundle','mixed'].forEach(s => {
+    document.getElementById('strat-' + s)
+            .setAttribute('aria-pressed', s === strat ? 'true' : 'false');
+  });
+
+  // Show inputs panel
+  const panel = document.getElementById('price-inputs-panel');
+  panel.classList.remove('hidden');
+
+  // Show/hide individual input rows
+  document.getElementById('row-p1').classList.toggle('hidden',    strat === 'bundle');
+  document.getElementById('row-p2').classList.toggle('hidden',    strat === 'bundle');
+  document.getElementById('row-bundle').classList.toggle('hidden', strat === 'separate');
+
+  // Hide results
+  document.getElementById('results-panel').classList.add('hidden');
+  document.getElementById('optimal-panel').classList.add('hidden');
+
+  // Reset values
+  document.getElementById('price1').value     = 0;
+  document.getElementById('price2').value     = 0;
+  document.getElementById('bundlePrice').value = 0;
+
+  const labels = { separate: 'Separate Pricing', bundle: 'Pure Bundling', mixed: 'Mixed Bundling' };
+  announce(labels[strat] + ' selected. Enter your prices and click Calculate Profit.');
+}
+
+// ── Calculate profit ──────────────────────────────────────────────────
+function calculateProfit() {
+  const sc  = scenarios[currentKey];
+  const p1  = parseFloat(document.getElementById('price1').value)     || 0;
+  const p2  = parseFloat(document.getElementById('price2').value)     || 0;
+  const bp  = parseFloat(document.getElementById('bundlePrice').value) || 0;
+
+  let totalProfit = 0;
+  const decisions = [];
+
+  sc.customers.forEach(c => {
+    let decision = '';
+    let earned   = 0;
+
+    if (currentStrategy === 'separate') {
+      const buys1 = c.p1 >= p1;
+      const buys2 = c.p2 >= p2;
+      if (buys1) { earned += p1; }
+      if (buys2) { earned += p2; }
+      if (buys1 && buys2)      decision = `buys ${sc.p1} ($${p1}) and ${sc.p2} ($${p2})`;
+      else if (buys1)          decision = `buys ${sc.p1} ($${p1}) only`;
+      else if (buys2)          decision = `buys ${sc.p2} ($${p2}) only`;
+      else                     decision = 'buys nothing';
+
+    } else if (currentStrategy === 'bundle') {
+      const bundleWTP = c.p1 + c.p2;
+      if (bundleWTP >= bp) {
+        earned = bp;
+        const surplus = bundleWTP - bp;
+        decision = `buys bundle ($${bp}) — surplus $${surplus.toFixed(2)}`;
+      } else {
+        decision = `buys nothing (combined WTP = $${bundleWTP})`;
+      }
+
+    } else if (currentStrategy === 'mixed') {
+      // Customer picks option that maximises their surplus
+      const s_nothing = 0;
+      const s_p1      = c.p1 >= p1 ? c.p1 - p1 : -Infinity;
+      const s_p2      = c.p2 >= p2 ? c.p2 - p2 : -Infinity;
+      const s_both    = (c.p1 >= p1 && c.p2 >= p2) ? (c.p1 - p1) + (c.p2 - p2) : -Infinity;
+      const s_bundle  = (c.p1 + c.p2 >= bp) ? (c.p1 + c.p2) - bp : -Infinity;
+
+      const best = Math.max(s_nothing, s_p1, s_p2, s_both, s_bundle);
+
+      if (best <= 0 && best === s_nothing) {
+        decision = 'buys nothing';
+      } else if (best === s_bundle) {
+        earned = bp;
+        decision = `buys bundle ($${bp}) — surplus $${s_bundle.toFixed(2)}`;
+      } else if (best === s_both) {
+        earned = p1 + p2;
+        decision = `buys ${sc.p1} and ${sc.p2} separately — surplus $${s_both.toFixed(2)}`;
+      } else if (best === s_p1) {
+        earned = p1;
+        decision = `buys ${sc.p1} ($${p1}) — surplus $${s_p1.toFixed(2)}`;
+      } else if (best === s_p2) {
+        earned = p2;
+        decision = `buys ${sc.p2} ($${p2}) — surplus $${s_p2.toFixed(2)}`;
+      } else {
+        decision = 'buys nothing';
+      }
+    }
+
+    totalProfit += earned;
+    decisions.push({ name: c.name, decision, earned });
+  });
+
+  // Display results
+  document.getElementById('profit-display').textContent = `Total Profit: $${totalProfit.toLocaleString()}`;
+  document.getElementById('purchase-list').innerHTML = decisions.map(d =>
+    `<div class="purchase-item">
+       <strong>${d.name}</strong> — ${d.decision}
+       ${d.earned > 0 ? `<span style="color:var(--green-acc);font-weight:700;"> (+$${d.earned.toLocaleString()})</span>` : ''}
+     </div>`
+  ).join('');
+
+  document.getElementById('results-panel').classList.remove('hidden');
+  document.getElementById('optimal-panel').classList.add('hidden');
+
+  updateGraph();
+  announce(`Profit calculated: $${totalProfit.toLocaleString()}. ${decisions.filter(d => d.earned > 0).length} of ${sc.customers.length} customers made purchases.`);
+}
+
+// ── Show optimal ──────────────────────────────────────────────────────
+function showOptimal() {
+  const sc = scenarios[currentKey];
+  const profits = [sc.sep.profit, sc.pure.profit, sc.mixed.profit];
+  const maxP    = Math.max(...profits);
+  const labels  = ['Separate Pricing', 'Pure Bundling', 'Mixed Bundling'];
+  const winner  = profits.indexOf(maxP);
+
+  const html = [
+    { label: 'Separate Pricing',
+      detail: `${sc.p1} @ $${sc.sep.p1},  ${sc.p2} @ $${sc.sep.p2}`,
+      profit: sc.sep.profit,
+      idx: 0 },
+    { label: 'Pure Bundling',
+      detail: `Bundle @ $${sc.pure.bp}`,
+      profit: sc.pure.profit,
+      idx: 1 },
+    { label: 'Mixed Bundling',
+      detail: `${sc.p1} @ $${sc.mixed.p1},  ${sc.p2} @ $${sc.mixed.p2},  Bundle @ $${sc.mixed.bp}`,
+      profit: sc.mixed.profit,
+      idx: 2 }
+  ].map(s =>
+    `<div class="opt-step ${s.idx === winner ? 'winner' : ''}">
+       <strong>${s.idx === winner ? '🏆 ' : ''}${s.label}</strong><br>
+       Prices: ${s.detail}<br>
+       Profit: <strong>$${s.profit.toLocaleString()}</strong>
+       ${s.idx === winner ? '<br><em>← Optimal strategy</em>' : ''}
+     </div>`
+  ).join('');
+
+  document.getElementById('optimal-content').innerHTML = html;
+  document.getElementById('optimal-panel').classList.remove('hidden');
+  announce(`Optimal strategy: ${labels[winner]} with profit $${maxP.toLocaleString()}.`);
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────
+function resetScenario() {
+  currentStrategy = null;
+  ['separate','bundle','mixed'].forEach(s =>
+    document.getElementById('strat-' + s).setAttribute('aria-pressed','false')
+  );
+  document.getElementById('price-inputs-panel').classList.add('hidden');
+  document.getElementById('results-panel').classList.add('hidden');
+  document.getElementById('optimal-panel').classList.add('hidden');
+  document.getElementById('price1').value      = 0;
+  document.getElementById('price2').value      = 0;
+  document.getElementById('bundlePrice').value  = 0;
+}
+
+// ── Graph ─────────────────────────────────────────────────────────────
+function updateGraph() {
+  const sc = scenarios[currentKey];
+
+  const p1sorted  = [...sc.customers].sort((a,b) => b.p1 - a.p1).map(c => c.p1);
+  const p2sorted  = [...sc.customers].sort((a,b) => b.p2 - a.p2).map(c => c.p2);
+  const bsorted   = [...sc.customers].sort((a,b) => (b.p1+b.p2) - (a.p1+a.p2)).map(c => c.p1+c.p2);
+
+  const maxY = Math.max(...bsorted) * 1.15;
+  const n    = sc.customers.length;
+
+  function stepXY(vals) {
+    const xs = [], ys = [];
+    vals.forEach((v, i) => { xs.push(i, i+1); ys.push(v, v); });
+    return { xs, ys };
+  }
+
+  const d1 = stepXY(p1sorted);
+  const d2 = stepXY(p2sorted);
+  const db = stepXY(bsorted);
+
+  const traces = [
+    { x: d1.xs, y: d1.ys, type:'scatter', mode:'lines',
+      name: sc.p1, line:{ color:'#2563eb', width:3 } },
+    { x: d2.xs, y: d2.ys, type:'scatter', mode:'lines',
+      name: sc.p2, line:{ color:'#f97316', width:3, dash:'dash' } },
+    { x: db.xs, y: db.ys, type:'scatter', mode:'lines',
+      name: 'Bundle (sum)', line:{ color:'#059669', width:3, dash:'dot' } }
+  ];
+
+  const layout = {
+    title: { text: `Demand Curves: ${sc.name}`, font:{ size:14, color:'#18453B' } },
+    xaxis: {
+      title: 'Number of Customers',
+      range: [0, n + 0.3],
+      fixedrange: true,
+      tick0: 0, dtick: 1,
+      gridcolor: '#e9ecef'
+    },
+    yaxis: {
+      title: 'Price / WTP ($)',
+      range: [0, maxY],
+      fixedrange: true,
+      gridcolor: '#e9ecef',
+      tickformat: '$,'
+    },
+    autosize: false,
+    width:  600,
+    height: 420,
+    margin: { l:70, r:30, t:60, b:60 },
+    hovermode: 'closest',
+    showlegend: true,
+    legend: { x:0.02, y:0.98, xanchor:'left', yanchor:'top',
+              bgcolor:'rgba(255,255,255,0.9)', bordercolor:'#ccc', borderwidth:1 },
+    plot_bgcolor:  '#fafafa',
+    paper_bgcolor: 'white'
+  };
+
+  Plotly.newPlot('demand-graph', traces, layout, {
+    responsive: false,
+    displayModeBar: false,
+    staticPlot: true
+  });
+
+  // Text description
+  const p1vals = p1sorted.map(v => '$'+v).join(', ');
+  const p2vals = p2sorted.map(v => '$'+v).join(', ');
+  const bvals  = bsorted.map(v  => '$'+v).join(', ');
+  document.getElementById('graph-description').innerHTML =
+    `This step-demand chart shows sorted willingness to pay for <strong>${sc.p1}</strong> (blue solid line: ${p1vals}), ` +
+    `<strong>${sc.p2}</strong> (orange dashed line: ${p2vals}), and the <strong>bundle</strong> ` +
+    `(green dotted line: ${bvals}). ` +
+    `The bundle curve lies above both individual curves because it aggregates each customer's valuations. ` +
+    `A pricing strategy is profitable only for prices at or below the step for each customer.`;
+}
+
+// ── Demand data table ─────────────────────────────────────────────────
+function updateDemandTable() {
+  const sc = scenarios[currentKey];
+  const rows = sc.customers.map((c,i) => ({ rank: i+1, p1: c.p1, p2: c.p2, bp: c.p1+c.p2 }));
+
+  // Sort by bundle WTP desc
+  rows.sort((a,b) => b.bp - a.bp).forEach((r,i) => r.rank = i+1);
+
+  document.getElementById('demand-table-body').innerHTML = rows.map(r =>
+    `<tr>
+      <td>${r.rank}</td>
+      <td>$${r.p1.toLocaleString()}</td>
+      <td>$${r.p2.toLocaleString()}</td>
+      <td><strong>$${r.bp.toLocaleString()}</strong></td>
+    </tr>`
+  ).join('');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  loadScenario('fastfood');
+});
+</script>
+</body>
+</html>
