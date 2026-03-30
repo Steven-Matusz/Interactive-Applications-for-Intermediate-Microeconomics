@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Income and Substitution Effects</title>
+  <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+  <style>
+    /* ── Skip Link ── */
+    .skip-link {
+      position: absolute; top: -40px; left: 0;
+      background: #18453B; color: white;
+      padding: 8px 16px; z-index: 9999;
+      font-weight: 700; text-decoration: none;
+      border-radius: 0 0 6px 0; transition: top 0.2s;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ── Screen-reader only ── */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+
+    /* ── Live region ── */
+    .live-region {
+      position: absolute; left: -10000px;
+      width: 1px; height: 1px; overflow: hidden;
+    }
+
+    /* ── Root / Reset ── */
+    :root {
+      --msu-green:  #18453B;
+      --msu-green2: #2d5a4f;
+      --msu-gold:   #C89A2A;
+      --bg-page:    #f0f4f0;
+      --bg-white:   #ffffff;
+      --border:     #cdd9d6;
+      --text-dark:  #1a1a1a;
+      --focus-ring: #C89A2A;
+      --green-pt:   #27ae60;
+      --red-pt:     #e74c3c;
+      --blue-pt:    #2980b9;
+      --orange-pt:  #e67e22;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg-page);
+      color: var(--text-dark);
+      min-height: 100vh;
+      padding: 16px;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    /* ── Focus visible (WCAG 2.4.11) ── */
+    :focus-visible {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 3px;
+    }
+
+    /* ── Wrapper ── */
+    .wrapper {
+      max-width: 1380px;
+      margin: 0 auto;
+      background: var(--bg-white);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, var(--msu-green), var(--msu-green2));
+      color: white;
+      padding: 24px 32px;
+      text-align: center;
+    }
+    .header h1 { font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 700; margin-bottom: 6px; }
+    .header p  { font-size: 1rem; opacity: 0.9; }
+
+    /* ── Scenario selector ── */
+    .scenario-bar {
+      background: #f8f9fa;
+      padding: 18px 28px;
+      border-bottom: 3px solid var(--msu-green);
+    }
+    .scenario-bar h2 {
+      font-size: 1rem; color: var(--msu-green);
+      margin-bottom: 12px; font-weight: 700;
+    }
+    .scenario-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+    .scenario-btn {
+      flex: 1; min-width: 180px;
+      padding: 12px 18px;
+      font-size: 0.95rem; font-weight: 600;
+      border: 3px solid var(--msu-green);
+      background: white; color: var(--msu-green);
+      border-radius: 8px; cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .scenario-btn:hover {
+      background: var(--msu-green); color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(24,69,59,0.25);
+    }
+    .scenario-btn.active { background: var(--msu-green); color: white; }
+
+    /* ── Content layout ── */
+    .content-wrapper {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 0;
+      min-height: 640px;
+    }
+
+    /* ── Control panel ── */
+    .control-panel {
+      background: #f8f9fa;
+      padding: 24px;
+      border-right: 3px solid #e9ecef;
+      overflow-y: auto;
+    }
+
+    .control-section {
+      background: white;
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    .control-section h3 {
+      font-size: 1rem; color: var(--msu-green);
+      margin-bottom: 14px; font-weight: 700;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e9ecef;
+    }
+
+    /* sliders */
+    .slider-group { margin-bottom: 14px; }
+    .slider-label {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 6px;
+      font-size: 0.9rem; font-weight: 600; color: #495057;
+    }
+    .slider-value {
+      background: var(--msu-green); color: white;
+      padding: 2px 10px; border-radius: 12px;
+      font-size: 0.85rem; font-weight: 700; min-width: 42px; text-align: center;
+    }
+    input[type="range"] {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 8px;
+      background: #d3d3d3; border-radius: 4px;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--msu-green);
+      border: 3px solid white;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      cursor: pointer;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--msu-green);
+      border: 3px solid white;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      cursor: pointer;
+    }
+    input[type="range"]:focus {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 3px;
+    }
+
+    /* step buttons */
+    .step-controls { display: flex; gap: 10px; flex-direction: column; }
+    .btn-primary {
+      padding: 12px 18px; font-size: 0.95rem; font-weight: 700;
+      background: var(--msu-green); color: white;
+      border: none; border-radius: 8px; cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--msu-green2);
+      transform: translateY(-1px);
+    }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-secondary {
+      padding: 10px 16px; font-size: 0.9rem; font-weight: 600;
+      background: white; color: var(--msu-green);
+      border: 2px solid var(--msu-green);
+      border-radius: 8px; cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-secondary:hover {
+      background: var(--msu-green); color: white;
+    }
+
+    /* progress steps */
+    .step-progress { margin-bottom: 16px; }
+    .step-progress h4 { font-size: 0.85rem; color: #666; margin-bottom: 10px; font-weight: 600; }
+    .steps-row { display: flex; gap: 6px; }
+    .step-dot {
+      flex: 1; height: 8px; border-radius: 4px;
+      background: #dee2e6; transition: background 0.3s;
+    }
+    .step-dot.active   { background: var(--msu-gold); }
+    .step-dot.complete { background: var(--msu-green); }
+
+    /* scenario description */
+    .scenario-desc {
+      background: #e8f5e9;
+      border-left: 4px solid var(--msu-green);
+      border-radius: 0 6px 6px 0;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      font-size: 0.88rem; color: #333;
+    }
+
+    /* effects summary */
+    .effects-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;
+    }
+    .effect-card {
+      border-radius: 8px; padding: 12px; text-align: center;
+      border: 2px solid;
+    }
+    .effect-card.subst { background: rgba(41,128,185,0.1); border-color: #2980b9; }
+    .effect-card.income-eff { background: rgba(230,126,34,0.1); border-color: #e67e22; }
+    .effect-card.total-eff { background: rgba(39,174,96,0.08); border-color: #27ae60; grid-column: 1/-1; }
+    .effect-label { font-size: 0.78rem; font-weight: 700; color: #555; margin-bottom: 4px; }
+    .effect-value { font-size: 1.2rem; font-weight: 700; color: var(--msu-green); }
+
+    /* ── Graph panel ── */
+    .graph-panel {
+      padding: 24px;
+      display: flex; flex-direction: column; gap: 18px;
+    }
+    .graph-wrapper {
+      border: 2px solid #e9ecef;
+      border-radius: 10px; overflow: hidden;
+      background: white;
+      width: 700px;           /* match Plotly fixed width */
+    }
+
+    /* ── Data table ── */
+    .data-table {
+      width: 100%; border-collapse: collapse;
+      background: white; border-radius: 8px;
+      overflow: hidden; border: 2px solid #e9ecef;
+      font-size: 0.88rem;
+    }
+    .data-table caption {
+      padding: 10px 14px; font-weight: 700;
+      color: var(--msu-green); text-align: left;
+      background: #f8f9fa; border-bottom: 2px solid #e9ecef;
+    }
+    .data-table th, .data-table td {
+      padding: 10px 14px; text-align: left;
+      border-bottom: 1px solid #e9ecef;
+    }
+    .data-table th { background: #f8f9fa; font-weight: 700; color: var(--msu-green); }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: #f8faf8; }
+
+    /* ── Concept box ── */
+    .concept-box {
+      background: #e7f3ff; border: 2px solid #1565C0;
+      border-radius: 8px; padding: 16px;
+      font-size: 0.9rem;
+    }
+    .concept-box h4 { color: #003a8c; margin-bottom: 10px; font-size: 0.95rem; }
+    .concept-box ul { padding-left: 18px; }
+    .concept-box li { margin-bottom: 5px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 1100px) {
+      .content-wrapper { grid-template-columns: 1fr; }
+      .control-panel { border-right: none; border-bottom: 3px solid #e9ecef; }
+      .graph-wrapper { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Skip Navigation -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Live Region -->
+<div id="live-updates" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+<div class="wrapper" role="main" id="main-content">
+
+  <!-- Header -->
+  <header class="header">
+    <h1>📊 Income and Substitution Effects</h1>
+    <p>Decompose price changes into substitution and income effects — step by step</p>
+  </header>
+
+  <!-- Scenario Selector -->
+  <section class="scenario-bar" aria-label="Preference type selection">
+    <h2>Select Preference Type</h2>
+    <div class="scenario-buttons" role="group" aria-label="Preference type buttons">
+      <button class="scenario-btn active" id="btn-normal"
+              onclick="loadScenario('normal')"
+              aria-pressed="true">
+        Cobb-Douglas (Normal Good)
+      </button>
+      <button class="scenario-btn" id="btn-complements"
+              onclick="loadScenario('complements')"
+              aria-pressed="false">
+        Perfect Complements
+      </button>
+      <button class="scenario-btn" id="btn-substitutes"
+              onclick="loadScenario('substitutes')"
+              aria-pressed="false">
+        Perfect Substitutes
+      </button>
+    </div>
+  </section>
+
+  <!-- Main content -->
+  <div class="content-wrapper">
+
+    <!-- ── Control Panel ── -->
+    <aside class="control-panel" aria-label="Analysis controls">
+
+      <!-- Scenario description -->
+      <div class="scenario-desc" id="scenario-desc" aria-live="polite">
+        <strong>Cobb-Douglas preferences</strong> — Coffee and food are normal goods consumed in fixed proportions of income. A price decrease increases consumption of the cheaper good via both effects.
+      </div>
+
+      <!-- Initial conditions -->
+      <div class="control-section">
+        <h3>Initial Conditions</h3>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <label for="sl-income">Income (M)</label>
+            <span class="slider-value" id="val-income" aria-live="polite">100</span>
+          </div>
+          <input type="range" id="sl-income"
+                 min="50" max="200" step="5" value="100"
+                 aria-label="Income in dollars, currently 100"
+                 oninput="syncSlider('sl-income','val-income'); updateGraph();">
+          <div class="sr-only" aria-live="polite" id="sr-income"></div>
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <label for="sl-px">Price of Coffee (Pₓ)</label>
+            <span class="slider-value" id="val-px" aria-live="polite">5</span>
+          </div>
+          <input type="range" id="sl-px"
+                 min="2" max="15" step="0.5" value="5"
+                 aria-label="Original price of coffee, currently 5"
+                 oninput="syncSlider('sl-px','val-px'); updateGraph();">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <label for="sl-py">Price of Food (P_y)</label>
+            <span class="slider-value" id="val-py" aria-live="polite">4</span>
+          </div>
+          <input type="range" id="sl-py"
+                 min="1" max="10" step="0.5" value="4"
+                 aria-label="Price of food, currently 4"
+                 oninput="syncSlider('sl-py','val-py'); updateGraph();">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <label for="sl-npx">New Coffee Price (P'ₓ)</label>
+            <span class="slider-value" id="val-npx" aria-live="polite">3</span>
+          </div>
+          <input type="range" id="sl-npx"
+                 min="1" max="14" step="0.5" value="3"
+                 aria-label="New price of coffee after change, currently 3"
+                 oninput="syncSlider('sl-npx','val-npx'); updateGraph();">
+        </div>
+      </div>
+
+      <!-- Step-by-step analysis -->
+      <div class="control-section">
+        <h3>Step-by-Step Analysis</h3>
+
+        <div class="step-progress" aria-label="Analysis progress">
+          <h4 id="step-label">Step 1 of 4: Initial Equilibrium</h4>
+          <div class="steps-row" role="list" aria-label="Steps progress indicator">
+            <div class="step-dot active" id="dot-1" role="listitem" aria-label="Step 1 active"></div>
+            <div class="step-dot"        id="dot-2" role="listitem" aria-label="Step 2"></div>
+            <div class="step-dot"        id="dot-3" role="listitem" aria-label="Step 3"></div>
+            <div class="step-dot"        id="dot-4" role="listitem" aria-label="Step 4"></div>
+          </div>
+        </div>
+
+        <div class="step-controls">
+          <button class="btn-primary" id="btn-next" onclick="nextStep()"
+                  aria-label="Advance to next analysis step">
+            Show Price Change →
+          </button>
+          <button class="btn-secondary" onclick="resetAnalysis()"
+                  aria-label="Reset analysis to beginning">
+            ↺ Reset Analysis
+          </button>
+        </div>
+      </div>
+
+      <!-- Effects summary (shown from step 3) -->
+      <div class="control-section" id="effects-panel" hidden aria-label="Effects summary">
+        <h3>Effects Summary</h3>
+        <div class="effects-grid">
+          <div class="effect-card subst">
+            <div class="effect-label">Substitution Effect</div>
+            <div class="effect-value" id="eff-subst" aria-live="polite">—</div>
+            <div style="font-size:0.75rem;color:#666;margin-top:3px;">A → B</div>
+          </div>
+          <div class="effect-card income-eff">
+            <div class="effect-label">Income Effect</div>
+            <div class="effect-value" id="eff-income" aria-live="polite">—</div>
+            <div style="font-size:0.75rem;color:#666;margin-top:3px;">B → C</div>
+          </div>
+          <div class="effect-card total-eff">
+            <div class="effect-label">Total Effect (A → C)</div>
+            <div class="effect-value" id="eff-total" aria-live="polite">—</div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ── Graph Panel ── -->
+    <section class="graph-panel" aria-label="Graph and data display">
+
+      <!-- Graph description for screen readers -->
+      <div id="graph-desc" class="sr-only" aria-live="polite" aria-atomic="true">
+        Initial equilibrium: consumer at Point A.
+      </div>
+
+      <!-- Plotly graph -->
+      <div class="graph-wrapper">
+        <div id="effects-plot"
+             role="img"
+             aria-label="Consumer choice graph showing budget lines and indifference curves"
+             aria-describedby="graph-desc"
+             style="width:700px; height:520px;">
+        </div>
+      </div>
+
+      <!-- Data table -->
+      <table class="data-table" aria-label="Consumption quantities at each point">
+        <caption>Consumption Quantities</caption>
+        <thead>
+          <tr>
+            <th scope="col">Point</th>
+            <th scope="col">Coffee (cups/wk)</th>
+            <th scope="col">Food (units/wk)</th>
+            <th scope="col">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">A (Original)</th>
+            <td id="tbl-ax">—</td>
+            <td id="tbl-ay">—</td>
+            <td>Original equilibrium</td>
+          </tr>
+          <tr id="row-b" hidden>
+            <th scope="row">B (Compensated)</th>
+            <td id="tbl-bx">—</td>
+            <td id="tbl-by">—</td>
+            <td>Same utility, new prices</td>
+          </tr>
+          <tr id="row-c" hidden>
+            <th scope="row">C (Final)</th>
+            <td id="tbl-cx">—</td>
+            <td id="tbl-cy">—</td>
+            <td>New equilibrium</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Concept box -->
+      <div class="concept-box" role="note" aria-label="Key concepts">
+        <h4>🔑 Key Concepts</h4>
+        <ul id="concept-list">
+          <li><strong>Point A</strong> — Original optimum: tangency of original budget line and indifference curve.</li>
+          <li><strong>Price change</strong> — The budget line pivots; the consumer moves to a new optimum (Point C).</li>
+          <li><strong>Substitution Effect (A→B)</strong> — Holding utility constant, the consumer shifts toward the relatively cheaper good.</li>
+          <li><strong>Income Effect (B→C)</strong> — The real income change from the price change shifts the consumer from B to the final choice C.</li>
+        </ul>
+      </div>
+
+    </section>
+  </div><!-- end content-wrapper -->
+</div><!-- end wrapper -->
+
+<script>
+/* ═══════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════ */
+let currentStep     = 1;   // 1–4
+let currentScenario = 'normal';
+
+const ALPHA = 0.6;  // Cobb-Douglas share for coffee
+
+/* ═══════════════════════════════════════════════
+   ACCESSIBILITY HELPERS
+═══════════════════════════════════════════════ */
+function announce(msg) {
+  const el = document.getElementById('live-updates');
+  el.textContent = '';
+  requestAnimationFrame(() => { el.textContent = msg; });
+}
+
+function fmt(n) { return n.toFixed(1); }
+
+/* ═══════════════════════════════════════════════
+   SLIDER SYNC
+═══════════════════════════════════════════════ */
+function syncSlider(sliderId, valId) {
+  const v = document.getElementById(sliderId).value;
+  document.getElementById(valId).textContent = v;
+}
+
+/* ═══════════════════════════════════════════════
+   SCENARIO LOAD
+═══════════════════════════════════════════════ */
+const scenarioInfo = {
+  normal: {
+    desc: '<strong>Cobb-Douglas preferences</strong> — Coffee and food are normal goods. Consumer spends fixed proportions of income on each. Both substitution and income effects reinforce when coffee price falls.',
+    concepts: [
+      '<strong>Point A</strong> — Original optimum where the budget line is tangent to the Cobb-Douglas indifference curve.',
+      '<strong>Price change</strong> — Coffee becomes cheaper; budget line pivots outward from the y-intercept.',
+      '<strong>Substitution Effect (A→B)</strong> — Consumer substitutes toward cheaper coffee, moving along the original indifference curve.',
+      '<strong>Income Effect (B→C)</strong> — Lower price increases real purchasing power; both goods consumed in higher quantities (normal goods).'
+    ]
+  },
+  complements: {
+    desc: '<strong>Perfect Complements</strong> — Coffee and cream are consumed in a fixed 1:1 ratio. The "L-shaped" indifference curves mean <em>zero substitution effect</em>; all adjustment is the income effect.',
+    concepts: [
+      '<strong>Point A</strong> — Original corner equilibrium on the L-shaped indifference curve (equal quantities of each good).',
+      '<strong>Price change</strong> — Coffee price falls; budget line pivots. Consumer jumps to new L-corner.',
+      '<strong>Substitution Effect = 0</strong> — Perfect complements cannot be substituted; Point B coincides with Point A.',
+      '<strong>Income Effect (A=B → C)</strong> — The entire adjustment is an income effect: lower price raises real income, increasing consumption of both goods proportionally.'
+    ]
+  },
+  substitutes: {
+    desc: '<strong>Perfect Substitutes</strong> — The consumer only buys whichever good is cheapest. The indifference curves are straight lines, so the <em>substitution effect dominates</em> completely.',
+    concepts: [
+      '<strong>Point A</strong> — Consumer buys only the cheapest good (corner solution).',
+      '<strong>Price change</strong> — If coffee falls below food\'s price, the corner solution flips entirely to coffee.',
+      '<strong>Substitution Effect (A→B)</strong> — With linear indifference curves the entire switch is substitution.',
+      '<strong>Income Effect</strong> — After the full switch, any remaining income effect moves within the same corner solution.'
+    ]
+  }
+};
+
+function loadScenario(s) {
+  currentScenario = s;
+  currentStep     = 1;
+
+  // Update buttons
+  ['normal','complements','substitutes'].forEach(id => {
+    const btn = document.getElementById('btn-' + id);
+    btn.classList.toggle('active', id === s);
+    btn.setAttribute('aria-pressed', id === s ? 'true' : 'false');
+  });
+
+  // Update description
+  document.getElementById('scenario-desc').innerHTML = scenarioInfo[s].desc;
+
+  // Update concepts
+  const ul = document.getElementById('concept-list');
+  ul.innerHTML = scenarioInfo[s].concepts.map(c => `<li>${c}</li>`).join('');
+
+  resetAnalysis(true);
+  announce('Scenario changed to ' + s.replace('normal','Cobb-Douglas').replace('complements','Perfect Complements').replace('substitutes','Perfect Substitutes') + '. Analysis reset to step 1.');
+}
+
+/* ═══════════════════════════════════════════════
+   STEP CONTROL
+═══════════════════════════════════════════════ */
+const stepLabels = [
+  '',
+  'Step 1 of 4: Initial Equilibrium',
+  'Step 2 of 4: Price Change & New Equilibrium',
+  'Step 3 of 4: Substitution Effect (A → B)',
+  'Step 4 of 4: Income Effect (B → C) — Complete'
+];
+const stepBtnText = [
+  '',
+  'Show Price Change →',
+  'Show Substitution Effect →',
+  'Show Income Effect →',
+  '✓ Analysis Complete'
+];
+const stepAnnouncements = [
+  '',
+  'Step 1: Initial consumer equilibrium shown at Point A.',
+  'Step 2: Price change applied. New budget line and final equilibrium Point C revealed.',
+  'Step 3: Substitution effect shown. Compensated budget line and Point B revealed.',
+  'Step 4: Income effect shown. Full decomposition complete. See effects summary below.'
+];
+
+function updateStepUI() {
+  document.getElementById('step-label').textContent = stepLabels[currentStep];
+  const btn = document.getElementById('btn-next');
+  btn.textContent = stepBtnText[currentStep];
+  btn.disabled = currentStep >= 4;
+
+  for (let i = 1; i <= 4; i++) {
+    const dot = document.getElementById('dot-' + i);
+    dot.classList.toggle('active', i === currentStep);
+    dot.classList.toggle('complete', i < currentStep);
+    dot.setAttribute('aria-label', `Step ${i} ${i < currentStep ? 'complete' : i === currentStep ? 'active' : ''}`);
+  }
+
+  // Show/hide table rows
+  document.getElementById('row-b').hidden = currentStep < 3;
+  document.getElementById('row-c').hidden = currentStep < 2;
+
+  // Show/hide effects panel
+  document.getElementById('effects-panel').hidden = currentStep < 3;
+}
+
+function nextStep() {
+  if (currentStep < 4) {
+    currentStep++;
+    updateStepUI();
+    updateGraph();
+    announce(stepAnnouncements[currentStep]);
+  }
+}
+
+function resetAnalysis(silent) {
+  currentStep = 1;
+  updateStepUI();
+  updateGraph();
+  if (!silent) announce('Analysis reset. Showing initial equilibrium at Point A.');
+}
+
+/* ═══════════════════════════════════════════════
+   CALCULATIONS
+═══════════════════════════════════════════════ */
+function calcPoints() {
+  const M  = parseFloat(document.getElementById('sl-income').value);
+  const px = parseFloat(document.getElementById('sl-px').value);
+  const py = parseFloat(document.getElementById('sl-py').value);
+  const np = parseFloat(document.getElementById('sl-npx').value);
+
+  let ax, ay, bx, by, cx, cy;
+
+  if (currentScenario === 'normal') {
+    ax = (ALPHA * M) / px;
+    ay = ((1-ALPHA) * M) / py;
+    cx = (ALPHA * M) / np;
+    cy = ((1-ALPHA) * M) / py;
+    const U = Math.pow(ax, ALPHA) * Math.pow(ay, 1-ALPHA);
+    const Mc = U * Math.pow(np/ALPHA, ALPHA) * Math.pow(py/(1-ALPHA), 1-ALPHA);
+    bx = (ALPHA * Mc) / np;
+    by = ((1-ALPHA) * Mc) / py;
+
+  } else if (currentScenario === 'complements') {
+    ax = ay = M / (px + py);
+    cx = cy = M / (np + py);
+    bx = ax; by = ay;   // No substitution effect
+
+  } else {  // perfect substitutes
+    if (px <= py) { ax = M/px; ay = 0; } else { ax = 0; ay = M/py; }
+    if (np <= py) { cx = M/np; cy = 0; } else { cx = 0; cy = M/py; }
+    bx = cx; by = cy;   // Substitution effect = total effect
+  }
+
+  return { M, px, py, np, ax, ay, bx, by, cx, cy };
+}
+
+/* ═══════════════════════════════════════════════
+   TABLE UPDATE
+═══════════════════════════════════════════════ */
+function updateTable(p) {
+  document.getElementById('tbl-ax').textContent = fmt(p.ax);
+  document.getElementById('tbl-ay').textContent = fmt(p.ay);
+  document.getElementById('tbl-bx').textContent = fmt(p.bx);
+  document.getElementById('tbl-by').textContent = fmt(p.by);
+  document.getElementById('tbl-cx').textContent = fmt(p.cx);
+  document.getElementById('tbl-cy').textContent = fmt(p.cy);
+}
+
+/* ═══════════════════════════════════════════════
+   EFFECTS SUMMARY
+═══════════════════════════════════════════════ */
+function updateEffects(p) {
+  if (currentStep < 3) return;
+  const substX  = p.bx - p.ax;
+  const incomeX = p.cx - p.bx;
+  const totalX  = p.cx - p.ax;
+  const sign = v => v >= 0 ? '+' : '';
+  document.getElementById('eff-subst').textContent  = sign(substX)  + fmt(substX)  + ' cups';
+  document.getElementById('eff-income').textContent = sign(incomeX) + fmt(incomeX) + ' cups';
+  document.getElementById('eff-total').textContent  = sign(totalX)  + fmt(totalX)  + ' cups';
+}
+
+/* ═══════════════════════════════════════════════
+   GRAPH DESCRIPTION FOR SCREEN READERS
+═══════════════════════════════════════════════ */
+function updateGraphDesc(p) {
+  let desc = '';
+  if (currentStep >= 1)
+    desc += `Point A: ${fmt(p.ax)} cups coffee, ${fmt(p.ay)} units food. `;
+  if (currentStep >= 2)
+    desc += `Point C: ${fmt(p.cx)} cups coffee, ${fmt(p.cy)} units food. `;
+  if (currentStep >= 3)
+    desc += `Point B (compensated): ${fmt(p.bx)} cups coffee, ${fmt(p.by)} units food. Substitution effect: ${fmt(p.bx-p.ax)} cups. `;
+  if (currentStep >= 4)
+    desc += `Income effect: ${fmt(p.cx-p.bx)} cups. Total effect: ${fmt(p.cx-p.ax)} cups.`;
+  document.getElementById('graph-desc').textContent = desc;
+}
+
+/* ═══════════════════════════════════════════════
+   INDIFFERENCE CURVE HELPERS
+═══════════════════════════════════════════════ */
+function cobbDouglasIC(U) {
+  const xs = [], ys = [];
+  for (let x = 0.5; x <= 50; x += 0.4) {
+    const y = Math.pow(U / Math.pow(x, ALPHA), 1/(1-ALPHA));
+    if (y > 0 && y <= 62) { xs.push(x); ys.push(y); }
+  }
+  return { xs, ys };
+}
+
+function complementsIC(qty) {
+  // L-shaped: vertical arm and horizontal arm
+  const armLen = 62;
+  const xs = [qty, qty, qty + armLen];
+  const ys = [qty + armLen, qty, qty];
+  return { xs, ys };
+}
+
+/* ═══════════════════════════════════════════════
+   MAIN GRAPH UPDATE
+═══════════════════════════════════════════════ */
+function updateGraph() {
+  const p = calcPoints();
+  updateTable(p);
+  updateEffects(p);
+  updateGraphDesc(p);
+
+  const traces = buildTraces(p);
+
+  const layout = {
+    margin: { l: 60, r: 30, t: 54, b: 65 },
+    autosize: false,
+    width: 700,
+    height: 520,
+    xaxis: {
+      title: { text: 'Coffee (cups per week)', font: { size: 13 } },
+      range: [0, 50],
+      zeroline: true, zerolinecolor: '#888', zerolinewidth: 1,
+      gridcolor: '#eee'
+    },
+    yaxis: {
+      title: { text: 'Food (units per week)', font: { size: 13 } },
+      range: [0, 62],
+      zeroline: true, zerolinecolor: '#888', zerolinewidth: 1,
+      gridcolor: '#eee'
+    },
+    plot_bgcolor: '#fafafa',
+    paper_bgcolor: 'white',
+    showlegend: true,
+    legend: { x: 0.62, y: 0.98, bgcolor: 'rgba(255,255,255,0.85)', bordercolor: '#ddd', borderwidth: 1, font: { size: 11 } },
+    title: {
+      text: getTitle(),
+      font: { size: 14, color: '#18453B' },
+      x: 0.5
+    }
+  };
+
+  const config = { responsive: false, displayModeBar: false, staticPlot: false };
+
+  Plotly.newPlot('effects-plot', traces, layout, config);
+}
+
+function getTitle() {
+  const names = { normal:'Cobb-Douglas', complements:'Perfect Complements', substitutes:'Perfect Substitutes' };
+  const steps = ['','Initial Equilibrium','Price Change & New Equilibrium','Substitution Effect (A→B)','Full Decomposition'];
+  return `${names[currentScenario]}: ${steps[currentStep]}`;
+}
+
+/* ═══════════════════════════════════════════════
+   BUILD TRACES
+═══════════════════════════════════════════════ */
+function buildTraces(p) {
+  if (currentScenario === 'normal')       return buildNormalTraces(p);
+  if (currentScenario === 'complements')  return buildComplementsTraces(p);
+  return buildSubstitutesTraces(p);
+}
+
+/* ── Cobb-Douglas ── */
+function buildNormalTraces(p) {
+  const { M, px, py, np, ax, ay, bx, by, cx, cy } = p;
+  const s = currentStep;
+  let traces = [];
+
+  const U1 = Math.pow(ax, ALPHA) * Math.pow(ay, 1-ALPHA);
+  const ic1 = cobbDouglasIC(U1);
+
+  // Original budget line
+  traces.push({ x:[0, M/px], y:[M/py, 0], mode:'lines', name:'Budget Line (Original)',
+    line:{ color:'#2c3e50', width:3, dash: s>1 ? 'dot' : 'solid' },
+    hovertemplate:'Original budget<extra></extra>' });
+
+  // Original IC
+  traces.push({ x:ic1.xs, y:ic1.ys, mode:'lines', name:'IC₁ (original utility)',
+    line:{ color:s>=3 ? '#aad4c0' : '#27ae60', width:2, dash: s>=3 ? 'dot' : 'solid' },
+    hovertemplate:'Original indifference curve<extra></extra>' });
+
+  // Point A
+  traces.push({ x:[ax], y:[ay], mode:'markers+text', name:'A (original)',
+    marker:{ color:'#27ae60', size:14, symbol:'circle' },
+    text:['A'], textposition:'top right',
+    textfont:{ size:15, color:'#27ae60' },
+    hovertemplate:`A: (${fmt(ax)}, ${fmt(ay)})<extra></extra>` });
+
+  if (s >= 2) {
+    // New budget line
+    traces.push({ x:[0, M/np], y:[M/py, 0], mode:'lines', name:'Budget Line (New)',
+      line:{ color:'#e74c3c', width:3 },
+      hovertemplate:'New budget line<extra></extra>' });
+
+    const U2 = Math.pow(cx, ALPHA) * Math.pow(cy, 1-ALPHA);
+    const ic2 = cobbDouglasIC(U2);
+
+    traces.push({ x:ic2.xs, y:ic2.ys, mode:'lines', name:'IC₂ (new utility)',
+      line:{ color:'#e74c3c', width:2 },
+      hovertemplate:'New indifference curve<extra></extra>' });
+
+    traces.push({ x:[cx], y:[cy], mode:'markers+text', name:'C (final)',
+      marker:{ color:'#e74c3c', size:14, symbol:'circle' },
+      text:['C'], textposition:'top right',
+      textfont:{ size:15, color:'#e74c3c' },
+      hovertemplate:`C: (${fmt(cx)}, ${fmt(cy)})<extra></extra>` });
+  }
+
+  if (s >= 3) {
+    const Mc = U1 * Math.pow(np/ALPHA, ALPHA) * Math.pow(py/(1-ALPHA), 1-ALPHA);
+    traces.push({ x:[0, Mc/np], y:[Mc/py, 0], mode:'lines', name:'Compensated Budget',
+      line:{ color:'#2980b9', width:2, dash:'dash' },
+      hovertemplate:'Compensated budget (Hicksian)<extra></extra>' });
+
+    traces.push({ x:[bx], y:[by], mode:'markers+text', name:'B (compensated)',
+      marker:{ color:'#2980b9', size:14, symbol:'diamond' },
+      text:['B'], textposition:'top right',
+      textfont:{ size:15, color:'#2980b9' },
+      hovertemplate:`B: (${fmt(bx)}, ${fmt(by)})<extra></extra>` });
+
+    // Substitution effect arrow A→B
+    traces.push({ x:[ax,bx], y:[ay,by], mode:'lines',
+      name:'Substitution Effect (A→B)',
+      line:{ color:'#2980b9', width:2.5 },
+      hovertemplate:'Substitution effect<extra></extra>' });
+  }
+
+  if (s >= 4) {
+    // Income effect arrow B→C
+    traces.push({ x:[bx,cx], y:[by,cy], mode:'lines',
+      name:'Income Effect (B→C)',
+      line:{ color:'#e67e22', width:2.5, dash:'dash' },
+      hovertemplate:'Income effect<extra></extra>' });
+  }
+
+  return traces;
+}
+
+/* ── Perfect Complements ── */
+function buildComplementsTraces(p) {
+  const { M, px, py, np, ax, ay, cx, cy } = p;
+  const s = currentStep;
+  let traces = [];
+
+  const ic1 = complementsIC(ax);
+
+  // Original budget line
+  traces.push({ x:[0, M/px], y:[M/py, 0], mode:'lines', name:'Budget Line (Original)',
+    line:{ color:'#2c3e50', width:3, dash: s>1 ? 'dot' : 'solid' } });
+
+  // IC1 L-shape
+  traces.push({ x:ic1.xs, y:ic1.ys, mode:'lines', name:'IC₁ (original utility)',
+    line:{ color: s>=3 ? '#aad4c0' : '#27ae60', width:2, dash: s>=3 ? 'dot' : 'solid' } });
+
+  traces.push({ x:[ax], y:[ay], mode:'markers+text', name:'A (original)',
+    marker:{ color:'#27ae60', size:14 }, text:['A'], textposition:'top right',
+    textfont:{ size:15, color:'#27ae60' },
+    hovertemplate:`A = B: (${fmt(ax)}, ${fmt(ay)})<extra></extra>` });
+
+  if (s >= 2) {
+    traces.push({ x:[0, M/np], y:[M/py, 0], mode:'lines', name:'Budget Line (New)',
+      line:{ color:'#e74c3c', width:3 } });
+
+    const ic2 = complementsIC(cx);
+    traces.push({ x:ic2.xs, y:ic2.ys, mode:'lines', name:'IC₂ (new utility)',
+      line:{ color:'#e74c3c', width:2 } });
+
+    traces.push({ x:[cx], y:[cy], mode:'markers+text', name:'C (final)',
+      marker:{ color:'#e74c3c', size:14 }, text:['C'], textposition:'top right',
+      textfont:{ size:15, color:'#e74c3c' },
+      hovertemplate:`C: (${fmt(cx)}, ${fmt(cy)})<extra></extra>` });
+  }
+
+  if (s >= 3) {
+    // B = A for perfect complements (zero substitution effect)
+    traces.push({ x:[ax], y:[ay], mode:'markers+text', name:'B = A (zero sub. effect)',
+      marker:{ color:'#2980b9', size:14, symbol:'diamond' }, text:['B=A'], textposition:'bottom left',
+      textfont:{ size:13, color:'#2980b9' },
+      hovertemplate:`B = A (no substitution)<extra></extra>` });
+
+    // Annotation: SE = 0
+    traces.push({ x:[ax+1], y:[ay+4], mode:'text', text:['SE = 0'], showlegend:false,
+      textfont:{ size:12, color:'#2980b9' } });
+  }
+
+  if (s >= 4) {
+    traces.push({ x:[ax,cx], y:[ay,cy], mode:'lines', name:'Income Effect (A→C)',
+      line:{ color:'#e67e22', width:2.5, dash:'dash' } });
+  }
+
+  return traces;
+}
+
+/* ── Perfect Substitutes ── */
+function buildSubstitutesTraces(p) {
+  const { M, px, py, np, ax, ay, bx, by, cx, cy } = p;
+  const s = currentStep;
+  let traces = [];
+
+  // Linear IC through A
+  const Ua = ax + ay;
+  traces.push({ x:[0, Math.min(Ua,50)], y:[Ua, Math.max(0, Ua-50)], mode:'lines', name:'IC₁ (original)',
+    line:{ color: s>=3 ? '#aad4c0' : '#27ae60', width:2, dash: s>=3 ? 'dot' : 'solid' } });
+
+  traces.push({ x:[0, M/px], y:[M/py, 0], mode:'lines', name:'Budget Line (Original)',
+    line:{ color:'#2c3e50', width:3, dash: s>1 ? 'dot' : 'solid' } });
+
+  traces.push({ x:[ax], y:[ay], mode:'markers+text', name:'A (original)',
+    marker:{ color:'#27ae60', size:14 }, text:['A'], textposition:'top right',
+    textfont:{ size:15, color:'#27ae60' },
+    hovertemplate:`A: (${fmt(ax)}, ${fmt(ay)})<extra></extra>` });
+
+  if (s >= 2) {
+    traces.push({ x:[0, M/np], y:[M/py, 0], mode:'lines', name:'Budget Line (New)',
+      line:{ color:'#e74c3c', width:3 } });
+
+    const Uc = cx + cy;
+    traces.push({ x:[0, Math.min(Uc,50)], y:[Uc, Math.max(0,Uc-50)], mode:'lines', name:'IC₂ (new)',
+      line:{ color:'#e74c3c', width:2 } });
+
+    traces.push({ x:[cx], y:[cy], mode:'markers+text', name:'C (final)',
+      marker:{ color:'#e74c3c', size:14 }, text:['C'], textposition:'top right',
+      textfont:{ size:15, color:'#e74c3c' },
+      hovertemplate:`C: (${fmt(cx)}, ${fmt(cy)})<extra></extra>` });
+  }
+
+  if (s >= 3) {
+    // For perfect substitutes B = C (entire effect is substitution)
+    traces.push({ x:[bx], y:[by], mode:'markers+text', name:'B (compensated) = C',
+      marker:{ color:'#2980b9', size:14, symbol:'diamond' }, text:['B=C'], textposition:'bottom right',
+      textfont:{ size:13, color:'#2980b9' },
+      hovertemplate:`B: (${fmt(bx)}, ${fmt(by)})<extra></extra>` });
+
+    traces.push({ x:[ax,bx], y:[ay,by], mode:'lines', name:'Substitution Effect (A→B)',
+      line:{ color:'#2980b9', width:2.5 } });
+  }
+
+  if (s >= 4) {
+    // Income effect is zero (B=C)
+    traces.push({ x:[cx+1], y:[cy+3], mode:'text', text:['IE = 0'], showlegend:false,
+      textfont:{ size:12, color:'#e67e22' } });
+  }
+
+  return traces;
+}
+
+/* ═══════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', function() {
+  updateGraph();
+  updateStepUI();
+});
+</script>
+</body>
+</html>

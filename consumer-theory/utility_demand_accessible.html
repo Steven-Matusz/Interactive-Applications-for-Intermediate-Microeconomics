@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Utility Functions &amp; Demand Curves – Individual Study</title>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<style>
+  /* ── Reset & base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f0f4f0;
+    min-height: 100vh;
+    padding: 20px;
+    color: #212529;
+  }
+
+  /* ── Skip link ── */
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: #18453B;
+    color: white;
+    padding: 8px 16px;
+    text-decoration: none;
+    font-weight: 600;
+    border-radius: 0 0 6px 0;
+    z-index: 9999;
+    transition: top 0.2s;
+  }
+  .skip-link:focus { top: 0; }
+
+  /* ── Focus visible ── */
+  *:focus-visible {
+    outline: 3px solid #18453B;
+    outline-offset: 2px;
+  }
+
+  /* ── Screen-reader only ── */
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* ── Live region ── */
+  .live-region {
+    position: absolute;
+    left: -10000px;
+    width: 1px; height: 1px;
+    overflow: hidden;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(135deg, #18453B 0%, #2d6a5a 100%);
+    color: white;
+    padding: 28px 30px;
+    border-radius: 12px;
+    text-align: center;
+    margin-bottom: 24px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+  }
+  .header h1 { font-size: 2em; font-weight: 600; margin-bottom: 6px; }
+  .header p  { font-size: 1.05em; opacity: 0.9; }
+
+  /* ── Layout ── */
+  .main-content {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 24px;
+    max-width: 1300px;
+    margin: 0 auto;
+  }
+
+  /* ── Control panel ── */
+  .control-panel {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    border: 2px solid #e0e0e0;
+    border-left: 5px solid #18453B;
+    overflow-y: auto;
+    max-height: 900px;
+  }
+  .control-panel h2 {
+    color: #18453B;
+    font-size: 1.1em;
+    margin-bottom: 16px;
+  }
+
+  /* ── Utility buttons ── */
+  .utility-group { margin-bottom: 20px; }
+  .utility-group legend {
+    font-weight: 700;
+    color: #18453B;
+    font-size: 1em;
+    margin-bottom: 10px;
+  }
+  .utility-btn {
+    display: block;
+    width: 100%;
+    padding: 11px 14px;
+    margin: 6px 0;
+    border: 2px solid #ced4da;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    text-align: left;
+    font-size: 0.92em;
+    transition: all 0.2s ease;
+    color: #212529;
+  }
+  .utility-btn:hover:not([aria-pressed="true"]) {
+    border-color: #18453B;
+    background: #f0f7f4;
+  }
+  .utility-btn[aria-pressed="true"] {
+    border-color: #18453B;
+    background: #e0f0ea;
+    color: #18453B;
+    font-weight: 700;
+  }
+  .utility-btn:focus-visible {
+    outline: 3px solid #18453B;
+    outline-offset: 2px;
+  }
+  .utility-btn small {
+    display: block;
+    font-weight: 400;
+    font-size: 0.88em;
+    color: #6c757d;
+    margin-top: 2px;
+  }
+  .utility-btn[aria-pressed="true"] small { color: #2d6a5a; }
+
+  /* ── Function display box ── */
+  .function-box {
+    background: #fff8dc;
+    border: 2px solid #f39c12;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    font-size: 1em;
+    text-align: center;
+    color: #2c3e50;
+  }
+
+  /* ── Demand equation box ── */
+  .demand-box {
+    background: #e8f5e9;
+    border: 2px solid #27ae60;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    font-size: 0.95em;
+    text-align: center;
+    color: #1b5e20;
+  }
+
+  /* ── Sliders ── */
+  .slider-group {
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  .slider-group label {
+    display: block;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 8px;
+    font-size: 0.92em;
+  }
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .slider-row input[type="range"] {
+    flex: 1;
+    height: 8px;
+    border-radius: 4px;
+    background: #ced4da;
+    outline: none;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .slider-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: #18453B;
+    cursor: pointer;
+    border: 3px solid white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  }
+  .slider-row input[type="range"]::-moz-range-thumb {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: #18453B;
+    cursor: pointer;
+    border: 3px solid white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  }
+  .slider-row input[type="range"]:focus {
+    outline: 3px solid #18453B;
+    outline-offset: 3px;
+  }
+  .slider-val {
+    font-weight: 700;
+    color: #18453B;
+    min-width: 48px;
+    text-align: right;
+    font-size: 0.95em;
+  }
+  .slider-range-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8em;
+    color: #6c757d;
+    margin-top: 3px;
+  }
+
+  /* ── Graph panel ── */
+  .graph-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .graph-wrapper {
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .graph-title {
+    background: #f8f9fa;
+    padding: 10px 16px;
+    font-weight: 700;
+    color: #18453B;
+    font-size: 0.95em;
+    border-bottom: 2px solid #e0e0e0;
+    text-align: center;
+  }
+
+  /* ── Accessible data table ── */
+  .data-table-section {
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .data-table-section h3 {
+    color: #18453B;
+    font-size: 1em;
+    margin-bottom: 12px;
+  }
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+  }
+  .data-table caption {
+    font-weight: 700;
+    color: #18453B;
+    text-align: left;
+    padding: 8px 0;
+    font-size: 0.95em;
+  }
+  .data-table th, .data-table td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  .data-table th {
+    background: #f0f7f4;
+    font-weight: 700;
+    color: #18453B;
+  }
+  .data-table tr:hover td { background: #f8f9fa; }
+  .data-table td.highlight { font-weight: 700; color: #c0392b; }
+
+  /* ── Concept callout ── */
+  .concept-box {
+    background: #e3f2fd;
+    border: 2px solid #1976d2;
+    border-radius: 8px;
+    padding: 14px;
+    margin-top: 16px;
+    font-size: 0.92em;
+    color: #0d47a1;
+  }
+  .concept-box strong { display: block; margin-bottom: 6px; }
+
+  /* ── Reset button ── */
+  .reset-btn {
+    width: 100%;
+    padding: 11px;
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95em;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: all 0.2s;
+  }
+  .reset-btn:hover, .reset-btn:focus {
+    background: #5a6268;
+    outline: 3px solid #18453B;
+    outline-offset: 2px;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 1000px) {
+    .main-content { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<div id="live-updates" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+<header class="header">
+  <h1>Utility Functions &amp; Demand Curves</h1>
+  <p>How different preferences shape demand – interactive exploration</p>
+</header>
+
+<main id="main-content">
+<div class="main-content">
+
+  <!-- ══ Control Panel ══ -->
+  <aside class="control-panel" aria-label="Controls and parameters">
+
+    <!-- Utility Function Selector -->
+    <fieldset class="utility-group">
+      <legend>Choose a Utility Function</legend>
+      <button class="utility-btn" id="btn-cd" aria-pressed="true"
+              onclick="selectUtility('cobb-douglas', this)">
+        <strong>Cobb-Douglas</strong>
+        <small>U(Qx, Qy) = Qx<sup>α</sup> · Qy<sup>(1−α)</sup></small>
+      </button>
+      <button class="utility-btn" id="btn-ps" aria-pressed="false"
+              onclick="selectUtility('perfect-substitutes', this)">
+        <strong>Perfect Substitutes</strong>
+        <small>U(Qx, Qy) = Qx + Qy</small>
+      </button>
+      <button class="utility-btn" id="btn-pc" aria-pressed="false"
+              onclick="selectUtility('perfect-complements', this)">
+        <strong>Perfect Complements</strong>
+        <small>U(Qx, Qy) = min(Qx, Qy)</small>
+      </button>
+      <button class="utility-btn" id="btn-q" aria-pressed="false"
+              onclick="selectUtility('quadratic', this)">
+        <strong>Quasi-linear (Quadratic)</strong>
+        <small>U(Qx, Qy) = aQx − bQx² + Qy</small>
+      </button>
+    </fieldset>
+
+    <!-- Utility & Demand formulas -->
+    <div class="function-box" id="function-display" role="region"
+         aria-label="Current utility function" aria-live="polite" aria-atomic="true">
+      U(Qx, Qy) = Qx<sup>0.6</sup> · Qy<sup>0.4</sup>
+    </div>
+    <div class="demand-box" id="demand-display" role="region"
+         aria-label="Demand equation" aria-live="polite" aria-atomic="true">
+      Qx = (α · Income) / Px
+    </div>
+
+    <!-- Parameter sliders – rendered by JS -->
+    <div id="param-sliders" role="group" aria-label="Model parameters"></div>
+
+    <!-- Reset -->
+    <button class="reset-btn" onclick="resetParams()" aria-label="Reset all parameters to default values">
+      ↺ Reset to Defaults
+    </button>
+
+    <!-- Concept box -->
+    <div class="concept-box" id="concept-box" aria-live="polite" aria-atomic="true">
+      <strong>💡 Key Insight</strong>
+      <span id="concept-text">Cobb-Douglas preferences produce a demand curve where expenditure on each good is a fixed fraction of income — quantity demanded varies inversely with price.</span>
+    </div>
+  </aside>
+
+  <!-- ══ Graph + Table Panel ══ -->
+  <section class="graph-panel" aria-label="Graphs and data">
+
+    <div class="graph-wrapper">
+      <div class="graph-title" id="ic-title">Indifference Curves &amp; Budget Constraint</div>
+      <div id="indifference-graph" role="img" aria-labelledby="ic-title" aria-describedby="ic-desc"></div>
+      <p id="ic-desc" class="sr-only">Indifference curves showing consumer preferences with the budget line. The tangency point indicates the optimal consumption bundle.</p>
+    </div>
+
+    <div class="graph-wrapper">
+      <div class="graph-title" id="d-title">Demand Curve for Good X</div>
+      <div id="demand-graph" role="img" aria-labelledby="d-title" aria-describedby="d-desc"></div>
+      <p id="d-desc" class="sr-only">Demand curve derived from utility maximization. The highlighted point shows the current price-quantity combination.</p>
+    </div>
+
+    <!-- Accessible data table -->
+    <div class="data-table-section">
+      <h3>Optimal Bundle &amp; Selected Demand Points</h3>
+      <table class="data-table" id="data-table" aria-label="Current optimal bundle and demand points">
+        <caption id="table-caption">Cobb-Douglas: key values at selected prices</caption>
+        <thead>
+          <tr>
+            <th scope="col">Price of X (Px)</th>
+            <th scope="col">Optimal Qx</th>
+            <th scope="col">Optimal Qy</th>
+            <th scope="col">Utility Level</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <!-- populated by JS -->
+        </tbody>
+      </table>
+    </div>
+
+  </section>
+</div>
+</main>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let currentUtility = 'cobb-douglas';
+
+let params = {
+  alpha: 0.6,
+  income: 60,
+  px: 2,
+  py: 3,
+  a: 10,
+  b: 0.5
+};
+
+const defaults = { ...params };
+
+// ── Utility metadata ────────────────────────────────────────────────────────
+const utilityMeta = {
+  'cobb-douglas': {
+    functionHTML: () => `U(Qx, Qy) = Qx<sup>${params.alpha}</sup> · Qy<sup>${(1 - params.alpha).toFixed(1)}</sup>`,
+    demandHTML:   () => `Qx = (α · Income) / Px = ${((params.alpha * params.income) / params.px).toFixed(2)}`,
+    concept: 'Cobb-Douglas preferences produce a demand curve where expenditure on each good is a fixed fraction of income — quantity demanded varies inversely with price.',
+    getQx: (px) => (params.alpha * params.income) / px,
+    getQy: (qx, px) => ((1 - params.alpha) * params.income) / params.py,
+    utilityLevel: (qx, qy) => Math.pow(qx, params.alpha) * Math.pow(qy, 1 - params.alpha),
+    sliders: ['alpha', 'income', 'px', 'py']
+  },
+  'perfect-substitutes': {
+    functionHTML: () => `U(Qx, Qy) = Qx + Qy`,
+    demandHTML:   () => params.px < params.py
+      ? `Qx = Income / Px = ${(params.income / params.px).toFixed(2)}, Qy = 0`
+      : params.px > params.py
+      ? `Qx = 0, Qy = Income / Py = ${(params.income / params.py).toFixed(2)}`
+      : `Any (Qx, Qy) with Px·Qx + Py·Qy = Income`,
+    concept: 'Perfect substitutes: the consumer buys only the cheaper good. When prices are equal, any combination on the budget line is optimal — demand is perfectly elastic at Px = Py.',
+    getQx: (px) => px < params.py ? params.income / px : px > params.py ? 0 : null,
+    getQy: (qx, px) => px > params.py ? params.income / params.py : px < params.py ? 0 : null,
+    utilityLevel: (qx, qy) => (qx || 0) + (qy || 0),
+    sliders: ['income', 'px', 'py']
+  },
+  'perfect-complements': {
+    functionHTML: () => `U(Qx, Qy) = min(Qx, Qy)`,
+    demandHTML:   () => {
+      const qx = params.income / (params.px + params.py);
+      return `Qx = Qy = Income / (Px + Py) = ${qx.toFixed(2)}`;
+    },
+    concept: 'Perfect complements are consumed in fixed proportions (like left and right shoes). A price decrease in one good raises the quantity demanded of both — the demand curve slopes downward but is steeper than Cobb-Douglas.',
+    getQx: (px) => params.income / (px + params.py),
+    getQy: (qx) => qx,
+    utilityLevel: (qx, qy) => Math.min(qx, qy),
+    sliders: ['income', 'px', 'py']
+  },
+  'quadratic': {
+    functionHTML: () => `U(Qx, Qy) = ${params.a}Qx − ${params.b}Qx² + Qy`,
+    demandHTML:   () => {
+      const qi = (params.a - params.px / params.py) / (2 * params.b);
+      const qx = qi >= 0 && params.px * qi <= params.income ? qi :
+                 qi >= 0 ? params.income / params.px : 0;
+      return `Qx = (a − Px/Py) / (2b) = ${qx.toFixed(2)}`;
+    },
+    concept: 'Quasi-linear preferences yield a linear demand curve (Qx = (a − Px/Py) / 2b). Spending on X reaches a ceiling determined by MU = 0; beyond that, income goes entirely to Y.',
+    getQx: (px) => {
+      const qi = (params.a - px / params.py) / (2 * params.b);
+      if (qi >= 0) {
+        return px * qi <= params.income ? qi : params.income / px;
+      }
+      return 0;
+    },
+    getQy: (qx, px) => Math.max(0, (params.income - px * qx) / params.py),
+    utilityLevel: (qx, qy) => params.a * qx - params.b * qx * qx + qy,
+    sliders: ['a', 'b', 'income', 'px', 'py']
+  }
+};
+
+// ── Slider configs ──────────────────────────────────────────────────────────
+const sliderConfig = {
+  alpha:  { label: 'Alpha (α) – share of income on X', min: 0.1, max: 0.9, step: 0.1, fmt: v => v.toFixed(1) },
+  income: { label: 'Income (I)', min: 20, max: 120, step: 5, fmt: v => `$${v}` },
+  px:     { label: 'Price of X (Px)', min: 0.5, max: 10, step: 0.5, fmt: v => `$${parseFloat(v).toFixed(2)}` },
+  py:     { label: 'Price of Y (Py)', min: 0.5, max: 10, step: 0.5, fmt: v => `$${parseFloat(v).toFixed(2)}` },
+  a:      { label: 'Parameter a (max marginal utility)', min: 4, max: 16, step: 1, fmt: v => v },
+  b:      { label: 'Parameter b (diminishing MU rate)', min: 0.1, max: 1.5, step: 0.1, fmt: v => parseFloat(v).toFixed(1) }
+};
+
+// ── Utility selection ────────────────────────────────────────────────────────
+function selectUtility(utility, btn) {
+  currentUtility = utility;
+  document.querySelectorAll('.utility-btn').forEach(b => b.setAttribute('aria-pressed', 'false'));
+  btn.setAttribute('aria-pressed', 'true');
+  renderSliders();
+  updateAll();
+  announce(`Switched to ${btn.querySelector('strong').textContent} utility function.`);
+}
+
+// ── Slider rendering ─────────────────────────────────────────────────────────
+function renderSliders() {
+  const container = document.getElementById('param-sliders');
+  const meta = utilityMeta[currentUtility];
+  container.innerHTML = '';
+
+  meta.sliders.forEach(key => {
+    const cfg = sliderConfig[key];
+    const val = params[key];
+    const displayVal = cfg.fmt(val);
+    const id = `slider-${key}`;
+    const valId = `val-${key}`;
+    const descId = `desc-${key}`;
+
+    const div = document.createElement('div');
+    div.className = 'slider-group';
+    div.setAttribute('role', 'group');
+    div.setAttribute('aria-labelledby', `lbl-${key}`);
+    div.innerHTML = `
+      <label id="lbl-${key}" for="${id}">${cfg.label} <span class="sr-only">(use arrow keys to adjust)</span></label>
+      <div class="slider-row">
+        <input type="range" id="${id}" min="${cfg.min}" max="${cfg.max}" step="${cfg.step}" value="${val}"
+          aria-valuemin="${cfg.min}" aria-valuemax="${cfg.max}" aria-valuenow="${val}"
+          aria-valuetext="${displayVal}" aria-describedby="${descId}"
+          oninput="handleSlider('${key}', this)">
+        <span class="slider-val" id="${valId}" aria-hidden="true">${displayVal}</span>
+      </div>
+      <div class="slider-range-labels" aria-hidden="true">
+        <span>${cfg.fmt(cfg.min)}</span><span>${cfg.fmt(cfg.max)}</span>
+      </div>
+      <span id="${descId}" class="sr-only">Range: ${cfg.fmt(cfg.min)} to ${cfg.fmt(cfg.max)}. Current: ${displayVal}.</span>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function handleSlider(key, input) {
+  const cfg = sliderConfig[key];
+  const val = parseFloat(input.value);
+  params[key] = val;
+  const displayVal = cfg.fmt(val);
+  document.getElementById(`val-${key}`).textContent = displayVal;
+  input.setAttribute('aria-valuenow', val);
+  input.setAttribute('aria-valuetext', displayVal);
+  document.getElementById(`desc-${key}`).textContent =
+    `Range: ${cfg.fmt(cfg.min)} to ${cfg.fmt(cfg.max)}. Current: ${displayVal}.`;
+  updateAll();
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────────────
+function resetParams() {
+  params = { ...defaults };
+  renderSliders();
+  updateAll();
+  announce('Parameters reset to default values.');
+}
+
+// ── Update everything ─────────────────────────────────────────────────────────
+function updateAll() {
+  const meta = utilityMeta[currentUtility];
+  document.getElementById('function-display').innerHTML = meta.functionHTML();
+  document.getElementById('demand-display').innerHTML  = meta.demandHTML();
+  document.getElementById('concept-text').textContent  = meta.concept;
+  updateTable();
+  updateGraphs();
+}
+
+// ── Data table ────────────────────────────────────────────────────────────────
+function updateTable() {
+  const meta = utilityMeta[currentUtility];
+  const selectedPrices = [0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10];
+  const tbody = document.getElementById('table-body');
+  const caption = document.getElementById('table-caption');
+
+  const utilityLabels = {
+    'cobb-douglas': 'Cobb-Douglas',
+    'perfect-substitutes': 'Perfect Substitutes',
+    'perfect-complements': 'Perfect Complements',
+    'quadratic': 'Quasi-linear (Quadratic)'
+  };
+  caption.textContent = `${utilityLabels[currentUtility]}: key values at selected prices (Income = $${params.income}, Py = $${params.py})`;
+
+  tbody.innerHTML = '';
+  selectedPrices.forEach(px => {
+    const qx = meta.getQx(px);
+    if (qx === null || qx < 0) {
+      // perfect substitutes at equal prices — skip or show range
+      if (currentUtility === 'perfect-substitutes' && Math.abs(px - params.py) < 0.05) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>$${px.toFixed(2)} <span style="color:#856404">(= Py)</span></td>
+          <td colspan="3">Any bundle with Px·Qx + Py·Qy = Income (indeterminate)</td>`;
+        tbody.appendChild(tr);
+      }
+      return;
+    }
+    const qy = meta.getQy ? meta.getQy(qx, px) : null;
+    const util = qy !== null ? meta.utilityLevel(qx, qy) : '—';
+    const isCurrent = Math.abs(px - params.px) < 0.01;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="${isCurrent ? 'highlight' : ''}">$${px.toFixed(2)}${isCurrent ? ' ◀ current' : ''}</td>
+      <td class="${isCurrent ? 'highlight' : ''}">${typeof qx === 'number' ? qx.toFixed(2) : qx}</td>
+      <td>${qy !== null ? qy.toFixed(2) : '0'}</td>
+      <td>${typeof util === 'number' ? util.toFixed(2) : util}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Graphs ────────────────────────────────────────────────────────────────────
+function updateGraphs() {
+  drawIndifferenceCurves();
+  drawDemandCurve();
+}
+
+const GRAPH_WIDTH  = 560;
+const GRAPH_HEIGHT = 420;
+
+function plotConfig() {
+  return { responsive: false, displayModeBar: false, staticPlot: true };
+}
+
+// ── Indifference-curve graph ──────────────────────────────────────────────────
+function drawIndifferenceCurves() {
+  const meta = utilityMeta[currentUtility];
+  const maxQ = 60;
+  const traces = [];
+
+  // Budget line
+  const blQx = [0, params.income / params.px];
+  const blQy = [params.income / params.py, 0];
+  traces.push({
+    x: blQx, y: blQy,
+    mode: 'lines', name: 'Budget Line',
+    line: { color: '#c0392b', width: 2.5, dash: 'dash' },
+    type: 'scatter'
+  });
+
+  // Optimal bundle
+  const qxOpt = meta.getQx(params.px);
+  const qyOpt = meta.getQy ? meta.getQy(qxOpt, params.px) : null;
+
+  // Indifference curves
+  if (currentUtility === 'cobb-douglas') {
+    const utilLevels = qxOpt !== null && qyOpt !== null
+      ? [meta.utilityLevel(qxOpt, qyOpt) * 0.55,
+         meta.utilityLevel(qxOpt, qyOpt) * 0.78,
+         meta.utilityLevel(qxOpt, qyOpt)]
+      : [4, 8, 12];
+
+    utilLevels.forEach((U, idx) => {
+      const xs = [], ys = [];
+      for (let qx = 0.2; qx <= maxQ; qx += 0.3) {
+        const qy = Math.pow(U / Math.pow(qx, params.alpha), 1 / (1 - params.alpha));
+        if (qy > 0 && qy <= maxQ) { xs.push(qx); ys.push(qy); }
+      }
+      traces.push({
+        x: xs, y: ys, mode: 'lines',
+        name: idx === utilLevels.length - 1 ? 'Optimal IC' : `IC ${idx + 1}`,
+        line: { color: idx === utilLevels.length - 1 ? '#18453B' : '#85c1a3',
+                width: idx === utilLevels.length - 1 ? 2.5 : 1.5 },
+        type: 'scatter'
+      });
+    });
+
+  } else if (currentUtility === 'perfect-substitutes') {
+    // ICs are straight lines with slope -1
+    const levels = qxOpt !== null ? [qxOpt * 0.5, qxOpt * 0.75, qxOpt] : [10, 15, 20];
+    levels.forEach((U, idx) => {
+      traces.push({
+        x: [0, U], y: [U, 0], mode: 'lines',
+        name: idx === levels.length - 1 ? 'Optimal IC' : `IC ${idx + 1}`,
+        line: { color: idx === levels.length - 1 ? '#18453B' : '#85c1a3',
+                width: idx === levels.length - 1 ? 2.5 : 1.5 },
+        type: 'scatter'
+      });
+    });
+
+  } else if (currentUtility === 'perfect-complements') {
+    // L-shaped ICs
+    const levels = qxOpt !== null ? [qxOpt * 0.5, qxOpt * 0.75, qxOpt] : [5, 10, 15];
+    levels.forEach((U, idx) => {
+      traces.push({
+        x: [U, U, maxQ], y: [maxQ, U, U], mode: 'lines',
+        name: idx === levels.length - 1 ? 'Optimal IC' : `IC ${idx + 1}`,
+        line: { color: idx === levels.length - 1 ? '#18453B' : '#85c1a3',
+                width: idx === levels.length - 1 ? 2.5 : 1.5 },
+        type: 'scatter'
+      });
+    });
+
+  } else if (currentUtility === 'quadratic') {
+    // Satiation point: MUx = a - 2b·Qx = 0  →  Qx* = a/(2b)
+    // Truncate all ICs at this point so only the downward-sloping (more-is-better) region shows.
+    const satiation = params.a / (2 * params.b);
+
+    const utilLevels = qxOpt !== null && qyOpt !== null
+      ? [meta.utilityLevel(qxOpt, qyOpt) * 0.55,
+         meta.utilityLevel(qxOpt, qyOpt) * 0.78,
+         meta.utilityLevel(qxOpt, qyOpt)]
+      : [30, 50, 70];
+
+    utilLevels.forEach((U, idx) => {
+      const xs = [], ys = [];
+      for (let qx = 0; qx <= satiation; qx += 0.2) {
+        const qy = U - params.a * qx + params.b * qx * qx;
+        if (qy >= 0 && qy <= maxQ) { xs.push(qx); ys.push(qy); }
+      }
+      if (xs.length > 1) {
+        traces.push({
+          x: xs, y: ys, mode: 'lines',
+          name: idx === utilLevels.length - 1 ? 'Optimal IC' : `IC ${idx + 1}`,
+          line: { color: idx === utilLevels.length - 1 ? '#18453B' : '#85c1a3',
+                  width: idx === utilLevels.length - 1 ? 2.5 : 1.5 },
+          type: 'scatter'
+        });
+      }
+    });
+  }
+
+  // Optimal point marker
+  if (qxOpt !== null && qyOpt !== null && qxOpt >= 0) {
+    traces.push({
+      x: [qxOpt], y: [qyOpt],
+      mode: 'markers',
+      name: `Optimal: (${qxOpt.toFixed(1)}, ${qyOpt.toFixed(1)})`,
+      marker: { color: '#e74c3c', size: 12, symbol: 'circle',
+                line: { color: 'white', width: 2 } },
+      type: 'scatter'
+    });
+  } else if (currentUtility === 'perfect-substitutes') {
+    const qx0 = params.px < params.py ? params.income / params.px : 0;
+    const qy0 = params.px > params.py ? params.income / params.py : 0;
+    traces.push({
+      x: [qx0], y: [qy0],
+      mode: 'markers',
+      name: `Optimal: (${qx0.toFixed(1)}, ${qy0.toFixed(1)})`,
+      marker: { color: '#e74c3c', size: 12, symbol: 'circle',
+                line: { color: 'white', width: 2 } },
+      type: 'scatter'
+    });
+  }
+
+  // For quadratic, cap the IC x-axis at the satiation point (MUx = a − 2b·Qx = 0)
+  // so the upward-sloping region is never shown.
+  const icMaxX = currentUtility === 'quadratic'
+    ? Math.min(maxQ, params.a / (2 * params.b) * 1.1)
+    : maxQ;
+
+  const layout = {
+    margin: { l: 55, r: 20, t: 15, b: 55 },
+    autosize: false,
+    width: GRAPH_WIDTH,
+    height: GRAPH_HEIGHT,
+    xaxis: { title: 'Quantity of X (Qx)', range: [0, icMaxX], zeroline: true },
+    yaxis: { title: 'Quantity of Y (Qy)', range: [0, maxQ], zeroline: true },
+    legend: { x: 0.55, y: 0.95, bgcolor: 'rgba(255,255,255,0.85)' },
+    paper_bgcolor: 'white',
+    plot_bgcolor: 'white'
+  };
+
+  Plotly.newPlot('indifference-graph', traces, layout, plotConfig());
+}
+
+// ── Demand curve graph ────────────────────────────────────────────────────────
+function drawDemandCurve() {
+  const meta = utilityMeta[currentUtility];
+  const traces = [];
+  const maxPx = 12;
+  const maxQx = 80;
+
+  if (currentUtility === 'perfect-substitutes') {
+    // Kinked demand
+    const below_x = [], below_y = [];
+    for (let px = 0.1; px < params.py - 0.05; px += 0.1) {
+      const qx = params.income / px;
+      if (qx <= maxQx) { below_x.push(qx); below_y.push(px); }
+    }
+    traces.push({
+      x: below_x, y: below_y, mode: 'lines', name: 'Demand (Px < Py)',
+      line: { color: '#27ae60', width: 3 }, type: 'scatter'
+    });
+
+    // Vertical segment at Qx=0 above Py
+    traces.push({
+      x: [0, 0], y: [params.py + 0.05, maxPx], mode: 'lines',
+      name: 'Demand (Px > Py)',
+      line: { color: '#27ae60', width: 3 }, type: 'scatter'
+    });
+
+    // Elastic segment at Py
+    if (Math.abs(params.px - params.py) < 0.01) {
+      traces.push({
+        x: [0, params.income / params.py], y: [params.py, params.py],
+        mode: 'lines', name: 'Perfectly elastic at Px = Py',
+        line: { color: '#e67e22', width: 5 }, type: 'scatter'
+      });
+    }
+  } else {
+    const xs = [], ys = [];
+    for (let px = 0.1; px <= maxPx; px += 0.1) {
+      const qx = meta.getQx(px);
+      if (qx !== null && qx >= 0 && qx <= maxQx) { xs.push(qx); ys.push(px); }
+    }
+    traces.push({
+      x: xs, y: ys, mode: 'lines', name: 'Demand Curve',
+      line: { color: '#27ae60', width: 3 }, type: 'scatter'
+    });
+  }
+
+  // Current point
+  const qxCurrent = meta.getQx(params.px);
+  if (qxCurrent !== null && qxCurrent >= 0) {
+    traces.push({
+      x: [qxCurrent], y: [params.px],
+      mode: 'markers',
+      name: `Current: Qx=${qxCurrent.toFixed(1)}, Px=$${params.px.toFixed(2)}`,
+      marker: { color: '#e74c3c', size: 12, symbol: 'circle',
+                line: { color: 'white', width: 2 } },
+      type: 'scatter'
+    });
+  }
+
+  const layout = {
+    margin: { l: 60, r: 20, t: 15, b: 55 },
+    autosize: false,
+    width: GRAPH_WIDTH,
+    height: GRAPH_HEIGHT,
+    xaxis: { title: 'Quantity of X (Qx)', range: [0, maxQx], zeroline: true },
+    yaxis: { title: 'Price of X (Px, $)', range: [0, maxPx], zeroline: true },
+    legend: { x: 0.45, y: 0.95, bgcolor: 'rgba(255,255,255,0.85)' },
+    paper_bgcolor: 'white',
+    plot_bgcolor: 'white'
+  };
+
+  Plotly.newPlot('demand-graph', traces, layout, plotConfig());
+}
+
+// ── Announce to screen readers ────────────────────────────────────────────────
+function announce(msg) {
+  const el = document.getElementById('live-updates');
+  el.textContent = '';
+  setTimeout(() => { el.textContent = msg; }, 50);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  renderSliders();
+  updateAll();
+});
+</script>
+</body>
+</html>

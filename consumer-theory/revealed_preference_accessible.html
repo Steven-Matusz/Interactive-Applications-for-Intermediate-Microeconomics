@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Following the Clues: Revealed Preference in Action</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js"></script>
+    <style>
+        /* ===================== BASE ===================== */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f4f8;
+            min-height: 100vh;
+            color: #1a1a1a;
+        }
+
+        /* ===================== SKIP LINK ===================== */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 6px;
+            background: #18453B;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 0 0 6px 6px;
+            font-weight: 600;
+            text-decoration: none;
+            z-index: 9999;
+            transition: top 0.2s;
+        }
+        .skip-link:focus { top: 0; }
+
+        /* ===================== LIVE REGION ===================== */
+        .live-region {
+            position: absolute;
+            left: -10000px;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+        }
+
+        /* ===================== SR-ONLY ===================== */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+
+        /* ===================== FOCUS ===================== */
+        *:focus-visible {
+            outline: 3px solid #005fcc;
+            outline-offset: 2px;
+        }
+
+        /* ===================== HEADER ===================== */
+        .header {
+            background: #18453B;
+            color: white;
+            padding: 24px 32px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .header p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        /* ===================== MAIN LAYOUT ===================== */
+        .main-wrapper {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 24px 16px;
+        }
+
+        .content-wrapper {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 0;
+            background: white;
+            border-radius: 12px;
+            border: 2px solid #dee2e6;
+            overflow: hidden;
+        }
+
+        /* ===================== CONTROL PANEL ===================== */
+        .control-panel {
+            background: #f8f9fa;
+            padding: 28px;
+            border-right: 3px solid #dee2e6;
+            overflow-y: auto;
+            max-height: 820px;
+        }
+
+        .control-panel h2 {
+            font-size: 1.1rem;
+            color: #18453B;
+            margin-bottom: 16px;
+            font-weight: 700;
+            border-bottom: 2px solid #18453B;
+            padding-bottom: 8px;
+        }
+
+        /* ===================== PROGRESS ===================== */
+        .progress-nav {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 20px;
+        }
+
+        .progress-step {
+            flex: 1;
+            padding: 8px 4px;
+            border-radius: 8px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-align: center;
+            border: 2px solid transparent;
+            cursor: default;
+        }
+        .progress-step.active {
+            background: #18453B;
+            color: white;
+            border-color: #18453B;
+        }
+        .progress-step.completed {
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
+        }
+        .progress-step.pending {
+            background: #e9ecef;
+            color: #6c757d;
+            border-color: #dee2e6;
+        }
+
+        /* ===================== SCENARIO INFO ===================== */
+        .scenario-card {
+            background: white;
+            border: 2px solid #18453B;
+            border-left: 5px solid #18453B;
+            border-radius: 8px;
+            padding: 14px;
+            margin-bottom: 18px;
+        }
+        .scenario-card h3 {
+            color: #18453B;
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+        .scenario-card .bundle-tag {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+        .bundle-a { background: #fde8e8; color: #c0392b; }
+        .bundle-b { background: #fef3e2; color: #d35400; }
+        .bundle-c { background: #f0e8f8; color: #7d3c98; }
+
+        .scenario-detail {
+            font-size: 0.88rem;
+            color: #495057;
+            line-height: 1.5;
+        }
+
+        /* ===================== ELIMINATION BUTTONS ===================== */
+        .elimination-section {
+            margin-bottom: 18px;
+        }
+        .elimination-section h3 {
+            font-size: 0.95rem;
+            color: #343a40;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .region-btn {
+            width: 100%;
+            padding: 12px 14px;
+            margin: 6px 0;
+            border: 2px solid #ced4da;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.88rem;
+            text-align: left;
+            line-height: 1.4;
+            color: #1a1a1a;
+            font-family: inherit;
+        }
+        .region-btn:hover {
+            border-color: #18453B;
+            background: #f0f7f4;
+            transform: translateY(-1px);
+        }
+        .region-btn.eliminated {
+            background: #dc3545;
+            color: white;
+            border-color: #c82333;
+        }
+        .region-btn.eliminated:hover {
+            background: #c82333;
+        }
+        .region-btn:focus-visible {
+            outline: 3px solid #005fcc;
+            outline-offset: 2px;
+        }
+
+        /* ===================== ACTION BUTTONS ===================== */
+        .btn {
+            width: 100%;
+            padding: 11px 16px;
+            margin: 5px 0;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+        .btn:focus-visible {
+            outline: 3px solid #005fcc;
+            outline-offset: 2px;
+        }
+        .btn-check   { background: #18453B; color: white; }
+        .btn-next    { background: #2c7be5; color: white; }
+        .btn-reveal  { background: #17a2b8; color: white; }
+        .btn-reset   { background: #6c757d; color: white; }
+        .btn:hover   { opacity: 0.88; transform: translateY(-1px); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* ===================== FEEDBACK ===================== */
+        .feedback {
+            padding: 14px;
+            border-radius: 8px;
+            margin: 12px 0;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .feedback-correct  { background: #d4edda; border: 2px solid #28a745; color: #155724; }
+        .feedback-incorrect{ background: #f8d7da; border: 2px solid #dc3545; color: #721c24; }
+        .feedback-info     { background: #d1ecf1; border: 2px solid #17a2b8; color: #0c5460; }
+        .feedback-complete { background: #d4edda; border: 2px solid #28a745; color: #155724; }
+
+        /* ===================== GRAPH PANEL ===================== */
+        .graph-panel {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .graph-wrapper {
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+        }
+
+        /* ===================== DATA TABLE ===================== */
+        .data-table-wrapper {
+            background: white;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+        .data-table caption {
+            padding: 10px 14px;
+            font-weight: 700;
+            color: #18453B;
+            text-align: left;
+            background: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            caption-side: top;
+        }
+        .data-table th,
+        .data-table td {
+            padding: 10px 14px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 700;
+            color: #18453B;
+        }
+        .data-table tr:last-child td { border-bottom: none; }
+        .data-table tr:hover td { background: #f8f9fa; }
+
+        /* ===================== CONCEPT BOX ===================== */
+        .concept-box {
+            background: #e8f4f8;
+            border: 2px solid #17a2b8;
+            border-radius: 8px;
+            padding: 14px;
+            font-size: 0.88rem;
+            line-height: 1.5;
+            color: #0c5460;
+        }
+        .concept-box strong { display: block; margin-bottom: 6px; color: #0c5460; }
+
+        /* ===================== DIVIDER ===================== */
+        .section-divider {
+            border: none;
+            border-top: 2px solid #dee2e6;
+            margin: 14px 0;
+        }
+
+        /* ===================== RESPONSIVE ===================== */
+        @media (max-width: 1024px) {
+            .content-wrapper { grid-template-columns: 1fr; }
+            .control-panel { border-right: none; border-bottom: 3px solid #dee2e6; max-height: none; }
+        }
+    </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Live Region -->
+<div id="live-updates" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+<!-- Header -->
+<header class="header">
+    <h1>Following the Clues: Revealed Preference in Action</h1>
+    <p>Use a consumer's observed choices to uncover hidden preferences — no surveys needed</p>
+</header>
+
+<main id="main-content" class="main-wrapper">
+    <div class="content-wrapper">
+
+        <!-- ===== CONTROL PANEL ===== -->
+        <aside class="control-panel" aria-labelledby="controls-heading">
+            <h2 id="controls-heading">Investigation Controls</h2>
+
+            <!-- Progress -->
+            <nav aria-label="Investigation progress">
+                <div class="progress-nav" role="list">
+                    <div class="progress-step active" id="step-1" role="listitem" aria-current="step" aria-label="Clue 1, current step">Clue 1</div>
+                    <div class="progress-step pending" id="step-2" role="listitem" aria-label="Clue 2, not yet reached">Clue 2</div>
+                    <div class="progress-step pending" id="step-3" role="listitem" aria-label="Clue 3, not yet reached">Clue 3</div>
+                    <div class="progress-step pending" id="step-finish" role="listitem" aria-label="Feasible region, not yet reached">Result</div>
+                </div>
+            </nav>
+
+            <!-- Scenario Info -->
+            <div id="scenario-card" class="scenario-card" aria-live="polite" aria-atomic="true">
+                <!-- filled by JS -->
+            </div>
+
+            <!-- Region Elimination Controls -->
+            <section class="elimination-section" aria-labelledby="eliminate-heading">
+                <h3 id="eliminate-heading">Which regions can you eliminate?</h3>
+                <p style="font-size:0.82rem;color:#6c757d;margin-bottom:10px;">
+                    Click a region to mark it eliminated (red). Click again to un-eliminate. Then check your work.
+                </p>
+
+                <div id="elimination-buttons" role="group" aria-labelledby="eliminate-heading">
+                    <!-- filled by JS per scenario -->
+                </div>
+
+                <hr class="section-divider">
+
+                <button class="btn btn-check" id="check-btn" onclick="checkElimination()">
+                    ✓ Check My Eliminations
+                </button>
+                <button class="btn btn-next" id="next-btn" onclick="nextScenario()" style="display:none">
+                    → Next Clue
+                </button>
+                <button class="btn btn-reveal" id="feasible-btn" onclick="revealFeasibleRegion()" style="display:none">
+                    🎯 Reveal Feasible Region
+                </button>
+                <button class="btn btn-reset" onclick="resetAll()" style="margin-top:10px">
+                    ↺ Start Over
+                </button>
+            </section>
+
+            <!-- Feedback -->
+            <div id="feedback" aria-live="polite" aria-atomic="true"></div>
+
+        </aside>
+
+        <!-- ===== GRAPH PANEL ===== -->
+        <section class="graph-panel" aria-labelledby="graph-heading">
+            <h2 id="graph-heading" class="sr-only">Revealed Preference Graph</h2>
+
+            <div class="graph-wrapper">
+                <div id="main-graph" role="img" aria-label="Scatter plot showing consumer budget lines and chosen bundles for revealed preference analysis"></div>
+            </div>
+
+            <!-- Accessible Data Table -->
+            <div class="data-table-wrapper">
+                <table class="data-table" id="scenario-table">
+                    <caption id="table-caption">Consumer Choice Data — Scenario 1 of 3</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Scenario</th>
+                            <th scope="col">Budget</th>
+                            <th scope="col">Pizza Price</th>
+                            <th scope="col">Coffee Price</th>
+                            <th scope="col">Chosen Bundle</th>
+                            <th scope="col">Interpretation</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scenario-table-body">
+                        <!-- filled by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Concept Box -->
+            <div class="concept-box" id="concept-box" aria-live="polite">
+                <strong>🔍 Revealed Preference Principle</strong>
+                If a consumer chose Bundle A when Bundle B was also affordable, then A is <em>revealed preferred</em> to B. 
+                This means B cannot lie on a higher indifference curve than A.
+            </div>
+
+        </section>
+    </div>
+</main>
+
+<script>
+    // =====================================================================
+    // DATA
+    // =====================================================================
+    const GRAPH_MAX_PIZZA  = 20;
+    const GRAPH_MAX_COFFEE = 25;
+
+    const scenarios = {
+        1: {
+            budget: 100, pizzaPrice: 8, coffeePrice: 4,
+            chosenBundle: { x: 6, y: 13 },
+            bundleName: 'A', bundleColor: '#c0392b',
+            budgetLineColor: '#2980b9',
+            budgetLabel: '$100', pizzaLabel: '$8', coffeeLabel: '$4'
+        },
+        2: {
+            budget: 100, pizzaPrice: 5, coffeePrice: 5,
+            chosenBundle: { x: 13, y: 7 },
+            bundleName: 'B', bundleColor: '#d35400',
+            budgetLineColor: '#e67e22',
+            budgetLabel: '$100', pizzaLabel: '$5', coffeeLabel: '$5'
+        },
+        3: {
+            budget: 100, pizzaPrice: 7, coffeePrice: 4,
+            chosenBundle: { x: 4, y: 18 },
+            bundleName: 'C', bundleColor: '#7d3c98',
+            budgetLineColor: '#8e44ad',
+            budgetLabel: '$100', pizzaLabel: '$7', coffeeLabel: '$4'
+        }
+    };
+
+    // What the student should eliminate for each scenario
+    const correctEliminations = {
+        1: ['better_unaffordable', 'affordable_unchosen'],
+        2: ['better_unaffordable', 'better_than_B'],
+        3: ['better_unaffordable', 'better_than_C', 'convexity_AC']
+    };
+
+    const regionLabels = {
+        better_unaffordable:  '📍 Bundles with MORE of both goods than the chosen bundle (better but were unaffordable)',
+        affordable_unchosen:  '📍 Bundles the consumer COULD have afforded but didn\'t choose (below budget line)',
+        better_than_B:        '📍 Bundles with MORE of both goods than Bundle B (better than B, so better than A by transitivity)',
+        better_than_C:        '📍 Bundles with MORE of both goods than Bundle C (better than C, so better than A by transitivity)',
+        convexity_AC:         '📍 The triangle between Bundles A and C (eliminated by convexity of preferences)'
+    };
+
+    const regionAriaLabels = {
+        better_unaffordable:  'Eliminate region: Bundles better than chosen bundle but unaffordable',
+        affordable_unchosen:  'Eliminate region: Bundles affordable but not chosen, therefore worse',
+        better_than_B:        'Eliminate region: Bundles better than Bundle B, eliminating by transitivity',
+        better_than_C:        'Eliminate region: Bundles better than Bundle C, eliminating by transitivity',
+        convexity_AC:         'Eliminate region: Triangle between A and C, eliminated by preference convexity'
+    };
+
+    // =====================================================================
+    // STATE
+    // =====================================================================
+    let currentScenario = 1;
+    let eliminatedRegions = new Set();
+    let lockedEliminations = {};   // { scenarioNum: Set([...]) }
+    let showingFeasible = false;
+
+    // =====================================================================
+    // ANNOUNCE
+    // =====================================================================
+    function announce(msg) {
+        const el = document.getElementById('live-updates');
+        el.textContent = '';
+        setTimeout(() => { el.textContent = msg; }, 50);
+    }
+
+    // =====================================================================
+    // SCENARIO INFO CARD
+    // =====================================================================
+    function updateScenarioCard() {
+        const s = scenarios[currentScenario];
+        const maxPizza  = (s.budget / s.pizzaPrice).toFixed(0);
+        const maxCoffee = (s.budget / s.coffeePrice).toFixed(0);
+        const tagClass  = { 1:'bundle-a', 2:'bundle-b', 3:'bundle-c' }[currentScenario];
+        const tagText   = `Bundle ${s.bundleName} — Chosen`;
+
+        document.getElementById('scenario-card').innerHTML = `
+            <h3>Clue ${currentScenario}: New Observation</h3>
+            <span class="bundle-tag ${tagClass}">${tagText}</span>
+            <div class="scenario-detail">
+                <strong>Budget:</strong> ${s.budgetLabel}<br>
+                <strong>Pizza price:</strong> ${s.pizzaLabel} &nbsp;|&nbsp; 
+                <strong>Coffee price:</strong> ${s.coffeeLabel}<br>
+                <strong>Budget line:</strong> ${maxPizza} pizza max → ${maxCoffee} coffee max<br>
+                <strong>Chosen:</strong> Bundle ${s.bundleName} = (${s.chosenBundle.x} pizza, ${s.chosenBundle.y} coffee)
+            </div>
+        `;
+    }
+
+    // =====================================================================
+    // ELIMINATION BUTTONS
+    // =====================================================================
+    function buildEliminationButtons() {
+        const correct = correctEliminations[currentScenario];
+        const container = document.getElementById('elimination-buttons');
+        container.innerHTML = '';
+
+        correct.forEach(regionKey => {
+            const btn = document.createElement('button');
+            btn.className = 'region-btn';
+            btn.id = `btn-${regionKey}`;
+            btn.setAttribute('aria-pressed', 'false');
+            btn.setAttribute('data-region', regionKey);
+            btn.setAttribute('aria-label', regionAriaLabels[regionKey]);
+            btn.innerHTML = regionLabels[regionKey];
+            btn.onclick = () => toggleRegion(regionKey, btn);
+            container.appendChild(btn);
+        });
+    }
+
+    function toggleRegion(regionKey, btn) {
+        if (eliminatedRegions.has(regionKey)) {
+            eliminatedRegions.delete(regionKey);
+            btn.classList.remove('eliminated');
+            btn.setAttribute('aria-pressed', 'false');
+            announce(`Region un-eliminated: ${regionLabels[regionKey].replace('📍 ', '')}`);
+        } else {
+            eliminatedRegions.add(regionKey);
+            btn.classList.add('eliminated');
+            btn.setAttribute('aria-pressed', 'true');
+            announce(`Region eliminated: ${regionLabels[regionKey].replace('📍 ', '')}`);
+        }
+        updateGraph();
+    }
+
+    // =====================================================================
+    // CHECK
+    // =====================================================================
+    function checkElimination() {
+        const correct = new Set(correctEliminations[currentScenario]);
+        const isCorrect = correct.size === eliminatedRegions.size &&
+                          [...correct].every(r => eliminatedRegions.has(r));
+
+        if (isCorrect) {
+            const isLast = currentScenario === 3;
+            document.getElementById('feedback').innerHTML = `
+                <div class="feedback feedback-correct" role="alert">
+                    <strong>✅ Excellent detective work!</strong><br>
+                    You correctly identified all regions to eliminate for Clue ${currentScenario}.
+                    ${isLast ? ' You\'ve completed all three clues!' : ' Ready for the next clue?'}
+                </div>`;
+            document.getElementById('check-btn').style.display = 'none';
+            if (!isLast) {
+                document.getElementById('next-btn').style.display = 'block';
+            } else {
+                document.getElementById('feasible-btn').style.display = 'block';
+            }
+            announce(`Correct! ${isLast ? 'All clues complete.' : 'Proceed to clue ' + (currentScenario + 1)}`);
+        } else {
+            const missing = [...correct].filter(r => !eliminatedRegions.has(r));
+            const extra   = [...eliminatedRegions].filter(r => !correct.has(r));
+            let hint = '';
+            if (missing.length > 0) hint += `<br>• You're missing ${missing.length} region(s) that should be eliminated.`;
+            if (extra.length > 0)   hint += `<br>• You've marked ${extra.length} region(s) that should NOT be eliminated yet.`;
+            document.getElementById('feedback').innerHTML = `
+                <div class="feedback feedback-incorrect" role="alert">
+                    <strong>🤔 Not quite.</strong>${hint}<br>
+                    Think carefully about what each choice reveals about preferences.
+                </div>`;
+            announce('Incorrect. Review the feedback and try again.');
+        }
+    }
+
+    // =====================================================================
+    // NEXT SCENARIO
+    // =====================================================================
+    function nextScenario() {
+        lockedEliminations[currentScenario] = new Set(eliminatedRegions);
+        eliminatedRegions.clear();
+
+        // Update progress steps
+        document.getElementById(`step-${currentScenario}`).className = 'progress-step completed';
+        document.getElementById(`step-${currentScenario}`).setAttribute('aria-label', `Clue ${currentScenario}, completed`);
+        document.getElementById(`step-${currentScenario}`).removeAttribute('aria-current');
+
+        currentScenario++;
+        document.getElementById(`step-${currentScenario}`).className = 'progress-step active';
+        document.getElementById(`step-${currentScenario}`).setAttribute('aria-current', 'step');
+        document.getElementById(`step-${currentScenario}`).setAttribute('aria-label', `Clue ${currentScenario}, current step`);
+
+        document.getElementById('feedback').innerHTML = '';
+        document.getElementById('check-btn').style.display = 'block';
+        document.getElementById('next-btn').style.display = 'none';
+        document.getElementById('feasible-btn').style.display = 'none';
+
+        updateScenarioCard();
+        buildEliminationButtons();
+        updateConceptBox();
+        updateTable();
+        updateGraph();
+        announce(`Now investigating Clue ${currentScenario}. A new budget line and chosen bundle have been added to the graph.`);
+    }
+
+    // =====================================================================
+    // REVEAL FEASIBLE
+    // =====================================================================
+    function revealFeasibleRegion() {
+        showingFeasible = true;
+        lockedEliminations[currentScenario] = new Set(eliminatedRegions);
+
+        document.getElementById('step-3').className = 'progress-step completed';
+        document.getElementById('step-3').setAttribute('aria-label', 'Clue 3, completed');
+        document.getElementById('step-3').removeAttribute('aria-current');
+        document.getElementById('step-finish').className = 'progress-step active';
+        document.getElementById('step-finish').setAttribute('aria-current', 'step');
+        document.getElementById('step-finish').setAttribute('aria-label', 'Feasible region, current step');
+
+        document.getElementById('feedback').innerHTML = `
+            <div class="feedback feedback-complete" role="alert">
+                <strong>🎯 Feasible Region Revealed!</strong><br>
+                The <strong>green shaded areas</strong> show where Bundle A's indifference curve <em>could possibly</em> pass.
+                All other regions have been eliminated by revealed preference theory and convexity.
+                This is the power of revealed preference — no surveys needed, just rational choice!
+            </div>`;
+
+        document.getElementById('feasible-btn').style.display = 'none';
+        updateGraph();
+        updateConceptBox();
+        announce('Feasible region revealed on graph. The green areas show where the indifference curve through Bundle A could possibly lie.');
+    }
+
+    // =====================================================================
+    // RESET
+    // =====================================================================
+    function resetAll() {
+        currentScenario = 1;
+        eliminatedRegions.clear();
+        lockedEliminations = {};
+        showingFeasible = false;
+
+        ['step-1','step-2','step-3','step-finish'].forEach((id, i) => {
+            const el = document.getElementById(id);
+            el.className = i === 0 ? 'progress-step active' : 'progress-step pending';
+            if (i === 0) {
+                el.setAttribute('aria-current', 'step');
+                el.setAttribute('aria-label', 'Clue 1, current step');
+            } else {
+                el.removeAttribute('aria-current');
+                const labels = ['Clue 2, not yet reached','Clue 3, not yet reached','Feasible region, not yet reached'];
+                el.setAttribute('aria-label', labels[i-1]);
+            }
+        });
+
+        document.getElementById('feedback').innerHTML = '';
+        document.getElementById('check-btn').style.display = 'block';
+        document.getElementById('next-btn').style.display = 'none';
+        document.getElementById('feasible-btn').style.display = 'none';
+
+        updateScenarioCard();
+        buildEliminationButtons();
+        updateConceptBox();
+        updateTable();
+        updateGraph();
+        announce('Investigation reset. Starting from Clue 1.');
+    }
+
+    // =====================================================================
+    // CONCEPT BOX
+    // =====================================================================
+    function updateConceptBox() {
+        const concepts = {
+            1: `<strong>🔍 Revealed Preference — Clue 1</strong>
+                The consumer chose Bundle A (${scenarios[1].chosenBundle.x} pizza, ${scenarios[1].chosenBundle.y} coffee) 
+                when the budget allowed buying anything on or below the blue budget line.
+                <br><br>
+                Two elimination rules apply:
+                <br>• <strong>Above budget line:</strong> These bundles were unaffordable, so if they contain more of both goods than A, they must be better than A — eliminate them as candidates for A's indifference curve.
+                <br>• <strong>Below budget line:</strong> These were affordable but not chosen, so they must be worse than A — eliminate them too.`,
+
+            2: `<strong>🔍 Revealed Preference — Clue 2</strong>
+                Bundle A (red circle) is affordable under Budget 2! The consumer chose Bundle B instead, 
+                so <strong>B is revealed preferred to A</strong>.
+                <br><br>
+                Now we can use <strong>transitivity</strong>: anything better than B is also better than A. 
+                So the region northeast of Bundle B is also eliminated.`,
+
+            3: `<strong>🔍 Revealed Preference — Clue 3</strong>
+                Similarly, Bundle A is affordable under Budget 3. The consumer chose Bundle C instead, 
+                so <strong>C is revealed preferred to A</strong>.
+                <br><br>
+                By transitivity, everything northeast of C is better than A and is eliminated.
+                With <strong>convex preferences</strong>, the triangle between A and C is also eliminated — 
+                mixtures of two preferred bundles are at least as good as the worse one.`
+        };
+
+        const finishConcept = `<strong>🎯 Investigation Complete!</strong>
+            Revealed preference theory has dramatically narrowed down where Bundle A's indifference curve can lie. 
+            The feasible region (green) represents all bundles that <em>could</em> be on A's indifference curve — 
+            consistent with everything we observed. This technique works without ever asking the consumer their preferences!`;
+
+        document.getElementById('concept-box').innerHTML = showingFeasible 
+            ? finishConcept 
+            : (concepts[currentScenario] || concepts[1]);
+    }
+
+    // =====================================================================
+    // TABLE
+    // =====================================================================
+    function updateTable() {
+        const maxVisible = showingFeasible ? 3 : currentScenario;
+        let rows = '';
+        for (let i = 1; i <= maxVisible; i++) {
+            const s = scenarios[i];
+            const maxP = (s.budget / s.pizzaPrice).toFixed(0);
+            const maxC = (s.budget / s.coffeePrice).toFixed(0);
+            rows += `<tr>
+                <td>Scenario ${i} (Bundle ${s.bundleName})</td>
+                <td>${s.budgetLabel}</td>
+                <td>${s.pizzaLabel}</td>
+                <td>${s.coffeeLabel}</td>
+                <td>(${s.chosenBundle.x}, ${s.chosenBundle.y})</td>
+                <td>Can afford up to ${maxP} pizza OR ${maxC} coffee</td>
+            </tr>`;
+        }
+        document.getElementById('scenario-table-body').innerHTML = rows;
+
+        const captionText = showingFeasible 
+            ? 'Consumer Choice Data — All 3 Scenarios'
+            : `Consumer Choice Data — Scenario ${currentScenario} of 3`;
+        document.getElementById('table-caption').textContent = captionText;
+    }
+
+    // =====================================================================
+    // GRAPH
+    // =====================================================================
+    function updateGraph() {
+        const traces = [];
+
+        // Budget lines and chosen bundles for all revealed scenarios
+        const visibleCount = showingFeasible ? 3 : currentScenario;
+        for (let i = 1; i <= visibleCount; i++) {
+            const s = scenarios[i];
+            const maxPizza  = s.budget / s.pizzaPrice;
+            const maxCoffee = s.budget / s.coffeePrice;
+
+            // Budget line
+            traces.push({
+                x: [0, maxPizza],
+                y: [maxCoffee, 0],
+                mode: 'lines',
+                name: `Budget Line ${i} (Bundle ${s.bundleName})`,
+                line: { color: s.budgetLineColor, width: 2.5, dash: i < visibleCount ? 'dot' : 'solid' },
+                showlegend: true,
+                hovertemplate: `Budget ${i}: Q_pizza=%{x:.1f}, Q_coffee=%{y:.1f}<extra></extra>`
+            });
+
+            // Chosen bundle marker
+            traces.push({
+                x: [s.chosenBundle.x],
+                y: [s.chosenBundle.y],
+                mode: 'markers+text',
+                name: `Bundle ${s.bundleName} (chosen)`,
+                marker: { size: 14, color: s.bundleColor, symbol: ['circle','square','diamond'][i-1], line: { color: 'white', width: 2 } },
+                text: [`  Bundle ${s.bundleName}`],
+                textposition: 'middle right',
+                textfont: { size: 12, color: s.bundleColor, family: 'Arial Black' },
+                showlegend: true,
+                hovertemplate: `Bundle ${s.bundleName}: (${s.chosenBundle.x} pizza, ${s.chosenBundle.y} coffee)<extra></extra>`
+            });
+        }
+
+        // ---- Locked elimination regions (from previous scenarios) ----
+        Object.entries(lockedEliminations).forEach(([scenNum, regions]) => {
+            const sNum = parseInt(scenNum);
+            regions.forEach(regionKey => {
+                const regionTrace = buildRegionTrace(sNum, regionKey, 0.15, false);
+                if (regionTrace) traces.push(regionTrace);
+            });
+        });
+
+        // ---- Current scenario elimination regions ----
+        eliminatedRegions.forEach(regionKey => {
+            const regionTrace = buildRegionTrace(currentScenario, regionKey, 0.3, true);
+            if (regionTrace) traces.push(regionTrace);
+        });
+
+        // ---- Feasible region ----
+        if (showingFeasible) {
+            // Region 1: upper-left area
+            traces.push({
+                x: [0, 6, 4, 4, 0],
+                y: [25, 13, 18, 25, 25],
+                fill: 'toself',
+                fillcolor: 'rgba(39,174,96,0.40)',
+                line: { color: 'rgba(39,174,96,0.85)', width: 3 },
+                mode: 'lines',
+                name: 'Feasible Region (possible indifference curve locations)',
+                showlegend: true,
+                hoverinfo: 'name'
+            });
+            // Region 2: lower-right area
+            traces.push({
+                x: [6, 12.5, 20, 20, 13, 6],
+                y: [13, 0,    0,  7,  7, 13],
+                fill: 'toself',
+                fillcolor: 'rgba(39,174,96,0.40)',
+                line: { color: 'rgba(39,174,96,0.85)', width: 3 },
+                mode: 'lines',
+                name: 'Feasible Region (continued)',
+                showlegend: false,
+                hoverinfo: 'name'
+            });
+        }
+
+        // ---- Layout ----
+        const layout = {
+            autosize: false,
+            width: 680,
+            height: 500,
+            margin: { l: 60, r: 160, t: 50, b: 60 },
+            xaxis: {
+                title: { text: 'Quantity of Pizza', font: { size: 13 } },
+                range: [0, GRAPH_MAX_PIZZA],
+                dtick: 2,
+                showgrid: true, gridcolor: '#ecf0f1',
+                zeroline: true, zerolinecolor: '#bdc3c7',
+                fixedrange: true
+            },
+            yaxis: {
+                title: { text: 'Quantity of Coffee', font: { size: 13 } },
+                range: [0, GRAPH_MAX_COFFEE],
+                dtick: 5,
+                showgrid: true, gridcolor: '#ecf0f1',
+                zeroline: true, zerolinecolor: '#bdc3c7',
+                fixedrange: true
+            },
+            plot_bgcolor: 'white',
+            paper_bgcolor: 'white',
+            legend: {
+                x: 1.02, y: 1,
+                bgcolor: 'rgba(255,255,255,0.9)',
+                bordercolor: '#dee2e6',
+                borderwidth: 1,
+                font: { size: 11 }
+            },
+            title: {
+                text: showingFeasible
+                    ? 'Revealed Preference — Feasible Region Identified'
+                    : `Revealed Preference — Clue ${currentScenario} of 3`,
+                font: { size: 14, color: '#18453B' }
+            }
+        };
+
+        const config = {
+            responsive: false,
+            displayModeBar: false,
+            staticPlot: false
+        };
+
+        Plotly.newPlot('main-graph', traces, layout, config);
+    }
+
+    // =====================================================================
+    // REGION TRACE BUILDER
+    // =====================================================================
+    function buildRegionTrace(scenNum, regionKey, opacity, isCurrent) {
+        const s = scenarios[scenNum];
+        const bundle = s.chosenBundle;
+        const alpha = opacity;
+        const maxP = GRAPH_MAX_PIZZA;
+        const maxC = GRAPH_MAX_COFFEE;
+
+        if (regionKey === 'better_unaffordable') {
+            return {
+                x: [bundle.x, maxP, maxP, bundle.x, bundle.x],
+                y: [bundle.y, bundle.y, maxC,  maxC,  bundle.y],
+                fill: 'toself',
+                fillcolor: `rgba(231,76,60,${alpha})`,
+                line: { color: `rgba(192,57,43,${isCurrent ? 0.8 : 0.4})`, width: isCurrent ? 2 : 1 },
+                mode: 'lines',
+                name: isCurrent ? `Better than Bundle ${s.bundleName} (unaffordable) — eliminated` : null,
+                showlegend: isCurrent,
+                hoverinfo: 'name'
+            };
+        }
+
+        if (regionKey === 'affordable_unchosen') {
+            const maxPizza  = s.budget / s.pizzaPrice;
+            const maxCoffee = s.budget / s.coffeePrice;
+            return {
+                x: [0, maxPizza, 0, 0],
+                y: [0, 0, maxCoffee, 0],
+                fill: 'toself',
+                fillcolor: `rgba(52,152,219,${alpha})`,
+                line: { color: `rgba(41,128,185,${isCurrent ? 0.8 : 0.4})`, width: isCurrent ? 2 : 1 },
+                mode: 'lines',
+                name: isCurrent ? 'Affordable but unchosen — revealed worse than A' : null,
+                showlegend: isCurrent,
+                hoverinfo: 'name'
+            };
+        }
+
+        if (regionKey === 'better_than_B') {
+            const bBundle = scenarios[2].chosenBundle;
+            return {
+                x: [bBundle.x, maxP, maxP, bBundle.x, bBundle.x],
+                y: [bBundle.y, bBundle.y, maxC, maxC, bBundle.y],
+                fill: 'toself',
+                fillcolor: `rgba(211,84,0,${alpha})`,
+                line: { color: `rgba(186,74,0,${isCurrent ? 0.8 : 0.4})`, width: isCurrent ? 2 : 1 },
+                mode: 'lines',
+                name: isCurrent ? 'Better than Bundle B → better than A by transitivity — eliminated' : null,
+                showlegend: isCurrent,
+                hoverinfo: 'name'
+            };
+        }
+
+        if (regionKey === 'better_than_C') {
+            const cBundle = scenarios[3].chosenBundle;
+            return {
+                x: [cBundle.x, maxP, maxP, cBundle.x, cBundle.x],
+                y: [cBundle.y, cBundle.y, maxC, maxC, cBundle.y],
+                fill: 'toself',
+                fillcolor: `rgba(125,60,152,${alpha})`,
+                line: { color: `rgba(110,50,135,${isCurrent ? 0.8 : 0.4})`, width: isCurrent ? 2 : 1 },
+                mode: 'lines',
+                name: isCurrent ? 'Better than Bundle C → better than A by transitivity — eliminated' : null,
+                showlegend: isCurrent,
+                hoverinfo: 'name'
+            };
+        }
+
+        if (regionKey === 'convexity_AC') {
+            // Triangle between A(6,13) and C(4,18) — convex preference region
+            return {
+                x: [4, 6, 6, 4],
+                y: [18, 13, 18, 18],
+                fill: 'toself',
+                fillcolor: `rgba(155,89,182,${alpha})`,
+                line: { color: `rgba(130,74,157,${isCurrent ? 0.8 : 0.4})`, width: isCurrent ? 2 : 1 },
+                mode: 'lines',
+                name: isCurrent ? 'Eliminated by convexity: mixtures of A and C better than A' : null,
+                showlegend: isCurrent,
+                hoverinfo: 'name'
+            };
+        }
+
+        return null;
+    }
+
+    // =====================================================================
+    // INIT
+    // =====================================================================
+    function initialize() {
+        updateScenarioCard();
+        buildEliminationButtons();
+        updateConceptBox();
+        updateTable();
+        updateGraph();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initialize);
+    } else {
+        initialize();
+    }
+    setTimeout(initialize, 300);
+</script>
+</body>
+</html>

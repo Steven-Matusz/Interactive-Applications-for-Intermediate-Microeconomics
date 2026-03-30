@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculus of Utility Maximization</title>
+  <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+  <style>
+    /* ── Skip Link ── */
+    .skip-link {
+      position: absolute; top: -40px; left: 0;
+      background: #18453B; color: white;
+      padding: 8px 16px; z-index: 9999;
+      font-weight: 700; text-decoration: none;
+      border-radius: 0 0 6px 0; transition: top 0.2s;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ── Screen-reader only ── */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+
+    /* ── Live region ── */
+    .live-region {
+      position: absolute; left: -10000px;
+      width: 1px; height: 1px; overflow: hidden;
+    }
+
+    :root {
+      --msu-green: #18453B;
+      --msu-green2: #2d5a4f;
+      --msu-gold: #C89A2A;
+      --blue: #1565C0;
+      --focus-ring: #C89A2A;
+      --bg: #f0f4f0;
+      --border: #cdd9d6;
+      --text: #1a1a1a;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 16px;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 3px;
+    }
+
+    .wrapper {
+      max-width: 1400px; margin: 0 auto;
+      background: white; border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, var(--msu-green), var(--msu-green2));
+      color: white; padding: 24px 32px; text-align: center;
+    }
+    .header h1 { font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 700; margin-bottom: 6px; }
+    .header p { font-size: 1.05rem; opacity: 0.9; }
+
+    /* ── Step Navigation Bar ── */
+    .step-nav {
+      background: #f8f9fa;
+      border-bottom: 3px solid var(--msu-green);
+      padding: 16px 24px;
+    }
+    .step-nav h2 {
+      color: var(--msu-green); font-size: 1rem; margin-bottom: 10px;
+      font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .step-buttons {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      list-style: none; padding: 0; margin: 0;
+    }
+    .step-buttons li { margin: 0; padding: 0; }
+    .step-btn {
+      padding: 8px 16px;
+      border: 2px solid var(--msu-green);
+      background: white; color: var(--msu-green);
+      border-radius: 24px; cursor: pointer;
+      font-weight: 600; font-size: 0.88rem;
+      transition: background 0.2s, color 0.2s;
+      white-space: nowrap;
+    }
+    .step-btn:hover { background: #e8f0ee; }
+    .step-btn[aria-current="true"],
+    .step-btn.active {
+      background: var(--msu-green); color: white;
+    }
+    .step-progress {
+      margin-top: 10px; font-size: 0.85rem; color: #555;
+    }
+
+    /* ── Main layout ── */
+    .content-wrapper {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 0;
+      min-height: 640px;
+    }
+
+    /* ── Control Panel ── */
+    .control-panel {
+      background: #f8f9fa;
+      padding: 24px;
+      border-right: 3px solid var(--border);
+      overflow-y: auto;
+    }
+    .control-panel h3 {
+      color: var(--msu-green); font-size: 1rem;
+      font-weight: 700; margin-bottom: 16px;
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+
+    .param-card {
+      background: white; border-radius: 10px;
+      padding: 16px; margin-bottom: 16px;
+      border: 2px solid var(--border);
+    }
+
+    .form-label {
+      display: block; font-weight: 600;
+      color: #333; margin-bottom: 6px; font-size: 0.95rem;
+    }
+    .form-label .param-val {
+      color: var(--msu-green); font-weight: 700;
+    }
+
+    input[type="range"] {
+      width: 100%; height: 8px;
+      border-radius: 4px; background: #d3d3d3;
+      outline: none; cursor: pointer;
+      -webkit-appearance: none; appearance: none;
+      margin: 8px 0;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 22px; height: 22px;
+      border-radius: 50%; background: var(--msu-green);
+      border: 3px solid white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--msu-green); border: 3px solid white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+    input[type="range"]:focus-visible {
+      outline: 3px solid var(--focus-ring); outline-offset: 2px;
+    }
+
+    .range-bounds {
+      display: flex; justify-content: space-between;
+      font-size: 0.8rem; color: #666; margin-top: 2px;
+    }
+
+    /* Results summary in control panel */
+    .results-box {
+      background: white; border-radius: 10px;
+      border: 2px solid var(--msu-green);
+      padding: 16px; margin-top: 16px;
+    }
+    .results-box h4 {
+      color: var(--msu-green); font-size: 0.95rem;
+      font-weight: 700; margin-bottom: 12px;
+    }
+    .result-row {
+      display: flex; justify-content: space-between;
+      align-items: baseline;
+      padding: 5px 0; border-bottom: 1px solid #eee;
+      font-size: 0.92rem;
+    }
+    .result-row:last-child { border-bottom: none; }
+    .result-label { color: #555; }
+    .result-value { font-weight: 700; color: var(--msu-green); }
+
+    /* ── Step Content Panel ── */
+    .step-panel {
+      padding: 28px 32px;
+      overflow-y: auto;
+    }
+    .step-content { display: none; }
+    .step-content.active { display: block; }
+
+    .step-title {
+      color: var(--msu-green); font-size: 1.35rem;
+      font-weight: 700; margin-bottom: 16px;
+      border-bottom: 3px solid var(--msu-gold);
+      padding-bottom: 8px;
+    }
+
+    .math-box {
+      background: #f0f7f4;
+      border-left: 5px solid var(--msu-green);
+      border-radius: 0 8px 8px 0;
+      padding: 16px 20px;
+      margin: 12px 0;
+    }
+    .math-box p { margin-bottom: 8px; }
+
+    .equation {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      font-size: 1.15rem;
+      background: #e8f4ee;
+      border: 2px solid var(--msu-green);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 10px 0;
+      text-align: center;
+    }
+
+    .step-block {
+      background: white; border-radius: 8px;
+      border-left: 4px solid var(--msu-gold);
+      padding: 14px 16px; margin: 10px 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+    .step-block strong { color: var(--msu-green); }
+
+    .insight-box {
+      background: #fff8e1;
+      border: 2px solid var(--msu-gold);
+      border-radius: 8px; padding: 14px 16px;
+      margin: 12px 0;
+    }
+    .insight-box strong { color: #7a5c00; }
+
+    /* Expand button for step algebra */
+    .expand-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 10px 18px;
+      background: var(--blue); color: white;
+      border: none; border-radius: 8px;
+      font-size: 0.95rem; font-weight: 600;
+      cursor: pointer; margin: 10px 0;
+      transition: background 0.2s;
+    }
+    .expand-btn:hover { background: #0d47a1; }
+    .expand-content {
+      display: none; margin-top: 10px;
+      background: #e8f5e9; border-radius: 8px;
+      border-left: 4px solid #388e3c;
+      padding: 14px 16px;
+    }
+    .expand-content.open { display: block; }
+    .expand-btn[aria-expanded="true"] { background: #0d47a1; }
+
+    /* ── Graph section (below content on step 1) ── */
+    .graph-section {
+      margin-top: 20px;
+      border-top: 2px solid var(--border);
+      padding-top: 20px;
+    }
+    .graph-section h3 {
+      color: var(--msu-green); font-size: 1rem;
+      font-weight: 700; margin-bottom: 10px;
+    }
+    .graph-wrapper {
+      border: 2px solid var(--border);
+      border-radius: 10px; overflow: hidden;
+      background: white; display: inline-block;
+    }
+    #graph-description {
+      background: #f0f7f4;
+      border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 16px;
+      margin-top: 12px; font-size: 0.9rem;
+      color: #333;
+    }
+
+    /* ── Data Table ── */
+    .data-table-section { margin-top: 20px; }
+    .data-table-section h3 {
+      color: var(--msu-green); font-size: 1rem;
+      font-weight: 700; margin-bottom: 10px;
+    }
+    .data-table {
+      width: 100%; border-collapse: collapse;
+      background: white; border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid var(--border);
+    }
+    .data-table caption {
+      padding: 10px; font-weight: 700;
+      color: var(--msu-green); text-align: left;
+      background: #f0f7f4;
+      border-bottom: 2px solid var(--border);
+      caption-side: top;
+    }
+    .data-table th, .data-table td {
+      padding: 10px 14px; text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.92rem;
+    }
+    .data-table th {
+      background: #f0f7f4; font-weight: 700;
+      color: var(--msu-green);
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: #f8faf8; }
+
+    /* ── Next / Previous navigation ── */
+    .step-nav-btns {
+      display: flex; gap: 12px; margin-top: 24px;
+      justify-content: space-between;
+      border-top: 2px solid var(--border); padding-top: 20px;
+    }
+    .nav-btn {
+      padding: 10px 22px;
+      border: 2px solid var(--msu-green);
+      background: white; color: var(--msu-green);
+      border-radius: 8px; font-weight: 700;
+      font-size: 0.95rem; cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .nav-btn:hover { background: var(--msu-green); color: white; }
+    .nav-btn:disabled {
+      opacity: 0.35; cursor: not-allowed;
+      background: white; color: var(--msu-green);
+    }
+    .nav-btn.primary {
+      background: var(--msu-green); color: white;
+    }
+    .nav-btn.primary:hover { background: var(--msu-green2); }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .content-wrapper { grid-template-columns: 1fr; }
+      .control-panel { border-right: none; border-bottom: 3px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<div id="live-updates" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+<div class="wrapper" role="main">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>Calculus of Utility Maximization</h1>
+    <p>Work through the six mathematical steps of consumer optimization using a Cobb-Douglas utility function</p>
+  </div>
+
+  <!-- Step Navigation -->
+  <nav class="step-nav" aria-label="Learning steps">
+    <h2 id="step-nav-label">Learning Steps</h2>
+    <ul class="step-buttons" role="tablist" aria-labelledby="step-nav-label">
+      <li role="presentation">
+        <button class="step-btn active" role="tab" aria-selected="true" aria-controls="step-1-panel" id="tab-1" onclick="showStep(1)">1. Setup &amp; Preferences</button>
+      </li>
+      <li role="presentation">
+        <button class="step-btn" role="tab" aria-selected="false" aria-controls="step-2-panel" id="tab-2" onclick="showStep(2)">2. Cobb-Douglas Function</button>
+      </li>
+      <li role="presentation">
+        <button class="step-btn" role="tab" aria-selected="false" aria-controls="step-3-panel" id="tab-3" onclick="showStep(3)">3. Marginal Utilities</button>
+      </li>
+      <li role="presentation">
+        <button class="step-btn" role="tab" aria-selected="false" aria-controls="step-4-panel" id="tab-4" onclick="showStep(4)">4. Optimization Condition</button>
+      </li>
+      <li role="presentation">
+        <button class="step-btn" role="tab" aria-selected="false" aria-controls="step-5-panel" id="tab-5" onclick="showStep(5)">5. Solving the System</button>
+      </li>
+      <li role="presentation">
+        <button class="step-btn" role="tab" aria-selected="false" aria-controls="step-6-panel" id="tab-6" onclick="showStep(6)">6. Optimal Solution</button>
+      </li>
+    </ul>
+    <p class="step-progress" aria-live="polite" id="step-progress">Step 1 of 6</p>
+  </nav>
+
+  <!-- Two-column layout -->
+  <div class="content-wrapper">
+
+    <!-- Left: Controls -->
+    <aside class="control-panel" aria-label="Consumer parameters">
+      <h3>Consumer Parameters</h3>
+
+      <div class="param-card">
+        <label class="form-label" for="alpha-slider">
+          Preference parameter &alpha;: <span class="param-val" id="alpha-val">0.60</span>
+        </label>
+        <input type="range" id="alpha-slider" min="0.1" max="0.9" step="0.1" value="0.6"
+          aria-label="Alpha preference parameter, currently 0.60"
+          aria-describedby="alpha-desc"
+          oninput="updateAll()">
+        <div class="range-bounds"><span>0.1</span><span>0.9</span></div>
+        <p id="alpha-desc" class="sr-only">
+          Alpha determines spending shares: consumer spends alpha×100% on X and (1-alpha)×100% on Y.
+        </p>
+      </div>
+
+      <div class="param-card">
+        <label class="form-label" for="px-slider">
+          Price of X (P<sub>x</sub>): <span class="param-val" id="px-val">$2.00</span>
+        </label>
+        <input type="range" id="px-slider" min="1" max="10" step="0.5" value="2"
+          aria-label="Price of good X, currently $2.00"
+          oninput="updateAll()">
+        <div class="range-bounds"><span>$1</span><span>$10</span></div>
+      </div>
+
+      <div class="param-card">
+        <label class="form-label" for="py-slider">
+          Price of Y (P<sub>y</sub>): <span class="param-val" id="py-val">$3.00</span>
+        </label>
+        <input type="range" id="py-slider" min="1" max="10" step="0.5" value="3"
+          aria-label="Price of good Y, currently $3.00"
+          oninput="updateAll()">
+        <div class="range-bounds"><span>$1</span><span>$10</span></div>
+      </div>
+
+      <div class="param-card">
+        <label class="form-label" for="income-slider">
+          Income (I): <span class="param-val" id="income-val">$60</span>
+        </label>
+        <input type="range" id="income-slider" min="20" max="200" step="10" value="60"
+          aria-label="Consumer income, currently $60"
+          oninput="updateAll()">
+        <div class="range-bounds"><span>$20</span><span>$200</span></div>
+      </div>
+
+      <!-- Live results summary -->
+      <div class="results-box" aria-label="Optimal solution summary" aria-live="polite">
+        <h4>Optimal Solution</h4>
+        <div class="result-row">
+          <span class="result-label">Q<sub>x</sub>*</span>
+          <span class="result-value" id="res-qx">18.0</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Q<sub>y</sub>*</span>
+          <span class="result-value" id="res-qy">8.0</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Spending on X</span>
+          <span class="result-value" id="res-spendx">$36.00</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Spending on Y</span>
+          <span class="result-value" id="res-spendy">$24.00</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Total Utility</span>
+          <span class="result-value" id="res-utility">12.60</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">MU/$ (equalized)</span>
+          <span class="result-value" id="res-mupd">0.35</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Price ratio P<sub>x</sub>/P<sub>y</sub></span>
+          <span class="result-value" id="res-pratio">0.67</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Right: Step content -->
+    <main id="main-content" class="step-panel" aria-label="Step content">
+
+      <!-- ══ STEP 1 ══ -->
+      <section id="step-1-panel" class="step-content active" role="tabpanel" aria-labelledby="tab-1">
+        <h2 class="step-title">Step 1: Setup &amp; The Budget Constraint</h2>
+
+        <div class="math-box">
+          <p><strong>The consumer's problem:</strong> Choose quantities of good X and good Y to maximize utility, subject to a budget constraint.</p>
+        </div>
+
+        <div class="step-block">
+          <strong>Budget Constraint:</strong>
+          <div class="equation" aria-label="Budget constraint equation">
+            P<sub>x</sub> &times; Q<sub>x</sub> + P<sub>y</sub> &times; Q<sub>y</sub> = Income
+          </div>
+          <p>With current values:</p>
+          <div class="equation" aria-label="Budget constraint with current values" id="bc-equation">
+            $2.00 &times; Q<sub>x</sub> + $3.00 &times; Q<sub>y</sub> = $60
+          </div>
+        </div>
+
+        <div class="step-block">
+          <strong>X-intercept</strong> (spend all on X): Q<sub>x</sub> = <span id="x-intercept">30.0</span> &nbsp;|&nbsp;
+          <strong>Y-intercept</strong> (spend all on Y): Q<sub>y</sub> = <span id="y-intercept">20.0</span>
+        </div>
+
+        <div class="insight-box">
+          <strong>Key Concept &mdash; The Budget Line:</strong>
+          The red line on the graph represents all affordable bundles. 
+          The slope equals &minus;P<sub>x</sub>/P<sub>y</sub> = <span id="bl-slope">&minus;0.67</span>.
+          This is the rate at which the <em>market</em> trades X for Y.
+        </div>
+
+        <!-- Graph lives in Step 1 -->
+        <div class="graph-section">
+          <h3 id="graph-heading">Indifference Curve &amp; Budget Line</h3>
+          <div class="graph-wrapper">
+            <div id="utility-chart" role="img" aria-labelledby="graph-heading" aria-describedby="graph-description"></div>
+          </div>
+          <p id="graph-description" aria-live="polite"></p>
+        </div>
+
+        <div class="step-nav-btns">
+          <button class="nav-btn" disabled aria-label="Previous step, unavailable">&#8592; Previous</button>
+          <button class="nav-btn primary" onclick="showStep(2)" aria-label="Go to Step 2: Cobb-Douglas Function">Next: Cobb-Douglas Function &#8594;</button>
+        </div>
+      </section>
+
+      <!-- ══ STEP 2 ══ -->
+      <section id="step-2-panel" class="step-content" role="tabpanel" aria-labelledby="tab-2" hidden>
+        <h2 class="step-title">Step 2: The Cobb-Douglas Utility Function</h2>
+
+        <div class="math-box">
+          <p>We work with a specific utility function that has clean mathematical properties:</p>
+          <div class="equation" aria-label="Cobb-Douglas utility function">
+            U = Q<sub>x</sub><sup>&alpha;</sup> &times; Q<sub>y</sub><sup>(1&minus;&alpha;)</sup>
+          </div>
+          <p>With current &alpha; = <span id="s2-alpha">0.60</span>:</p>
+          <div class="equation" aria-label="Utility function with current alpha" id="s2-ufunc">
+            U = Q<sub>x</sub><sup>0.60</sup> &times; Q<sub>y</sub><sup>0.40</sup>
+          </div>
+        </div>
+
+        <div class="step-block">
+          <strong>What does &alpha; tell us?</strong>
+          <ul style="margin: 8px 0 0 20px; line-height: 1.8;">
+            <li>&alpha; = <span id="s2-alpha2">0.60</span> means the consumer has a relative preference for good X</li>
+            <li>The consumer will spend <strong><span id="s2-xpct">60%</span></strong> of income on X</li>
+            <li>The consumer will spend <strong><span id="s2-ypct">40%</span></strong> of income on Y</li>
+            <li>This spending split is <em>independent of prices</em> &mdash; only &alpha; matters!</li>
+          </ul>
+        </div>
+
+        <div class="insight-box">
+          <strong>Try it:</strong> Change &alpha; with the slider. Notice how the spending percentages in the 
+          Optimal Solution box update immediately &mdash; and the graph shows the optimal bundle shift.
+        </div>
+
+        <div class="step-block">
+          <strong>Why Cobb-Douglas?</strong>
+          <ul style="margin: 8px 0 0 20px; line-height: 1.8;">
+            <li>Generates smooth, convex indifference curves (the teal curves on the graph)</li>
+            <li>Has diminishing marginal utility in each good</li>
+            <li>Produces clean, closed-form solutions (no messy algebra)</li>
+            <li>Widely used in economics and finance</li>
+          </ul>
+        </div>
+
+        <div class="step-nav-btns">
+          <button class="nav-btn" onclick="showStep(1)">&#8592; Previous</button>
+          <button class="nav-btn primary" onclick="showStep(3)">Next: Marginal Utilities &#8594;</button>
+        </div>
+      </section>
+
+      <!-- ══ STEP 3 ══ -->
+      <section id="step-3-panel" class="step-content" role="tabpanel" aria-labelledby="tab-3" hidden>
+        <h2 class="step-title">Step 3: Computing Marginal Utilities</h2>
+
+        <div class="math-box">
+          <p>Marginal utility measures the <em>extra</em> utility from consuming one more unit. 
+          We find these by taking partial derivatives of the utility function.</p>
+        </div>
+
+        <div class="step-block">
+          <strong>Marginal Utility of X:</strong>
+          <div class="equation" aria-label="Partial derivative giving MU of X">
+            MU<sub>x</sub> = &part;U/&part;Q<sub>x</sub> = &alpha; &times; Q<sub>x</sub><sup>(&alpha;&minus;1)</sup> &times; Q<sub>y</sub><sup>(1&minus;&alpha;)</sup>
+          </div>
+          <p>With &alpha; = <span id="s3-alpha">0.60</span>:</p>
+          <div class="equation" id="s3-mux-eq" aria-label="MU of X with current alpha">
+            MU<sub>x</sub> = 0.60 &times; Q<sub>x</sub><sup>&minus;0.40</sup> &times; Q<sub>y</sub><sup>0.40</sup>
+          </div>
+          <p><em>Note:</em> MU<sub>x</sub> <strong>decreases</strong> as Q<sub>x</sub> rises (since the exponent on Q<sub>x</sub> is negative) &mdash; this is diminishing marginal utility.</p>
+        </div>
+
+        <div class="step-block">
+          <strong>Marginal Utility of Y:</strong>
+          <div class="equation" aria-label="Partial derivative giving MU of Y">
+            MU<sub>y</sub> = &part;U/&part;Q<sub>y</sub> = (1&minus;&alpha;) &times; Q<sub>x</sub><sup>&alpha;</sup> &times; Q<sub>y</sub><sup>(&minus;&alpha;)</sup>
+          </div>
+          <div class="equation" id="s3-muy-eq" aria-label="MU of Y with current alpha">
+            MU<sub>y</sub> = 0.40 &times; Q<sub>x</sub><sup>0.60</sup> &times; Q<sub>y</sub><sup>&minus;0.60</sup>
+          </div>
+        </div>
+
+        <div class="step-block">
+          <strong>Marginal Rate of Substitution (MRS):</strong>
+          <div class="equation" aria-label="MRS equals ratio of marginal utilities">
+            MRS = MU<sub>x</sub> / MU<sub>y</sub> = (&alpha; / (1&minus;&alpha;)) &times; (Q<sub>y</sub> / Q<sub>x</sub>)
+          </div>
+          <p>With current &alpha;: MRS = <span id="s3-alpha-ratio">1.50</span> &times; (Q<sub>y</sub> / Q<sub>x</sub>)</p>
+          <p>The MRS is the slope of the indifference curve: how many units of Y the consumer would give up for one more X.</p>
+        </div>
+
+        <div class="data-table-section">
+          <h3>Marginal Utilities at the Optimal Point</h3>
+          <table class="data-table" aria-label="Marginal utility calculations at optimal bundle">
+            <caption>Calculated with current parameter values</caption>
+            <thead>
+              <tr>
+                <th scope="col">Quantity</th>
+                <th scope="col">Value</th>
+                <th scope="col">Interpretation</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Q<sub>x</sub>*</td>
+                <td id="tbl-qx">18.0</td>
+                <td>Optimal units of X</td>
+              </tr>
+              <tr>
+                <td>Q<sub>y</sub>*</td>
+                <td id="tbl-qy">8.0</td>
+                <td>Optimal units of Y</td>
+              </tr>
+              <tr>
+                <td>MU<sub>x</sub> at optimum</td>
+                <td id="tbl-mux">0.70</td>
+                <td>Extra utility from 1 more X</td>
+              </tr>
+              <tr>
+                <td>MU<sub>y</sub> at optimum</td>
+                <td id="tbl-muy">1.05</td>
+                <td>Extra utility from 1 more Y</td>
+              </tr>
+              <tr>
+                <td>MRS at optimum</td>
+                <td id="tbl-mrs">0.67</td>
+                <td>Should equal P<sub>x</sub>/P<sub>y</sub></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="step-nav-btns">
+          <button class="nav-btn" onclick="showStep(2)">&#8592; Previous</button>
+          <button class="nav-btn primary" onclick="showStep(4)">Next: Optimization Condition &#8594;</button>
+        </div>
+      </section>
+
+      <!-- ══ STEP 4 ══ -->
+      <section id="step-4-panel" class="step-content" role="tabpanel" aria-labelledby="tab-4" hidden>
+        <h2 class="step-title">Step 4: The Optimization Condition</h2>
+
+        <div class="math-box">
+          <p><strong>The golden rule of consumer optimization:</strong> At the optimal bundle, the last dollar spent on each good delivers the same marginal utility.</p>
+          <div class="equation" aria-label="MU per dollar equalized across goods">
+            MU<sub>x</sub> / P<sub>x</sub> = MU<sub>y</sub> / P<sub>y</sub>
+          </div>
+        </div>
+
+        <div class="step-block">
+          <strong>Equivalently &mdash; MRS equals the price ratio:</strong>
+          <div class="equation" aria-label="MRS equals price ratio at optimum">
+            MRS = P<sub>x</sub> / P<sub>y</sub>
+          </div>
+          <p>The slope of the indifference curve equals the slope of the budget line. 
+          This is the tangency condition you see on the graph.</p>
+        </div>
+
+        <div class="step-block">
+          <strong>Substituting our MRS expression:</strong>
+          <div class="equation" aria-label="Substituting Cobb-Douglas MRS">
+            (&alpha; / (1&minus;&alpha;)) &times; (Q<sub>y</sub> / Q<sub>x</sub>) = P<sub>x</sub> / P<sub>y</sub>
+          </div>
+        </div>
+
+        <div class="step-block">
+          <strong>After rearranging:</strong>
+          <div class="equation" aria-label="Spending ratio equals alpha ratio">
+            &alpha; / (1&minus;&alpha;) = (P<sub>x</sub> &times; Q<sub>x</sub>) / (P<sub>y</sub> &times; Q<sub>y</sub>)
+          </div>
+          <p>With current values: &alpha;/(1&minus;&alpha;) = <span id="s4-alpharatio">1.50</span></p>
+          <p>This means: Spending on X / Spending on Y = <span id="s4-spendratio">1.50</span></p>
+        </div>
+
+        <div class="insight-box">
+          <strong>Verification with current values:</strong>
+          Spending on X = $<span id="s4-spendx">36.00</span> &nbsp;|&nbsp;
+          Spending on Y = $<span id="s4-spendy">24.00</span><br>
+          Ratio = <span id="s4-actualratio">1.50</span> &#10003; (matches &alpha;/(1&minus;&alpha;))
+        </div>
+
+        <div class="step-nav-btns">
+          <button class="nav-btn" onclick="showStep(3)">&#8592; Previous</button>
+          <button class="nav-btn primary" onclick="showStep(5)">Next: Solving the System &#8594;</button>
+        </div>
+      </section>
+
+      <!-- ══ STEP 5 ══ -->
+      <section id="step-5-panel" class="step-content" role="tabpanel" aria-labelledby="tab-5" hidden>
+        <h2 class="step-title">Step 5: Solving for Optimal Quantities</h2>
+
+        <div class="math-box">
+          <p>We have two equations and two unknowns (Q<sub>x</sub> and Q<sub>y</sub>):</p>
+        </div>
+
+        <div class="step-block">
+          <strong>Equation 1 &mdash; Optimization condition (from Step 4):</strong>
+          <div class="equation" aria-label="Optimization condition rearranged">
+            P<sub>x</sub> &times; Q<sub>x</sub> = [&alpha; / (1&minus;&alpha;)] &times; P<sub>y</sub> &times; Q<sub>y</sub>
+          </div>
+        </div>
+
+        <div class="step-block">
+          <strong>Equation 2 &mdash; Budget constraint:</strong>
+          <div class="equation" aria-label="Budget constraint">
+            P<sub>x</sub> &times; Q<sub>x</sub> + P<sub>y</sub> &times; Q<sub>y</sub> = I
+          </div>
+        </div>
+
+        <button class="expand-btn" id="algebra-btn" aria-expanded="false" onclick="toggleAlgebra()">
+          &#9660; Show Step-by-Step Algebra
+        </button>
+        <div id="algebra-content" class="expand-content" aria-hidden="true">
+          <ol style="margin: 0 0 0 20px; line-height: 2;">
+            <li>Substitute Eq. 1 into Eq. 2: &nbsp; [&alpha;/(1&minus;&alpha;)] P<sub>y</sub>Q<sub>y</sub> + P<sub>y</sub>Q<sub>y</sub> = I</li>
+            <li>Factor out P<sub>y</sub>Q<sub>y</sub>: &nbsp; P<sub>y</sub>Q<sub>y</sub> [&alpha;/(1&minus;&alpha;) + 1] = I</li>
+            <li>Simplify bracket: &nbsp; P<sub>y</sub>Q<sub>y</sub> [1/(1&minus;&alpha;)] = I</li>
+            <li>Solve for Q<sub>y</sub>: &nbsp; <strong>Q<sub>y</sub>* = (1&minus;&alpha;) &times; I / P<sub>y</sub></strong></li>
+            <li>Substitute back to get: &nbsp; <strong>Q<sub>x</sub>* = &alpha; &times; I / P<sub>x</sub></strong></li>
+          </ol>
+        </div>
+
+        <div class="step-block" style="margin-top: 16px;">
+          <strong>The Demand Functions:</strong>
+          <div class="equation" aria-label="Optimal quantity of X">
+            Q<sub>x</sub>* = (&alpha; &times; I) / P<sub>x</sub>
+          </div>
+          <div class="equation" aria-label="Optimal quantity of Y">
+            Q<sub>y</sub>* = ((1&minus;&alpha;) &times; I) / P<sub>y</sub>
+          </div>
+        </div>
+
+        <div class="step-block">
+          <strong>With current values (&alpha; = <span id="s5-alpha">0.60</span>, I = $<span id="s5-income">60</span>):</strong>
+          <div class="equation" id="s5-qx-calc" aria-label="Q star of X calculation">
+            Q<sub>x</sub>* = (0.60 &times; $60) / $2.00 = 18.0
+          </div>
+          <div class="equation" id="s5-qy-calc" aria-label="Q star of Y calculation">
+            Q<sub>y</sub>* = (0.40 &times; $60) / $3.00 = 8.0
+          </div>
+        </div>
+
+        <div class="insight-box">
+          <strong>Key Insight:</strong> The consumer spends exactly &alpha; = <span id="s5-alpha2">60%</span> of income on X 
+          and (1&minus;&alpha;) = <span id="s5-beta2">40%</span> on Y, <em>regardless of prices</em>. 
+          This is a unique property of Cobb-Douglas preferences.
+        </div>
+
+        <div class="step-nav-btns">
+          <button class="nav-btn" onclick="showStep(4)">&#8592; Previous</button>
+          <button class="nav-btn primary" onclick="showStep(6)">Next: Optimal Solution &#8594;</button>
+        </div>
+      </section>
+
+      <!-- ══ STEP 6 ══ -->
+      <section id="step-6-panel" class="step-content" role="tabpanel" aria-labelledby="tab-6" hidden>
+        <h2 class="step-title">Step 6: The Optimal Solution &amp; Insights</h2>
+
+        <div class="math-box">
+          <p>Bringing it all together: the full optimal solution with current parameters.</p>
+        </div>
+
+        <!-- Full results table -->
+        <table class="data-table" aria-label="Complete optimal solution with current parameter values" aria-live="polite">
+          <caption>Optimal Consumer Solution</caption>
+          <thead>
+            <tr>
+              <th scope="col">Variable</th>
+              <th scope="col">Value</th>
+              <th scope="col">How computed</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Q<sub>x</sub>*</td>
+              <td id="s6-qx">18.0</td>
+              <td>&alpha; &times; I / P<sub>x</sub></td>
+            </tr>
+            <tr>
+              <td>Q<sub>y</sub>*</td>
+              <td id="s6-qy">8.0</td>
+              <td>(1&minus;&alpha;) &times; I / P<sub>y</sub></td>
+            </tr>
+            <tr>
+              <td>Spending on X</td>
+              <td id="s6-spendx">$36.00</td>
+              <td>&alpha; &times; I</td>
+            </tr>
+            <tr>
+              <td>Spending on Y</td>
+              <td id="s6-spendy">$24.00</td>
+              <td>(1&minus;&alpha;) &times; I</td>
+            </tr>
+            <tr>
+              <td>Total Utility (U*)</td>
+              <td id="s6-utility">12.60</td>
+              <td>Q<sub>x</sub>*<sup>&alpha;</sup> &times; Q<sub>y</sub>*<sup>(1&minus;&alpha;)</sup></td>
+            </tr>
+            <tr>
+              <td>MRS at optimum</td>
+              <td id="s6-mrs">0.67</td>
+              <td>Must equal P<sub>x</sub>/P<sub>y</sub></td>
+            </tr>
+            <tr>
+              <td>MU<sub>x</sub>/P<sub>x</sub></td>
+              <td id="s6-mupx">0.35</td>
+              <td rowspan="2">Both equal (optimality check)</td>
+            </tr>
+            <tr>
+              <td>MU<sub>y</sub>/P<sub>y</sub></td>
+              <td id="s6-mupy">0.35</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="insight-box" style="margin-top: 16px;">
+          <strong>Five Key Takeaways from Cobb-Douglas Optimization:</strong>
+          <ol style="margin: 10px 0 0 20px; line-height: 2;">
+            <li>Consumer spends <strong><span id="s6-xpct">60%</span></strong> on X and <strong><span id="s6-ypct">40%</span></strong> on Y &mdash; set by &alpha; alone</li>
+            <li>Doubling P<sub>x</sub> cuts Q<sub>x</sub> in half, but spending on X is unchanged</li>
+            <li>Doubling income doubles <em>both</em> quantities (unit income elasticity)</li>
+            <li>At the optimum: MRS = P<sub>x</sub>/P<sub>y</sub> (indifference curve tangent to budget line)</li>
+            <li>At the optimum: MU<sub>x</sub>/P<sub>x</sub> = MU<sub>y</sub>/P<sub>y</sub> (equal marginal utility per dollar)</li>
+          </ol>
+        </div>
+
+        <div class="step-block">
+          <strong>Experiment:</strong> Adjust the sliders on the left and watch the table and graph update in real time. 
+          Try doubling P<sub>x</sub> &mdash; does Q<sub>x</sub>* halve while spending on X stays constant?
+        </div>
+
+        <div class="step-nav-btns">
+          <button class="nav-btn" onclick="showStep(5)">&#8592; Previous</button>
+          <button class="nav-btn" disabled aria-label="Next step, unavailable">Next &#8594;</button>
+        </div>
+      </section>
+
+    </main>
+  </div><!-- end content-wrapper -->
+</div><!-- end wrapper -->
+
+<script>
+  // ── State ──
+  let currentStep = 1;
+  const TOTAL_STEPS = 6;
+
+  // ── Helpers ──
+  function val(id) { return parseFloat(document.getElementById(id).value); }
+  function setText(id, txt) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = txt;
+  }
+  function setHTML(id, html) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = html;
+  }
+  function announce(msg) {
+    const el = document.getElementById('live-updates');
+    el.textContent = '';
+    setTimeout(() => { el.textContent = msg; }, 50);
+  }
+
+  // ── Core calculation ──
+  function calcAll() {
+    const alpha  = val('alpha-slider');
+    const px     = val('px-slider');
+    const py     = val('py-slider');
+    const income = val('income-slider');
+    const beta   = 1 - alpha;
+
+    const qx = (alpha * income) / px;
+    const qy = (beta  * income) / py;
+    const spendX = alpha * income;
+    const spendY = beta  * income;
+    const utility = Math.pow(qx, alpha) * Math.pow(qy, beta);
+    const mux = alpha * Math.pow(qx, alpha - 1) * Math.pow(qy, beta);
+    const muy = beta  * Math.pow(qx, alpha) * Math.pow(qy, -alpha);
+    const mupx = mux / px;
+    const mupy = muy / py;
+    const mrs  = mux / muy;
+    const pratio = px / py;
+    const alphaRatio = alpha / beta;
+
+    return { alpha, beta, px, py, income,
+             qx, qy, spendX, spendY, utility,
+             mux, muy, mupx, mupy, mrs, pratio, alphaRatio };
+  }
+
+  // ── Update all DOM ──
+  function updateAll() {
+    const d = calcAll();
+    const alpha  = d.alpha;
+    const px     = d.px;
+    const py     = d.py;
+    const income = d.income;
+    const beta   = d.beta;
+
+    // Slider label updates
+    document.getElementById('alpha-val').textContent  = alpha.toFixed(2);
+    document.getElementById('px-val').textContent     = '$' + px.toFixed(2);
+    document.getElementById('py-val').textContent     = '$' + py.toFixed(2);
+    document.getElementById('income-val').textContent = '$' + income.toFixed(0);
+
+    // Aria-label updates for sliders
+    document.getElementById('alpha-slider').setAttribute('aria-label',
+      `Alpha preference parameter, currently ${alpha.toFixed(2)}`);
+    document.getElementById('px-slider').setAttribute('aria-label',
+      `Price of good X, currently $${px.toFixed(2)}`);
+    document.getElementById('py-slider').setAttribute('aria-label',
+      `Price of good Y, currently $${py.toFixed(2)}`);
+    document.getElementById('income-slider').setAttribute('aria-label',
+      `Consumer income, currently $${income.toFixed(0)}`);
+
+    // Results box
+    setText('res-qx',      d.qx.toFixed(1));
+    setText('res-qy',      d.qy.toFixed(1));
+    setText('res-spendx',  '$' + d.spendX.toFixed(2));
+    setText('res-spendy',  '$' + d.spendY.toFixed(2));
+    setText('res-utility', d.utility.toFixed(2));
+    setText('res-mupd',    d.mupx.toFixed(4));
+    setText('res-pratio',  d.pratio.toFixed(2));
+
+    // Step 1
+    setHTML('bc-equation',
+      `$${px.toFixed(2)} &times; Q<sub>x</sub> + $${py.toFixed(2)} &times; Q<sub>y</sub> = $${income.toFixed(0)}`);
+    setText('x-intercept', (income/px).toFixed(1));
+    setText('y-intercept', (income/py).toFixed(1));
+    setText('bl-slope',    '\u2212' + d.pratio.toFixed(2));
+
+    // Step 2
+    setText('s2-alpha',  alpha.toFixed(2));
+    setText('s2-alpha2', alpha.toFixed(2));
+    setText('s2-xpct',   (alpha*100).toFixed(0) + '%');
+    setText('s2-ypct',   (beta*100).toFixed(0)  + '%');
+    setHTML('s2-ufunc',
+      `U = Q<sub>x</sub><sup>${alpha.toFixed(2)}</sup> &times; Q<sub>y</sub><sup>${beta.toFixed(2)}</sup>`);
+
+    // Step 3
+    setText('s3-alpha',       alpha.toFixed(2));
+    setText('s3-alpha-ratio', d.alphaRatio.toFixed(2));
+    setHTML('s3-mux-eq',
+      `MU<sub>x</sub> = ${alpha.toFixed(2)} &times; Q<sub>x</sub><sup>${(alpha-1).toFixed(2)}</sup> &times; Q<sub>y</sub><sup>${beta.toFixed(2)}</sup>`);
+    setHTML('s3-muy-eq',
+      `MU<sub>y</sub> = ${beta.toFixed(2)} &times; Q<sub>x</sub><sup>${alpha.toFixed(2)}</sup> &times; Q<sub>y</sub><sup>&minus;${alpha.toFixed(2)}</sup>`);
+    setText('tbl-qx',  d.qx.toFixed(2));
+    setText('tbl-qy',  d.qy.toFixed(2));
+    setText('tbl-mux', d.mux.toFixed(4));
+    setText('tbl-muy', d.muy.toFixed(4));
+    setText('tbl-mrs', d.mrs.toFixed(4));
+
+    // Step 4
+    setText('s4-alpharatio', d.alphaRatio.toFixed(2));
+    setText('s4-spendratio', d.alphaRatio.toFixed(2));
+    setText('s4-spendx',     d.spendX.toFixed(2));
+    setText('s4-spendy',     d.spendY.toFixed(2));
+    setText('s4-actualratio', (d.spendX/d.spendY).toFixed(2));
+
+    // Step 5
+    setText('s5-alpha',  alpha.toFixed(2));
+    setText('s5-income', income.toFixed(0));
+    setText('s5-alpha2', (alpha*100).toFixed(0) + '%');
+    setText('s5-beta2',  (beta*100).toFixed(0)  + '%');
+    setHTML('s5-qx-calc',
+      `Q<sub>x</sub>* = (${alpha.toFixed(2)} &times; $${income.toFixed(0)}) / $${px.toFixed(2)} = <strong>${d.qx.toFixed(1)}</strong>`);
+    setHTML('s5-qy-calc',
+      `Q<sub>y</sub>* = (${beta.toFixed(2)} &times; $${income.toFixed(0)}) / $${py.toFixed(2)} = <strong>${d.qy.toFixed(1)}</strong>`);
+
+    // Step 6
+    setText('s6-qx',      d.qx.toFixed(1));
+    setText('s6-qy',      d.qy.toFixed(1));
+    setText('s6-spendx',  '$' + d.spendX.toFixed(2));
+    setText('s6-spendy',  '$' + d.spendY.toFixed(2));
+    setText('s6-utility', d.utility.toFixed(2));
+    setText('s6-mrs',     d.mrs.toFixed(4));
+    setText('s6-mupx',    d.mupx.toFixed(4));
+    setText('s6-mupy',    d.mupy.toFixed(4));
+    setText('s6-xpct',    (alpha*100).toFixed(0) + '%');
+    setText('s6-ypct',    (beta*100).toFixed(0)  + '%');
+
+    // Graph description for screen readers
+    const gdesc = `Indifference curve diagram. Budget line runs from (0, ${(income/py).toFixed(1)}) to (${(income/px).toFixed(1)}, 0). ` +
+      `Optimal bundle is at (${d.qx.toFixed(1)}, ${d.qy.toFixed(1)}). ` +
+      `The indifference curve through the optimal point is tangent to the budget line. ` +
+      `MRS at optimum = ${d.mrs.toFixed(2)}, price ratio = ${d.pratio.toFixed(2)}.`;
+    setText('graph-description', gdesc);
+
+    updateChart(d);
+  }
+
+  // ── Chart ──
+  let chartInitialized = false;
+
+  function updateChart(d) {
+    if (!d) d = calcAll();
+    const { alpha, beta, px, py, income, qx, qy } = d;
+
+    // Budget line
+    const blX  = income / px;
+    const blY  = income / py;
+
+    // Indifference curves: U = const, Qy = (U / Qx^alpha)^(1/beta)
+    const Uopt = Math.pow(qx, alpha) * Math.pow(qy, beta);
+    const U1   = Uopt * 0.6;
+    const U2   = Uopt * 1.35;
+
+    const npts = 80;
+    const xMax = blX * 1.6;
+
+    function icY(U, xArr) {
+      return xArr.map(x => {
+        if (x <= 0) return null;
+        const y = Math.pow(U / Math.pow(x, alpha), 1/beta);
+        return (y > 0 && y < blY * 2.2) ? y : null;
+      });
+    }
+
+    const xArr = Array.from({length: npts}, (_, i) => (i+1) * xMax / npts);
+
+    const traces = [
+      // IC lower
+      { x: xArr, y: icY(U1, xArr), mode: 'lines',
+        line: { color: '#00897B', width: 1.5, dash: 'dot' },
+        name: 'Lower IC', hoverinfo: 'skip' },
+      // IC optimal
+      { x: xArr, y: icY(Uopt, xArr), mode: 'lines',
+        line: { color: '#00897B', width: 2.5 },
+        name: `Optimal IC (U=${Uopt.toFixed(2)})`, hovertemplate: 'U=%{y:.2f}<extra></extra>' },
+      // IC higher
+      { x: xArr, y: icY(U2, xArr), mode: 'lines',
+        line: { color: '#00897B', width: 1.5, dash: 'dot' },
+        name: 'Higher IC', hoverinfo: 'skip' },
+      // Budget line
+      { x: [0, blX], y: [blY, 0], mode: 'lines',
+        line: { color: '#C62828', width: 2.5 },
+        name: `Budget (I=$${income})`,
+        hovertemplate: 'Budget<extra></extra>' },
+      // Optimal point
+      { x: [qx], y: [qy], mode: 'markers+text',
+        marker: { color: '#1565C0', size: 12, symbol: 'circle',
+                  line: { color: 'white', width: 2 } },
+        text: [` A* (${qx.toFixed(1)}, ${qy.toFixed(1)})`],
+        textposition: 'middle right',
+        textfont: { size: 12, color: '#1565C0' },
+        name: 'Optimal Bundle',
+        hovertemplate: `Optimal: Qx=${qx.toFixed(2)}, Qy=${qy.toFixed(2)}<extra></extra>` }
+    ];
+
+    const xAxisMax = Math.ceil(blX * 1.5 / 5) * 5;
+    const yAxisMax = Math.ceil(blY * 1.5 / 5) * 5;
+
+    const layout = {
+      xaxis: { title: { text: 'Quantity of X (Qₓ)', font: { size: 13 } },
+               range: [0, xAxisMax], zeroline: true, gridcolor: '#eee' },
+      yaxis: { title: { text: 'Quantity of Y (Q_y)', font: { size: 13 } },
+               range: [0, yAxisMax], zeroline: true, gridcolor: '#eee' },
+      legend: { orientation: 'h', x: 0, y: -0.18, font: { size: 11 } },
+      margin: { l: 60, r: 20, t: 20, b: 80 },
+      plot_bgcolor: '#fafffe',
+      paper_bgcolor: 'white',
+      autosize: false,
+      width: 560,
+      height: 430
+    };
+
+    const config = { responsive: false, displayModeBar: false, staticPlot: false };
+
+    if (!chartInitialized) {
+      Plotly.newPlot('utility-chart', traces, layout, config);
+      chartInitialized = true;
+    } else {
+      Plotly.react('utility-chart', traces, layout, config);
+    }
+  }
+
+  // ── Step navigation ──
+  function showStep(n) {
+    // Hide all panels
+    for (let i = 1; i <= TOTAL_STEPS; i++) {
+      const panel = document.getElementById(`step-${i}-panel`);
+      const tab   = document.getElementById(`tab-${i}`);
+      if (panel) { panel.classList.remove('active'); panel.hidden = true; }
+      if (tab)   { tab.classList.remove('active'); tab.setAttribute('aria-selected','false'); }
+    }
+    // Show target
+    const panel = document.getElementById(`step-${n}-panel`);
+    const tab   = document.getElementById(`tab-${n}`);
+    if (panel) { panel.classList.add('active'); panel.hidden = false; }
+    if (tab)   { tab.classList.add('active'); tab.setAttribute('aria-selected','true'); }
+
+    currentStep = n;
+    setText('step-progress', `Step ${n} of ${TOTAL_STEPS}`);
+
+    const stepNames = ['', 'Setup & Budget Constraint', 'Cobb-Douglas Function',
+      'Marginal Utilities', 'Optimization Condition',
+      'Solving the System', 'Optimal Solution'];
+    announce(`Showing step ${n}: ${stepNames[n]}`);
+
+    // Scroll content to top
+    const sp = document.querySelector('.step-panel');
+    if (sp) sp.scrollTop = 0;
+  }
+
+  // ── Expand/collapse algebra ──
+  function toggleAlgebra() {
+    const btn  = document.getElementById('algebra-btn');
+    const cont = document.getElementById('algebra-content');
+    const open = btn.getAttribute('aria-expanded') === 'true';
+    btn.setAttribute('aria-expanded', String(!open));
+    cont.setAttribute('aria-hidden',  String(open));
+    if (open) {
+      cont.classList.remove('open');
+      btn.textContent = '▼ Show Step-by-Step Algebra';
+    } else {
+      cont.classList.add('open');
+      btn.textContent = '▲ Hide Algebra';
+    }
+  }
+
+  // ── Keyboard navigation for step tabs ──
+  document.addEventListener('keydown', function(e) {
+    const tabs = document.querySelectorAll('.step-btn[role="tab"]');
+    const focused = document.activeElement;
+    const idx = Array.from(tabs).indexOf(focused);
+    if (idx === -1) return;
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      const next = tabs[(idx + 1) % tabs.length];
+      next.focus();
+      showStep(parseInt(next.id.replace('tab-',''), 10));
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const prev = tabs[(idx - 1 + tabs.length) % tabs.length];
+      prev.focus();
+      showStep(parseInt(prev.id.replace('tab-',''), 10));
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      tabs[0].focus(); showStep(1);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      tabs[tabs.length-1].focus(); showStep(TOTAL_STEPS);
+    }
+  });
+
+  // ── Init ──
+  document.addEventListener('DOMContentLoaded', function() {
+    updateAll();
+    // Ensure step 1 panel visible
+    showStep(1);
+  });
+</script>
+</body>
+</html>

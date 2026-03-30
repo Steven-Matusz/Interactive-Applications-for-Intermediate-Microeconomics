@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consumer Choice and Government Policy</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Skip link ── */
+    .skip-link {
+      position: absolute;
+      top: -40px; left: 0;
+      background: #18453B; color: white;
+      padding: 8px 16px;
+      text-decoration: none;
+      border-radius: 0 0 4px 0;
+      z-index: 100;
+      font-weight: 600;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ── SR-only ── */
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border-width: 0;
+    }
+
+    /* ── Live region ── */
+    .live-region {
+      position: absolute;
+      left: -10000px;
+      width: 1px; height: 1px;
+      overflow: hidden;
+    }
+
+    /* ── Focus visible ── */
+    *:focus-visible {
+      outline: 3px solid #667eea;
+      outline-offset: 2px;
+    }
+
+    /* ── Container ── */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #18453B 0%, #2d5a4f 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 { font-size: 2em; margin-bottom: 8px; }
+    .header p  { font-size: 1.1em; opacity: 0.9; }
+
+    /* ── Scenario selector bar ── */
+    .scenario-selector {
+      background: #f8f9fa;
+      padding: 20px 24px;
+      border-bottom: 3px solid #18453B;
+    }
+    .scenario-selector h2 {
+      color: #18453B;
+      font-size: 1.15em;
+      margin-bottom: 12px;
+    }
+    .scenario-buttons {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    .scenario-btn {
+      flex: 1;
+      min-width: 200px;
+      padding: 14px 20px;
+      font-size: 1.05em;
+      border: 3px solid #18453B;
+      background: white;
+      color: #18453B;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 600;
+    }
+    .scenario-btn:hover,
+    .scenario-btn:focus {
+      background: #18453B;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(24,69,59,0.3);
+    }
+    .scenario-btn.active {
+      background: #18453B;
+      color: white;
+    }
+
+    /* ── Main layout ── */
+    .content-wrapper {
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      min-height: 600px;
+    }
+
+    /* ── Control panel ── */
+    .control-panel {
+      background: #f8f9fa;
+      padding: 28px;
+      border-right: 3px solid #e9ecef;
+      overflow-y: auto;
+      max-height: 860px;
+    }
+
+    /* ── Graph panel ── */
+    .graph-panel {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ── Slider sections ── */
+    .price-control {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 18px;
+      border: 2px solid #e9ecef;
+    }
+    .price-control h3 {
+      color: #18453B;
+      margin-bottom: 14px;
+      font-size: 1.1em;
+    }
+    .form-label {
+      display: block;
+      margin-bottom: 8px;
+      color: #495057;
+      font-weight: 600;
+    }
+    .price-slider {
+      width: 100%;
+      height: 8px;
+      border-radius: 5px;
+      background: #d3d3d3;
+      outline: none;
+      margin: 12px 0;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .price-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: #18453B;
+      cursor: pointer;
+      border: 3px solid white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .price-slider::-moz-range-thumb {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: #18453B;
+      cursor: pointer;
+      border: 3px solid white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .price-slider:focus {
+      outline: 3px solid #667eea;
+      outline-offset: 3px;
+    }
+    .slider-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 4px;
+      font-size: 0.88em;
+      color: #6c757d;
+    }
+    .current-value-display {
+      font-weight: bold;
+      color: #18453B;
+      font-size: 1.1em;
+      text-align: center;
+      padding: 6px;
+      background: #e8f4f1;
+      border-radius: 6px;
+      margin-bottom: 6px;
+    }
+
+    /* ── Compare buttons ── */
+    .compare-section {
+      background: white;
+      padding: 18px;
+      border-radius: 10px;
+      margin-bottom: 18px;
+      border: 2px solid #e9ecef;
+    }
+    .compare-section h3 {
+      color: #18453B;
+      margin-bottom: 10px;
+      font-size: 1.05em;
+    }
+    .compare-section p {
+      font-size: 0.9em;
+      color: #555;
+      margin-bottom: 10px;
+    }
+    .compare-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .compare-btn {
+      flex: 1;
+      padding: 10px 14px;
+      border: 3px solid #18453B;
+      border-radius: 8px;
+      background: white;
+      color: #18453B;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95em;
+      transition: all 0.3s ease;
+    }
+    .compare-btn:hover,
+    .compare-btn:focus {
+      background: #18453B;
+      color: white;
+    }
+    .compare-btn.active {
+      background: #18453B;
+      color: white;
+    }
+    .govt-cost-display {
+      font-size: 0.92em;
+      color: #495057;
+      padding: 6px 0;
+    }
+
+    /* ── Metrics ── */
+    .metrics-container {
+      background: white;
+      padding: 18px;
+      border-radius: 10px;
+      border: 2px solid #e9ecef;
+      margin-bottom: 18px;
+    }
+    .metrics-container h3 {
+      color: #18453B;
+      margin-bottom: 12px;
+      font-size: 1.05em;
+    }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .metric-card {
+      background: #f8f9fa;
+      padding: 13px;
+      border-radius: 8px;
+      border-left: 4px solid #18453B;
+      text-align: center;
+    }
+    .metric-label {
+      font-size: 0.82em;
+      color: #6c757d;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+    .metric-value {
+      font-size: 1.2em;
+      font-weight: 700;
+      color: #18453B;
+    }
+
+    /* ── Info / insight boxes ── */
+    .insight-box {
+      background: #e8f4f1;
+      border: 2px solid #18453B;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 18px;
+      font-size: 0.92em;
+      color: #2c3e50;
+      line-height: 1.5;
+    }
+    .insight-box strong { color: #18453B; }
+
+    /* ── Reset button ── */
+    .reset-btn {
+      width: 100%;
+      padding: 11px;
+      margin-top: 6px;
+      background: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .reset-btn:hover,
+    .reset-btn:focus {
+      background: #5a6268;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    /* ── Graph wrapper ── */
+    .graph-wrapper {
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      overflow: hidden;
+      background: white;
+    }
+
+    /* ── Data table ── */
+    .data-table-section { margin-top: 6px; }
+    details summary {
+      cursor: pointer;
+      padding: 10px 14px;
+      background: #f8f9fa;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      font-weight: 600;
+      color: #18453B;
+      font-size: 0.95em;
+      user-select: none;
+      list-style: none;
+    }
+    details summary::-webkit-details-marker { display: none; }
+    details summary::before { content: '▶ '; font-size: 0.8em; }
+    details[open] summary::before { content: '▼ '; }
+    details summary:focus {
+      outline: 3px solid #667eea;
+      outline-offset: 2px;
+    }
+    details[open] summary {
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      border-bottom: none;
+    }
+    .data-table-scroll { overflow-x: auto; }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border: 2px solid #e9ecef;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+    }
+    .data-table th,
+    .data-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e9ecef;
+      font-size: 0.88em;
+    }
+    .data-table th {
+      background: #f8f9fa;
+      font-weight: 700;
+      color: #18453B;
+    }
+    .data-table tr:hover { background: #f8f9fa; }
+
+    /* ── Poverty trap budget line section ── */
+    .pt-reduce-display {
+      background: white;
+      padding: 18px;
+      border-radius: 10px;
+      margin-bottom: 18px;
+      border: 2px solid #e9ecef;
+    }
+
+    /* ── Hidden ── */
+    .hidden { display: none !important; }
+
+    /* ── Responsive ── */
+    @media (max-width: 1024px) {
+      .content-wrapper { grid-template-columns: 1fr; }
+      .control-panel {
+        border-right: none;
+        border-bottom: 3px solid #e9ecef;
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Live regions for screen reader announcements -->
+<div id="live-updates" class="live-region" aria-live="polite" aria-atomic="true"></div>
+<div id="sr-announcer" aria-live="assertive" aria-atomic="true" class="sr-only"></div>
+
+<div class="container">
+
+  <!-- Header -->
+  <header class="header">
+    <h1>🛏️ Consumer Choice and Government Policy</h1>
+    <p>Exploring how government programs affect household decision-making</p>
+  </header>
+
+  <!-- Scenario selector -->
+  <section class="scenario-selector" aria-label="Topic selection">
+    <h2 id="scenario-heading">Choose a Topic:</h2>
+    <div class="scenario-buttons" role="group" aria-labelledby="scenario-heading">
+      <button class="scenario-btn active" id="sbtn-lumpsum"
+              aria-pressed="true"
+              aria-describedby="desc-lumpsum"
+              onclick="setScenario('lumpsum', this)">
+        💰 Lump Sum Principle
+      </button>
+      <button class="scenario-btn" id="sbtn-povertytrap"
+              aria-pressed="false"
+              aria-describedby="desc-povertytrap"
+              onclick="setScenario('povertytrap', this)">
+        🪤 Poverty Trap
+      </button>
+    </div>
+    <span id="desc-lumpsum" class="sr-only">Compare food subsidies versus cash transfers and the lump sum efficiency principle.</span>
+    <span id="desc-povertytrap" class="sr-only">Analyze how benefit reduction rates create work disincentives and poverty traps.</span>
+  </section>
+
+  <main id="main-content">
+
+    <!-- ══════════════════════════════════════════
+         LUMP SUM SCENARIO
+    ══════════════════════════════════════════ -->
+    <div id="lumpsum-content">
+      <div class="content-wrapper">
+
+        <!-- Controls -->
+        <aside class="control-panel" aria-label="Lump sum policy controls and results">
+
+          <!-- Sliders -->
+          <div class="price-control">
+            <h3 id="ls-params-heading">💰 Aid Program Parameters</h3>
+
+            <label for="food-price-slider" class="form-label">Food Price:</label>
+            <div class="current-value-display" id="food-price-display" aria-live="polite">$4.00 / unit</div>
+            <div class="slider-labels" aria-hidden="true"><span>$2</span><span>$8</span></div>
+            <input type="range" class="price-slider" id="food-price-slider"
+                   min="2" max="8" value="4" step="0.5"
+                   aria-label="Food price in dollars per unit"
+                   aria-valuemin="2" aria-valuemax="8" aria-valuenow="4"
+                   aria-describedby="food-price-hint"
+                   oninput="updateLS()">
+            <p id="food-price-hint" class="sr-only">Use arrow keys to adjust food price. Range: $2 to $8 per unit.</p>
+
+            <label for="subsidy-rate-slider" class="form-label">Food Subsidy Rate:</label>
+            <div class="current-value-display" id="subsidy-rate-display" aria-live="polite">0%</div>
+            <div class="slider-labels" aria-hidden="true"><span>0%</span><span>50%</span></div>
+            <input type="range" class="price-slider" id="subsidy-rate-slider"
+                   min="0" max="50" value="0" step="5"
+                   aria-label="Food subsidy rate as a percentage"
+                   aria-valuemin="0" aria-valuemax="50" aria-valuenow="0"
+                   aria-describedby="subsidy-hint"
+                   oninput="updateLS()">
+            <p id="subsidy-hint" class="sr-only">Use arrow keys to adjust the food subsidy rate. Range: 0% to 50%.</p>
+
+            <label for="household-income-slider" class="form-label">Household Income:</label>
+            <div class="current-value-display" id="household-income-display" aria-live="polite">$80</div>
+            <div class="slider-labels" aria-hidden="true"><span>$60</span><span>$120</span></div>
+            <input type="range" class="price-slider" id="household-income-slider"
+                   min="60" max="120" value="80" step="10"
+                   aria-label="Household income in dollars"
+                   aria-valuemin="60" aria-valuemax="120" aria-valuenow="80"
+                   aria-describedby="income-hint"
+                   oninput="updateLS()">
+            <p id="income-hint" class="sr-only">Use arrow keys to adjust household income. Range: $60 to $120.</p>
+          </div>
+
+          <!-- Compare buttons -->
+          <div class="compare-section" role="group" aria-labelledby="compare-heading">
+            <h3 id="compare-heading">📊 Compare Aid Programs</h3>
+            <p>Same government cost — different approaches:</p>
+            <div class="compare-buttons">
+              <button class="compare-btn active" id="cbtn-subsidy"
+                      aria-pressed="true"
+                      onclick="setComparison('subsidy', this)">
+                🍞 Food Subsidy
+              </button>
+              <button class="compare-btn" id="cbtn-cash"
+                      aria-pressed="false"
+                      onclick="setComparison('cash', this)">
+                💵 Cash Transfer
+              </button>
+            </div>
+            <div class="govt-cost-display">
+              <strong>Government Cost:</strong>
+              <span id="govt-cost-display" aria-live="polite">$0.00</span>
+            </div>
+          </div>
+
+          <!-- Metrics -->
+          <div class="metrics-container" aria-label="Household outcomes" aria-live="polite" aria-atomic="true">
+            <h3>📈 Household Outcomes</h3>
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <div class="metric-label">Food Consumption</div>
+                <div class="metric-value" id="food-consumption">6.0 units</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Other Goods</div>
+                <div class="metric-value" id="other-goods">$56</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Program Cost</div>
+                <div class="metric-value" id="total-utility">$0.00</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Transfer Type</div>
+                <div class="metric-value" id="transfer-type">None</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Explanation / insight -->
+          <div class="insight-box" id="ls-explanation" aria-live="polite" aria-atomic="true">
+            <strong>Starting Point: No Government Intervention</strong><br>
+            Use the subsidy slider to introduce a food subsidy, then compare it with an equivalent cash transfer to see the lump sum principle at work.
+          </div>
+
+          <!-- Data table -->
+          <div class="data-table-section">
+            <details>
+              <summary>📋 View Data Table (accessible alternative)</summary>
+              <div class="data-table-scroll">
+                <table class="data-table"
+                       aria-label="Household consumption under different policies">
+                  <thead>
+                    <tr>
+                      <th scope="col">Policy</th>
+                      <th scope="col">Food (units)</th>
+                      <th scope="col">Other Goods ($)</th>
+                      <th scope="col">Gov't Cost ($)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ls-table-body"></tbody>
+                </table>
+              </div>
+            </details>
+          </div>
+
+          <button class="reset-btn" onclick="resetLS()" aria-label="Reset lump sum controls to defaults">
+            ↺ Reset to Defaults
+          </button>
+        </aside>
+
+        <!-- Graph panel -->
+        <section class="graph-panel" aria-label="Consumption graph">
+          <div class="graph-wrapper"
+               role="img"
+               aria-label="Indifference curve and budget line diagram"
+               aria-describedby="ls-graph-desc">
+            <div id="ls-graph"></div>
+          </div>
+          <p id="ls-graph-desc" class="sr-only">
+            This diagram shows food on the horizontal axis (0–35 units) and other goods on the vertical axis (0–$120).
+            Budget lines show what the household can afford; indifference curves show equal-utility combinations.
+            The grey dashed line is the original budget. When a subsidy is active the red line shows the rotated
+            subsidy budget and the green line shows the parallel cash-transfer budget. Optimal choice points are marked.
+            The cash transfer reaches a higher indifference curve than the food subsidy at the same government cost,
+            illustrating the lump sum principle.
+          </p>
+        </section>
+
+      </div>
+    </div><!-- /lumpsum-content -->
+
+    <!-- ══════════════════════════════════════════
+         POVERTY TRAP SCENARIO
+    ══════════════════════════════════════════ -->
+    <div id="povertytrap-content" class="hidden">
+      <div class="content-wrapper">
+
+        <!-- Controls -->
+        <aside class="control-panel" aria-label="Poverty trap policy controls and results">
+
+          <div class="price-control">
+            <h3>🪤 Welfare Policy Parameters</h3>
+
+            <label for="wage-slider" class="form-label">Hourly Wage:</label>
+            <div class="current-value-display" id="wage-display" aria-live="polite">$10.00 / hour</div>
+            <div class="slider-labels" aria-hidden="true"><span>$8</span><span>$15</span></div>
+            <input type="range" class="price-slider" id="wage-slider"
+                   min="8" max="15" value="10" step="0.5"
+                   aria-label="Hourly wage rate in dollars"
+                   aria-valuemin="8" aria-valuemax="15" aria-valuenow="10"
+                   aria-describedby="wage-hint-pt"
+                   oninput="updatePT()">
+            <p id="wage-hint-pt" class="sr-only">Use arrow keys to adjust hourly wage. Range: $8 to $15.</p>
+
+            <label for="base-benefit-slider" class="form-label">Base Benefit (annual):</label>
+            <div class="current-value-display" id="base-benefit-display" aria-live="polite">$18,000</div>
+            <div class="slider-labels" aria-hidden="true"><span>$10,000</span><span>$25,000</span></div>
+            <input type="range" class="price-slider" id="base-benefit-slider"
+                   min="10000" max="25000" value="18000" step="1000"
+                   aria-label="Base welfare benefit in dollars per year"
+                   aria-valuemin="10000" aria-valuemax="25000" aria-valuenow="18000"
+                   aria-describedby="benefit-hint"
+                   oninput="updatePT()">
+            <p id="benefit-hint" class="sr-only">Use arrow keys to adjust base benefit. Range: $10,000 to $25,000.</p>
+
+            <label for="reduction-rate-slider" class="form-label">Benefit Reduction Rate:</label>
+            <div class="current-value-display" id="reduction-rate-display" aria-live="polite">100%</div>
+            <div class="slider-labels" aria-hidden="true"><span>0%</span><span>100%</span></div>
+            <input type="range" class="price-slider" id="reduction-rate-slider"
+                   min="0" max="100" value="100" step="10"
+                   aria-label="Benefit reduction rate as a percentage of earnings"
+                   aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"
+                   aria-describedby="reduction-hint"
+                   oninput="updatePT()">
+            <p id="reduction-hint" class="sr-only">Use arrow keys to adjust the benefit reduction rate. At 100%, benefits fall by $1 for every $1 earned, creating a poverty trap. Range: 0% to 100%.</p>
+          </div>
+
+          <!-- Metrics -->
+          <div class="metrics-container" aria-label="Work-leisure outcomes" aria-live="polite" aria-atomic="true">
+            <h3>📈 Work-Leisure Outcomes</h3>
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <div class="metric-label">Leisure Hours</div>
+                <div class="metric-value" id="leisure-hours">1,800</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Work Hours</div>
+                <div class="metric-value" id="work-hours">700</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Total Income</div>
+                <div class="metric-value" id="total-income">$18,000</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Net Wage</div>
+                <div class="metric-value" id="net-wage">$0 / hr</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Explanation -->
+          <div class="insight-box" id="pt-explanation" aria-live="polite" aria-atomic="true">
+            <strong>Welfare Policy Analysis</strong><br>
+            Adjust the benefit reduction rate to see how work incentives change.
+            At 100% reduction, every dollar earned costs a dollar in benefits — the net wage is $0,
+            creating a <em>poverty trap</em> with no incentive to work.
+          </div>
+
+          <!-- Data table -->
+          <div class="data-table-section">
+            <details>
+              <summary>📋 View Data Table (accessible alternative)</summary>
+              <div class="data-table-scroll">
+                <table class="data-table"
+                       aria-label="Work-leisure outcomes at different benefit reduction rates">
+                  <thead>
+                    <tr>
+                      <th scope="col">Reduction Rate</th>
+                      <th scope="col">Net Wage ($/hr)</th>
+                      <th scope="col">Work Hours</th>
+                      <th scope="col">Total Income ($)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pt-table-body"></tbody>
+                </table>
+              </div>
+            </details>
+          </div>
+
+          <button class="reset-btn" onclick="resetPT()" aria-label="Reset poverty trap controls to defaults">
+            ↺ Reset to Defaults
+          </button>
+        </aside>
+
+        <!-- Graph panel -->
+        <section class="graph-panel" aria-label="Work-leisure graph">
+          <div class="graph-wrapper"
+               role="img"
+               aria-label="Work-leisure indifference curve diagram"
+               aria-describedby="pt-graph-desc">
+            <div id="pt-graph"></div>
+          </div>
+          <p id="pt-graph-desc" class="sr-only">
+            This diagram shows leisure hours (0–2,700) on the horizontal axis and annual income ($0–$40,000)
+            on the vertical axis. The grey dashed line is the budget constraint without welfare benefits.
+            The red line shows the welfare budget constraint, which is kinked: to the right of the benefit
+            cut-off point the household receives the full base benefit (flat segment); to the left the
+            effective slope reflects the net wage after benefit reduction. The grey dot marks the
+            no-welfare choice; the red dot marks the choice with the current welfare policy.
+            At 100% reduction rate, the household maximises utility by taking all leisure (2,500 hours)
+            and living on benefits alone — the poverty trap.
+          </p>
+        </section>
+
+      </div>
+    </div><!-- /povertytrap-content -->
+
+  </main>
+</div><!-- /container -->
+
+<script>
+/* ═══════════════════════════════════════════
+   SHARED UTILITY
+═══════════════════════════════════════════ */
+const ALPHA = 0.3;
+
+function announce(msg) {
+  const el = document.getElementById('sr-announcer');
+  el.textContent = '';
+  setTimeout(() => { el.textContent = msg; }, 50);
+}
+
+/* ═══════════════════════════════════════════
+   SCENARIO SWITCHING
+═══════════════════════════════════════════ */
+let currentScenario = 'lumpsum';
+
+function setScenario(scenario, btn) {
+  currentScenario = scenario;
+  document.querySelectorAll('.scenario-btn').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-pressed', 'false');
+  });
+  btn.classList.add('active');
+  btn.setAttribute('aria-pressed', 'true');
+
+  document.getElementById('lumpsum-content').classList.toggle('hidden', scenario !== 'lumpsum');
+  document.getElementById('povertytrap-content').classList.toggle('hidden', scenario !== 'povertytrap');
+
+  if (scenario === 'lumpsum') updateLS();
+  else updatePT();
+
+  announce('Switched to ' + (scenario === 'lumpsum' ? 'Lump Sum Principle' : 'Poverty Trap') + ' topic.');
+}
+
+/* ═══════════════════════════════════════════
+   LUMP SUM — CALCULATIONS
+═══════════════════════════════════════════ */
+let currentComparison = 'subsidy';
+
+function calcSubsidyChoice(foodPrice, subsidyRate, income) {
+  const effPrice = foodPrice * (1 - subsidyRate / 100);
+  const food  = ALPHA * income / effPrice;
+  const other = (1 - ALPHA) * income;
+  const govtCost = foodPrice * (subsidyRate / 100) * food;
+  return { food, other, utility: Math.pow(food, ALPHA) * Math.pow(other, 1 - ALPHA), govtCost };
+}
+
+function calcCashChoice(foodPrice, income, govtCost) {
+  const totalIncome = income + govtCost;
+  const food  = ALPHA * totalIncome / foodPrice;
+  const other = (1 - ALPHA) * totalIncome;
+  return { food, other, utility: Math.pow(food, ALPHA) * Math.pow(other, 1 - ALPHA), govtCost };
+}
+
+function setComparison(type, btn) {
+  currentComparison = type;
+  document.querySelectorAll('.compare-btn').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-pressed', 'false');
+  });
+  btn.classList.add('active');
+  btn.setAttribute('aria-pressed', 'true');
+  updateLS();
+}
+
+function updateLS() {
+  const foodPrice  = parseFloat(document.getElementById('food-price-slider').value);
+  const subsidyPct = parseFloat(document.getElementById('subsidy-rate-slider').value);
+  const income     = parseFloat(document.getElementById('household-income-slider').value);
+
+  // Update displays
+  document.getElementById('food-price-display').textContent  = '$' + foodPrice.toFixed(2) + ' / unit';
+  document.getElementById('subsidy-rate-display').textContent = subsidyPct + '%';
+  document.getElementById('household-income-display').textContent = '$' + income;
+  document.getElementById('food-price-slider').setAttribute('aria-valuenow', foodPrice);
+  document.getElementById('subsidy-rate-slider').setAttribute('aria-valuenow', subsidyPct);
+  document.getElementById('household-income-slider').setAttribute('aria-valuenow', income);
+
+  const orig    = calcSubsidyChoice(foodPrice, 0, income);
+  const subsidy = calcSubsidyChoice(foodPrice, subsidyPct, income);
+  const cash    = calcCashChoice(foodPrice, income, subsidy.govtCost);
+
+  document.getElementById('govt-cost-display').textContent = '$' + subsidy.govtCost.toFixed(2);
+
+  // Decide which result to show in metrics
+  let shown;
+  if (subsidyPct === 0) {
+    shown = orig;
+  } else {
+    shown = currentComparison === 'subsidy' ? subsidy : cash;
+  }
+
+  document.getElementById('food-consumption').textContent = shown.food.toFixed(1) + ' units';
+  document.getElementById('other-goods').textContent      = '$' + shown.other.toFixed(0);
+  document.getElementById('total-utility').textContent    = '$' + subsidy.govtCost.toFixed(2);
+  document.getElementById('transfer-type').textContent    =
+    subsidyPct === 0 ? 'None' : (currentComparison === 'subsidy' ? 'Subsidy' : 'Cash');
+
+  // Update explanation
+  updateLSExplanation(subsidyPct, subsidy.govtCost);
+
+  // Live region
+  document.getElementById('live-updates').textContent =
+    `Food price $${foodPrice.toFixed(2)}, subsidy ${subsidyPct}%. ` +
+    `Government cost $${subsidy.govtCost.toFixed(2)}. ` +
+    `${currentComparison === 'subsidy' ? 'Subsidy' : 'Cash transfer'}: ` +
+    `${shown.food.toFixed(1)} units food, $${shown.other.toFixed(0)} other goods.`;
+
+  drawLSGraph(orig, subsidy, cash, { foodPrice, subsidyPct, income, govtCost: subsidy.govtCost });
+  buildLSTable(foodPrice, income);
+}
+
+function updateLSExplanation(subsidyPct, govtCost) {
+  const box = document.getElementById('ls-explanation');
+  if (subsidyPct === 0) {
+    box.innerHTML = '<strong>No Policy Active</strong><br>The household maximises utility with no government intervention. Move the subsidy slider to introduce a food subsidy, then switch to "Cash Transfer" to compare.';
+  } else if (currentComparison === 'subsidy') {
+    box.innerHTML = `<strong>Food Subsidy Active (${subsidyPct}%)</strong><br>The subsidy rotates the budget line outward by reducing the effective food price. The household buys more food, but the government spends $${govtCost.toFixed(2)}.`;
+  } else {
+    box.innerHTML = `<strong>Cash Transfer vs. Food Subsidy</strong><br>A $${govtCost.toFixed(2)} cash transfer shifts the budget line <em>parallel</em> outward. The household reaches a <em>higher</em> indifference curve than with the food subsidy at identical government cost — the <strong>Lump Sum Principle</strong>.`;
+  }
+}
+
+function buildLSTable(foodPrice, income) {
+  const rows = [0, 10, 20, 30, 40, 50].map(s => {
+    const sub  = calcSubsidyChoice(foodPrice, s, income);
+    const cash = calcCashChoice(foodPrice, income, sub.govtCost);
+    return { s, sub, cash };
+  });
+  const tbody = document.getElementById('ls-table-body');
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td>Subsidy ${r.s}%</td>
+      <td>${r.sub.food.toFixed(1)}</td>
+      <td>$${r.sub.other.toFixed(0)}</td>
+      <td>$${r.sub.govtCost.toFixed(2)}</td>
+    </tr>
+    <tr style="background:#f0faf7;">
+      <td>Cash (equiv. to ${r.s}% sub.)</td>
+      <td>${r.cash.food.toFixed(1)}</td>
+      <td>$${r.cash.other.toFixed(0)}</td>
+      <td>$${r.cash.govtCost.toFixed(2)}</td>
+    </tr>`).join('');
+}
+
+/* ── Indifference curve generation ── */
+function genIC(utility, maxFood) {
+  const xs = [], ys = [];
+  for (let f = 0.3; f <= maxFood; f += 0.15) {
+    const o = Math.pow(utility / Math.pow(f, ALPHA), 1 / (1 - ALPHA));
+    if (o > 0 && o <= 130) { xs.push(f); ys.push(o); }
+  }
+  return { xs, ys };
+}
+
+function drawLSGraph(orig, subsidy, cash, params) {
+  const { foodPrice, subsidyPct, income, govtCost } = params;
+  const traces = [];
+
+  // Original budget line
+  traces.push({
+    x: [0, income / foodPrice], y: [income, 0],
+    mode: 'lines', name: 'Original Budget',
+    line: { color: '#adb5bd', width: 2, dash: 'dash' }
+  });
+
+  // Original IC
+  const oIC = genIC(orig.utility, 35);
+  traces.push({
+    x: oIC.xs, y: oIC.ys,
+    mode: 'lines', name: 'Original Indif. Curve',
+    line: { color: '#adb5bd', width: 2, dash: 'dot' }
+  });
+
+  // Original choice point
+  traces.push({
+    x: [orig.food], y: [orig.other],
+    mode: 'markers+text', name: 'Original Choice',
+    marker: { color: '#6c757d', size: 10 },
+    text: ['Original'], textposition: 'top center'
+  });
+
+  if (subsidyPct > 0 && currentComparison === 'subsidy') {
+    const effPrice = foodPrice * (1 - subsidyPct / 100);
+    traces.push({
+      x: [0, income / effPrice], y: [income, 0],
+      mode: 'lines', name: 'Food Subsidy Budget',
+      line: { color: '#e74c3c', width: 3 }
+    });
+    const sIC = genIC(subsidy.utility, 35);
+    traces.push({
+      x: sIC.xs, y: sIC.ys,
+      mode: 'lines', name: 'Subsidy Indif. Curve',
+      line: { color: '#e74c3c', width: 2 }
+    });
+    traces.push({
+      x: [subsidy.food], y: [subsidy.other],
+      mode: 'markers+text', name: 'Choice with Subsidy',
+      marker: { color: '#e74c3c', size: 12 },
+      text: ['Subsidy'], textposition: 'top center'
+    });
+  }
+
+  if (subsidyPct > 0 && currentComparison === 'cash') {
+    // Show subsidy budget & choice as reference
+    const effPrice = foodPrice * (1 - subsidyPct / 100);
+    traces.push({
+      x: [0, income / effPrice], y: [income, 0],
+      mode: 'lines', name: 'Food Subsidy Budget',
+      line: { color: '#e74c3c', width: 2, dash: 'dot' }
+    });
+    traces.push({
+      x: [subsidy.food], y: [subsidy.other],
+      mode: 'markers+text', name: 'Subsidy Choice',
+      marker: { color: '#e74c3c', size: 10, symbol: 'circle-open' },
+      text: ['Subsidy'], textposition: 'bottom center'
+    });
+    const sIC = genIC(subsidy.utility, 35);
+    traces.push({
+      x: sIC.xs, y: sIC.ys,
+      mode: 'lines', name: 'Subsidy Indif. Curve',
+      line: { color: '#e74c3c', width: 2, dash: 'dot' }
+    });
+
+    // Cash budget line
+    const newIncome = income + govtCost;
+    traces.push({
+      x: [0, newIncome / foodPrice], y: [newIncome, 0],
+      mode: 'lines', name: 'Cash Transfer Budget',
+      line: { color: '#18453B', width: 3 }
+    });
+    const cIC = genIC(cash.utility, 35);
+    traces.push({
+      x: cIC.xs, y: cIC.ys,
+      mode: 'lines', name: 'Cash Transfer Indif. Curve',
+      line: { color: '#18453B', width: 2 }
+    });
+    traces.push({
+      x: [cash.food], y: [cash.other],
+      mode: 'markers+text', name: 'Choice with Cash',
+      marker: { color: '#18453B', size: 12 },
+      text: ['Cash'], textposition: 'top center'
+    });
+  }
+
+  const layout = {
+    title: { text: 'Food vs. Other Goods Consumption', font: { size: 17, color: '#18453B' } },
+    xaxis: {
+      title: 'Food (units)', range: [0, 35],
+      gridcolor: '#ecf0f1', fixedrange: true, autorange: false
+    },
+    yaxis: {
+      title: 'Other Goods ($)', range: [0, 130],
+      gridcolor: '#ecf0f1', fixedrange: true, autorange: false
+    },
+    plot_bgcolor: '#ffffff', paper_bgcolor: '#ffffff',
+    margin: { l: 65, r: 30, t: 55, b: 110 },
+    autosize: false, width: 680, height: 560,
+    legend: {
+      orientation: 'h', x: 0.5, xanchor: 'center', y: -0.22,
+      bgcolor: 'rgba(255,255,255,0.9)', bordercolor: '#dee2e6', borderwidth: 1
+    }
+  };
+
+  Plotly.react('ls-graph', traces, layout, { responsive: false, displayModeBar: false });
+}
+
+function resetLS() {
+  document.getElementById('food-price-slider').value = 4;
+  document.getElementById('subsidy-rate-slider').value = 0;
+  document.getElementById('household-income-slider').value = 80;
+  currentComparison = 'subsidy';
+  document.querySelectorAll('.compare-btn').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-pressed', 'false');
+  });
+  document.getElementById('cbtn-subsidy').classList.add('active');
+  document.getElementById('cbtn-subsidy').setAttribute('aria-pressed', 'true');
+  updateLS();
+  announce('Lump sum controls reset to defaults.');
+}
+
+/* ═══════════════════════════════════════════
+   POVERTY TRAP — CALCULATIONS
+═══════════════════════════════════════════ */
+const MAX_HOURS = 2500;
+
+function calcPTChoice(wage, baseBenefit, reductionRate) {
+  const netWage = wage * (1 - reductionRate / 100);
+
+  // Original (no welfare)
+  const origLeisure = ALPHA * MAX_HOURS;
+  const origWork    = MAX_HOURS - origLeisure;
+  const origIncome  = origWork * wage;
+  const origUtil    = Math.pow(origLeisure, ALPHA) * Math.pow(origIncome, 1 - ALPHA);
+
+  // With welfare
+  let pLeisure, pWork, pIncome;
+
+  if (netWage <= 0) {
+    // 100% reduction or higher: compare all-leisure vs original
+    const allLeisureUtil = Math.pow(MAX_HOURS, ALPHA) * Math.pow(baseBenefit, 1 - ALPHA);
+    if (allLeisureUtil >= origUtil) {
+      pLeisure = MAX_HOURS; pWork = 0; pIncome = baseBenefit;
+    } else {
+      pLeisure = origLeisure; pWork = origWork; pIncome = origIncome;
+    }
+  } else {
+    // Optimise with kinked budget
+    // Interior solution under welfare: L* = alpha*(B/nw + T)/(1+alpha) [where nw=netWage]
+    // BUT only valid if working gives income > B, i.e. check kink point
+    const kinkLeisure = MAX_HOURS - baseBenefit / (wage * (reductionRate / 100) || 0.001);
+
+    let interiorLeisure = ALPHA * (baseBenefit / netWage + MAX_HOURS) / (1 + ALPHA);
+    interiorLeisure = Math.max(0, Math.min(MAX_HOURS, interiorLeisure));
+
+    // Also check corner: all leisure
+    const allLeisureUtil = Math.pow(MAX_HOURS, ALPHA) * Math.pow(baseBenefit, 1 - ALPHA);
+    const interiorWork   = MAX_HOURS - interiorLeisure;
+    const interiorIncome = baseBenefit + netWage * interiorWork;
+    const interiorUtil   = Math.pow(interiorLeisure, ALPHA) * Math.pow(Math.max(0.01, interiorIncome), 1 - ALPHA);
+
+    if (allLeisureUtil > interiorUtil) {
+      pLeisure = MAX_HOURS; pWork = 0; pIncome = baseBenefit;
+    } else {
+      pLeisure = interiorLeisure;
+      pWork    = interiorWork;
+      pIncome  = interiorIncome;
+    }
+  }
+
+  return {
+    original: { leisure: origLeisure, work: origWork, income: origIncome, utility: origUtil },
+    policy:   { leisure: pLeisure,   work: pWork,    income: pIncome,    utility: Math.pow(Math.max(0.01, pLeisure), ALPHA) * Math.pow(Math.max(0.01, pIncome), 1 - ALPHA), netWage }
+  };
+}
+
+function updatePT() {
+  const wage          = parseFloat(document.getElementById('wage-slider').value);
+  const baseBenefit   = parseFloat(document.getElementById('base-benefit-slider').value);
+  const reductionRate = parseFloat(document.getElementById('reduction-rate-slider').value);
+
+  document.getElementById('wage-display').textContent          = '$' + wage.toFixed(2) + ' / hour';
+  document.getElementById('base-benefit-display').textContent  = '$' + baseBenefit.toLocaleString();
+  document.getElementById('reduction-rate-display').textContent = reductionRate + '%';
+  document.getElementById('wage-slider').setAttribute('aria-valuenow', wage);
+  document.getElementById('base-benefit-slider').setAttribute('aria-valuenow', baseBenefit);
+  document.getElementById('reduction-rate-slider').setAttribute('aria-valuenow', reductionRate);
+
+  const result = calcPTChoice(wage, baseBenefit, reductionRate);
+  const pol    = result.policy;
+
+  document.getElementById('leisure-hours').textContent = Math.round(pol.leisure).toLocaleString();
+  document.getElementById('work-hours').textContent    = Math.round(pol.work).toLocaleString();
+  document.getElementById('total-income').textContent  = '$' + Math.round(pol.income).toLocaleString();
+  document.getElementById('net-wage').textContent      = '$' + pol.netWage.toFixed(2) + ' / hr';
+
+  updatePTExplanation(reductionRate, pol.netWage);
+
+  document.getElementById('live-updates').textContent =
+    `Wage $${wage.toFixed(2)}/hr, benefit $${baseBenefit.toLocaleString()}, reduction rate ${reductionRate}%. ` +
+    `Net wage $${pol.netWage.toFixed(2)}/hr. Work hours: ${Math.round(pol.work).toLocaleString()}. ` +
+    `Total income: $${Math.round(pol.income).toLocaleString()}.`;
+
+  drawPTGraph(result, { wage, baseBenefit, reductionRate });
+  buildPTTable(wage, baseBenefit);
+}
+
+function updatePTExplanation(reductionRate, netWage) {
+  const box = document.getElementById('pt-explanation');
+  if (reductionRate === 100) {
+    box.innerHTML = '<strong>⚠️ Poverty Trap Created</strong><br>With 100% benefit reduction the household loses $1 in benefits for every $1 earned. Net wage = $0 — no financial incentive to work exists. The optimal choice is full leisure funded by benefits.';
+  } else if (reductionRate === 0) {
+    box.innerHTML = '<strong>No Work Disincentive</strong><br>With 0% reduction the household keeps its full wage <em>plus</em> benefits. This maximises work incentives but is very costly to government.';
+  } else {
+    box.innerHTML = `<strong>Partial Disincentive (${reductionRate}% reduction)</strong><br>Net wage is $${netWage.toFixed(2)}/hr instead of the full wage. Work incentives remain but are reduced. This creates a more gradual trade-off between benefits and earnings.`;
+  }
+}
+
+function buildPTTable(wage, baseBenefit) {
+  const rates = [0, 10, 25, 50, 75, 100];
+  const tbody = document.getElementById('pt-table-body');
+  tbody.innerHTML = rates.map(r => {
+    const res = calcPTChoice(wage, baseBenefit, r);
+    const pol = res.policy;
+    const currentRate = parseFloat(document.getElementById('reduction-rate-slider').value);
+    const isActive = r === currentRate;
+    return `<tr${isActive ? ' style="background:#d4edda;font-weight:700;"' : ''}>
+      <td>${r}%</td>
+      <td>$${pol.netWage.toFixed(2)}</td>
+      <td>${Math.round(pol.work).toLocaleString()}</td>
+      <td>$${Math.round(pol.income).toLocaleString()}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── Poverty trap indifference curves ── */
+function genLeisureIC(utility, maxLeisure) {
+  const xs = [], ys = [];
+  for (let l = 100; l <= maxLeisure - 50; l += 50) {
+    const inc = Math.pow(utility / Math.pow(l, ALPHA), 1 / (1 - ALPHA));
+    if (inc > 0 && inc <= 40000) { xs.push(l); ys.push(inc); }
+  }
+  return { xs, ys };
+}
+
+function drawPTGraph(result, params) {
+  const { wage, baseBenefit, reductionRate } = params;
+  const netWage = wage * (1 - reductionRate / 100);
+  const traces  = [];
+
+  // No-welfare budget line
+  traces.push({
+    x: [0, MAX_HOURS], y: [wage * MAX_HOURS, 0],
+    mode: 'lines', name: 'No Welfare Budget',
+    line: { color: '#adb5bd', width: 2, dash: 'dash' }
+  });
+
+  // Original IC & point
+  const oIC = genLeisureIC(result.original.utility, 2700);
+  traces.push({
+    x: oIC.xs, y: oIC.ys,
+    mode: 'lines', name: 'No-Welfare Indif. Curve',
+    line: { color: '#adb5bd', width: 2, dash: 'dot' }
+  });
+  traces.push({
+    x: [result.original.leisure], y: [result.original.income],
+    mode: 'markers+text', name: 'Choice: No Welfare',
+    marker: { color: '#6c757d', size: 10 },
+    text: ['No Welfare'], textposition: 'top center'
+  });
+
+  // Welfare budget line — build kinked shape
+  let welfareX = [], welfareY = [];
+  if (reductionRate === 0) {
+    welfareX = [0, MAX_HOURS];
+    welfareY = [wage * MAX_HOURS + baseBenefit, baseBenefit];
+  } else {
+    // kink point: income = baseBenefit when work earnings = baseBenefit/(reduction rate)
+    const kinkWork    = baseBenefit / (wage * reductionRate / 100);
+    const kinkLeisure = MAX_HOURS - kinkWork;
+
+    if (kinkLeisure >= 0 && kinkLeisure <= MAX_HOURS) {
+      const kinkIncome = baseBenefit; // at kink, benefits fully withdrawn
+      // Left segment: working so much that benefits are gone → slope = wage
+      welfareX = [0, kinkLeisure, MAX_HOURS];
+      welfareY = [wage * MAX_HOURS, kinkIncome, baseBenefit];
+    } else if (kinkLeisure < 0) {
+      // Benefits exhausted even at full work — just net wage segment
+      welfareX = [0, MAX_HOURS];
+      welfareY = [baseBenefit + netWage * MAX_HOURS, baseBenefit];
+    } else {
+      // Kink beyond full leisure — benefits never fully withdrawn
+      welfareX = [0, MAX_HOURS];
+      welfareY = [baseBenefit + netWage * MAX_HOURS, baseBenefit];
+    }
+  }
+
+  traces.push({
+    x: welfareX, y: welfareY,
+    mode: 'lines', name: `Welfare Budget (${reductionRate}% reduction)`,
+    line: { color: '#e74c3c', width: 3 }
+  });
+
+  // Policy IC & point
+  const pIC = genLeisureIC(result.policy.utility, 2700);
+  traces.push({
+    x: pIC.xs, y: pIC.ys,
+    mode: 'lines', name: 'Welfare Indif. Curve',
+    line: { color: '#e74c3c', width: 2 }
+  });
+  traces.push({
+    x: [result.policy.leisure], y: [result.policy.income],
+    mode: 'markers+text', name: 'Choice: With Welfare',
+    marker: { color: '#e74c3c', size: 12 },
+    text: ['With Welfare'], textposition: 'top center'
+  });
+
+  const layout = {
+    title: { text: 'Work-Leisure Choice with Welfare Benefits', font: { size: 17, color: '#18453B' } },
+    xaxis: {
+      title: 'Leisure Hours', range: [0, 2700],
+      gridcolor: '#ecf0f1', fixedrange: true, autorange: false
+    },
+    yaxis: {
+      title: 'Annual Income ($)', range: [0, 40000],
+      gridcolor: '#ecf0f1', fixedrange: true, autorange: false
+    },
+    plot_bgcolor: '#ffffff', paper_bgcolor: '#ffffff',
+    margin: { l: 75, r: 30, t: 55, b: 110 },
+    autosize: false, width: 680, height: 560,
+    legend: {
+      orientation: 'h', x: 0.5, xanchor: 'center', y: -0.22,
+      bgcolor: 'rgba(255,255,255,0.9)', bordercolor: '#dee2e6', borderwidth: 1
+    }
+  };
+
+  Plotly.react('pt-graph', traces, layout, { responsive: false, displayModeBar: false });
+}
+
+function resetPT() {
+  document.getElementById('wage-slider').value          = 10;
+  document.getElementById('base-benefit-slider').value  = 18000;
+  document.getElementById('reduction-rate-slider').value = 100;
+  updatePT();
+  announce('Poverty trap controls reset to defaults.');
+}
+
+/* ═══════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', function () {
+  updateLS();
+  // PT graph initialised lazily when scenario is first opened
+});
+</script>
+</body>
+</html>

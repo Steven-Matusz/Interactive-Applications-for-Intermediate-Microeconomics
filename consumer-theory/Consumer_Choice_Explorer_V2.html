@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consumer Choice Explorer</title>
+  <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+  <style>
+    /* ── Skip Link ── */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: #18453B;
+      color: white;
+      padding: 8px 16px;
+      z-index: 9999;
+      font-weight: 700;
+      text-decoration: none;
+      border-radius: 0 0 6px 0;
+      transition: top 0.2s;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ── Screen-reader only ── */
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ── Live region ── */
+    .live-region {
+      position: absolute;
+      left: -10000px;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+    }
+
+    /* ── Root / Reset ── */
+    :root {
+      --msu-green:   #18453B;
+      --msu-green2:  #2d5a4f;
+      --light-green: #e8f4f0;
+      --accent-blue: #1565C0;
+      --bg-page:     #f0f4f0;
+      --bg-white:    #ffffff;
+      --border:      #cdd9d6;
+      --text-dark:   #1a1a1a;
+      --text-mid:    #444444;
+      --focus-ring:  #C89A2A;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg-page);
+      color: var(--text-dark);
+      min-height: 100vh;
+      padding: 16px;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 3px;
+    }
+
+    /* ── Wrapper ── */
+    .wrapper {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: var(--bg-white);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, var(--msu-green), var(--msu-green2));
+      color: white;
+      padding: 24px 32px;
+      text-align: center;
+    }
+    .header h1 { font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 700; margin-bottom: 6px; }
+    .header p  { font-size: 1rem; opacity: 0.9; }
+
+    /* ── Main layout ── */
+    .content-wrapper {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 0;
+      min-height: 600px;
+    }
+
+    /* ── Control panel ── */
+    .control-panel {
+      background: #f8f9fa;
+      padding: 24px;
+      border-right: 3px solid #e9ecef;
+      overflow-y: auto;
+      max-height: 900px;
+    }
+
+    .control-section {
+      background: white;
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 16px;
+      border: 2px solid #e9ecef;
+    }
+
+    .control-section h2 {
+      color: var(--msu-green);
+      font-size: 1rem;
+      margin-bottom: 14px;
+      border-bottom: 2px solid var(--light-green);
+      padding-bottom: 6px;
+    }
+
+    /* ── Form labels & sliders ── */
+    .form-group { margin-bottom: 14px; }
+
+    .form-label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #495057;
+    }
+
+    .slider-wrapper { display: flex; align-items: center; gap: 10px; }
+
+    .slider {
+      flex: 1;
+      height: 8px;
+      border-radius: 4px;
+      background: #d3d3d3;
+      outline: none;
+      cursor: pointer;
+      -webkit-appearance: none;
+    }
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--msu-green);
+      cursor: pointer;
+      border: 2px solid white;
+      box-shadow: 0 0 0 2px var(--msu-green);
+    }
+    .slider:focus-visible::-webkit-slider-thumb {
+      box-shadow: 0 0 0 3px var(--focus-ring);
+    }
+    .slider::-moz-range-thumb {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--msu-green);
+      cursor: pointer;
+      border: 2px solid white;
+    }
+
+    .value-badge {
+      background: var(--light-green);
+      color: var(--msu-green);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-weight: 700;
+      min-width: 58px;
+      text-align: center;
+      font-size: 0.85rem;
+    }
+
+    /* ── Preference tabs ── */
+    .pref-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 14px;
+    }
+    .pref-tab {
+      flex: 1;
+      padding: 8px 6px;
+      border: 2px solid var(--border);
+      background: white;
+      color: var(--msu-green);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .pref-tab:hover { background: var(--light-green); }
+    .pref-tab.active {
+      background: var(--msu-green);
+      color: white;
+      border-color: var(--msu-green);
+    }
+    .pref-section { display: none; }
+    .pref-section.active { display: block; }
+
+    /* ── Action buttons ── */
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+    .btn {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: var(--msu-green); color: white; }
+    .btn-primary:hover { background: var(--msu-green2); }
+    .btn-secondary { background: #6c757d; color: white; }
+    .btn-secondary:hover { background: #545b62; }
+    .btn-warn { background: #e67e22; color: white; }
+    .btn-warn:hover { background: #d35400; }
+
+    /* ── Metrics cards ── */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .metric-card {
+      background: var(--light-green);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+    .metric-card .mlabel { font-size: 0.75rem; color: #555; margin-bottom: 3px; }
+    .metric-card .mvalue { font-size: 1rem; font-weight: 700; color: var(--msu-green); }
+    .metric-card.full { grid-column: 1 / -1; }
+
+    /* ── Graph panel ── */
+    .graph-panel {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .graph-wrapper {
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      overflow: hidden;
+      background: white;
+    }
+
+    /* ── Graph text description ── */
+    .graph-description {
+      background: #f8f9fa;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 18px;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: var(--text-dark);
+    }
+    .graph-description h3 {
+      color: var(--msu-green);
+      font-size: 0.95rem;
+      margin-bottom: 8px;
+    }
+
+    /* ── Data table ── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid #e9ecef;
+    }
+    .data-table caption {
+      padding: 10px;
+      font-weight: 700;
+      color: var(--msu-green);
+      text-align: left;
+      background: #f8f9fa;
+      border-bottom: 2px solid #e9ecef;
+    }
+    .data-table th, .data-table td {
+      padding: 11px 14px;
+      text-align: left;
+      border-bottom: 1px solid #e9ecef;
+      font-size: 0.9rem;
+    }
+    .data-table th { background: #f8f9fa; font-weight: 600; color: var(--msu-green); }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: #f8f9fa; }
+
+    /* ── Edu tabs ── */
+    .edu-tabs {
+      display: flex;
+      background: #e9ecef;
+      border-radius: 8px 8px 0 0;
+      overflow: hidden;
+    }
+    .edu-tab {
+      flex: 1;
+      padding: 10px 12px;
+      border: none;
+      background: transparent;
+      color: #555;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .edu-tab:hover { background: #dee2e6; }
+    .edu-tab.active { background: var(--msu-green); color: white; }
+
+    .edu-panel { display: none; }
+    .edu-panel.active { display: block; }
+
+    .edu-content {
+      background: #f8f9fa;
+      border: 2px solid #e9ecef;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      padding: 20px;
+    }
+
+    .concepts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    .concept-card {
+      background: white;
+      border-radius: 8px;
+      padding: 14px;
+      border-left: 4px solid var(--msu-green);
+    }
+    .concept-card h4 { color: var(--msu-green); font-size: 0.9rem; margin-bottom: 6px; }
+    .concept-card p  { font-size: 0.85rem; color: #555; line-height: 1.5; margin-bottom: 8px; }
+    .formula {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 5px;
+      padding: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      text-align: center;
+    }
+
+    .solution-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 12px;
+    }
+    .solution-step {
+      background: white;
+      border-radius: 8px;
+      padding: 14px;
+      border: 1px solid #dee2e6;
+    }
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--msu-green);
+      color: white;
+      border-radius: 50%;
+      width: 24px; height: 24px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-right: 8px;
+    }
+    .step-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 8px; }
+    .step-content { font-size: 0.85rem; color: #555; line-height: 1.5; margin-left: 32px; }
+
+    .whatif-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .whatif-box {
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+      border: 1px solid #dee2e6;
+    }
+    .whatif-box h4 { color: var(--msu-green); font-size: 0.9rem; margin-bottom: 12px; }
+    .whatif-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .whatif-row label { flex: 1; font-size: 0.85rem; font-weight: 500; }
+    .whatif-row input {
+      width: 90px;
+      padding: 6px 8px;
+      border: 2px solid #ddd;
+      border-radius: 5px;
+      font-size: 0.85rem;
+    }
+    .whatif-row input:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+    .result-box {
+      background: var(--light-green);
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 8px;
+    }
+    .result-box .rlabel { font-weight: 700; font-size: 0.8rem; color: var(--msu-green); margin-bottom: 3px; }
+    .result-box .rvalue { font-size: 0.9rem; color: #333; }
+    .tip-box {
+      background: #fff3cd;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 1024px) {
+      .content-wrapper { grid-template-columns: 1fr; }
+      .control-panel { border-right: none; border-bottom: 3px solid #e9ecef; max-height: none; }
+      .whatif-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<div id="live-updates" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+<div class="wrapper">
+  <!-- Header -->
+  <header class="header">
+    <h1>Consumer Choice Explorer</h1>
+    <p>Explore budget constraints, preferences, and utility maximization</p>
+  </header>
+
+  <!-- Main content -->
+  <main id="main-content">
+    <div class="content-wrapper">
+
+      <!-- ── Control Panel ── -->
+      <aside class="control-panel" aria-label="Controls">
+
+        <!-- Budget & Prices -->
+        <section class="control-section" aria-labelledby="budget-heading">
+          <h2 id="budget-heading">💰 Budget &amp; Prices</h2>
+
+          <div class="form-group">
+            <label class="form-label" for="income">
+              Weekly Budget:
+              <span class="sr-only">(use arrow keys to adjust)</span>
+            </label>
+            <div class="slider-wrapper">
+              <input type="range" id="income" class="slider"
+                     min="20" max="200" step="5" value="100"
+                     aria-label="Weekly budget in dollars"
+                     aria-valuemin="20" aria-valuemax="200" aria-valuenow="100"
+                     aria-valuetext="$100"
+                     oninput="handleSlider(this)">
+              <span class="value-badge" id="income-display" aria-hidden="true">$100</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="price-x">Price of Pizza:</label>
+            <div class="slider-wrapper">
+              <input type="range" id="price-x" class="slider"
+                     min="1" max="20" step="0.5" value="8"
+                     aria-label="Price of pizza in dollars"
+                     aria-valuemin="1" aria-valuemax="20" aria-valuenow="8"
+                     aria-valuetext="$8.00"
+                     oninput="handleSlider(this)">
+              <span class="value-badge" id="price-x-display" aria-hidden="true">$8.00</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="price-y">Price of Coffee:</label>
+            <div class="slider-wrapper">
+              <input type="range" id="price-y" class="slider"
+                     min="1" max="15" step="0.5" value="4"
+                     aria-label="Price of coffee in dollars"
+                     aria-valuemin="1" aria-valuemax="15" aria-valuenow="4"
+                     aria-valuetext="$4.00"
+                     oninput="handleSlider(this)">
+              <span class="value-badge" id="price-y-display" aria-hidden="true">$4.00</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Preference Type -->
+        <section class="control-section" aria-labelledby="pref-heading">
+          <h2 id="pref-heading">🎯 Consumer Preferences</h2>
+
+          <div class="pref-tabs" role="tablist" aria-label="Preference type">
+            <button class="pref-tab active" role="tab" id="tab-cd"
+                    aria-selected="true" aria-controls="panel-cd"
+                    onclick="setPreference('cobb-douglas', this)">Cobb-Douglas</button>
+            <button class="pref-tab" role="tab" id="tab-subs"
+                    aria-selected="false" aria-controls="panel-subs"
+                    onclick="setPreference('substitutes', this)">Substitutes</button>
+            <button class="pref-tab" role="tab" id="tab-comp"
+                    aria-selected="false" aria-controls="panel-comp"
+                    onclick="setPreference('complements', this)">Complements</button>
+          </div>
+
+          <!-- Cobb-Douglas panel -->
+          <div id="panel-cd" class="pref-section active" role="tabpanel" aria-labelledby="tab-cd">
+            <div class="form-group">
+              <label class="form-label" for="alpha">
+                Pizza Preference (α):
+                <span class="sr-only">Higher alpha means stronger preference for pizza</span>
+              </label>
+              <div class="slider-wrapper">
+                <input type="range" id="alpha" class="slider"
+                       min="0.1" max="0.9" step="0.1" value="0.6"
+                       aria-label="Alpha: pizza preference weight, 0.1 to 0.9"
+                       aria-valuenow="0.6" aria-valuetext="0.6"
+                       oninput="handleSlider(this)">
+                <span class="value-badge" id="alpha-display" aria-hidden="true">0.6</span>
+              </div>
+            </div>
+            <p style="font-size:0.8rem;color:#555;margin-bottom:10px;">
+              U = Pizza<sup>α</sup> × Coffee<sup>1−α</sup> — consumer spends fixed income shares.
+            </p>
+            <div class="btn-row">
+              <button class="btn btn-primary"
+                      onclick="showOptimum()"
+                      aria-describedby="panel-cd">Show Optimal Bundle</button>
+              <button class="btn btn-secondary" onclick="resetGraph()">Reset</button>
+            </div>
+          </div>
+
+          <!-- Perfect Substitutes panel -->
+          <div id="panel-subs" class="pref-section" role="tabpanel" aria-labelledby="tab-subs" hidden>
+            <p style="font-size:0.8rem;color:#555;margin-bottom:10px;">
+              U = Pizza + Coffee — goods are interchangeable; buy whichever is cheaper.
+            </p>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="showOptimum()">Show Optimal Bundle</button>
+              <button class="btn btn-secondary" onclick="resetGraph()">Reset</button>
+            </div>
+          </div>
+
+          <!-- Perfect Complements panel -->
+          <div id="panel-comp" class="pref-section" role="tabpanel" aria-labelledby="tab-comp" hidden>
+            <p style="font-size:0.8rem;color:#555;margin-bottom:10px;">
+              U = min(Pizza, Coffee) — goods must be consumed together in equal quantities.
+            </p>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="showOptimum()">Show Optimal Bundle</button>
+              <button class="btn btn-secondary" onclick="resetGraph()">Reset</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Display Options -->
+        <section class="control-section" aria-labelledby="display-heading">
+          <h2 id="display-heading">📊 Display Options</h2>
+          <div class="btn-row">
+            <button class="btn btn-secondary" id="toggle-ic-btn"
+                    onclick="toggleIC()"
+                    aria-pressed="true">Hide Indifference Curves</button>
+          </div>
+        </section>
+
+        <!-- Metrics -->
+        <section class="control-section" aria-labelledby="metrics-heading">
+          <h2 id="metrics-heading">📈 Budget Analysis</h2>
+          <div class="metrics-grid" aria-live="polite" aria-atomic="false">
+            <div class="metric-card">
+              <div class="mlabel">Budget Line Slope</div>
+              <div class="mvalue" id="m-slope">−2.0</div>
+            </div>
+            <div class="metric-card">
+              <div class="mlabel">Price Ratio (Px/Py)</div>
+              <div class="mvalue" id="m-pratio">2.0</div>
+            </div>
+            <div class="metric-card">
+              <div class="mlabel">Max Pizza (Q<sub>coffee</sub>=0)</div>
+              <div class="mvalue" id="m-maxpizza">12.5</div>
+            </div>
+            <div class="metric-card">
+              <div class="mlabel">Max Coffee (Q<sub>pizza</sub>=0)</div>
+              <div class="mvalue" id="m-maxcoffee">25.0</div>
+            </div>
+            <div class="metric-card full" id="m-optimum-card" style="display:none;">
+              <div class="mlabel">Optimal Bundle (Pizza*, Coffee*)</div>
+              <div class="mvalue" id="m-optimum">—</div>
+            </div>
+            <div class="metric-card full" id="m-utility-card" style="display:none;">
+              <div class="mlabel">Utility at Optimum</div>
+              <div class="mvalue" id="m-utility">—</div>
+            </div>
+          </div>
+        </section>
+
+      </aside>
+
+      <!-- ── Graph Panel ── -->
+      <div class="graph-panel">
+
+        <!-- Plotly graph -->
+        <div class="graph-wrapper"
+             role="img"
+             aria-label="Consumer choice graph showing budget line and indifference curves"
+             aria-describedby="graph-desc-text">
+          <div id="consumption-graph"></div>
+        </div>
+
+        <!-- Accessible text description -->
+        <div class="graph-description" id="graph-desc-text" aria-live="polite" aria-atomic="true">
+          <h3>Graph Description</h3>
+          <p id="graph-desc-para">
+            The graph shows a budget line for a consumer with a $100 weekly budget,
+            pizza priced at $8, and coffee priced at $4.
+            The maximum affordable pizza (spending all income on pizza) is 12.5 units;
+            the maximum coffee is 25.0 units.
+            The slope of the budget line is −2.0, equal to the price ratio Px/Py.
+            Cobb-Douglas indifference curves are shown, representing combinations yielding equal utility.
+          </p>
+        </div>
+
+        <!-- Accessible data table -->
+        <table class="data-table" aria-label="Budget constraint and optimal choice data">
+          <caption>Consumer Choice Summary</caption>
+          <thead>
+            <tr>
+              <th scope="col">Parameter</th>
+              <th scope="col">Value</th>
+              <th scope="col">Meaning</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Weekly Budget</td>
+              <td id="t-income">$100</td>
+              <td>Total income available to spend</td>
+            </tr>
+            <tr>
+              <td>Price of Pizza</td>
+              <td id="t-px">$8.00</td>
+              <td>Cost per unit of pizza</td>
+            </tr>
+            <tr>
+              <td>Price of Coffee</td>
+              <td id="t-py">$4.00</td>
+              <td>Cost per unit of coffee</td>
+            </tr>
+            <tr>
+              <td>Budget Line Slope</td>
+              <td id="t-slope">−2.0</td>
+              <td>Opportunity cost: units of coffee given up per pizza</td>
+            </tr>
+            <tr>
+              <td>Max Pizza (all income)</td>
+              <td id="t-maxpizza">12.5 units</td>
+              <td>Income ÷ Price of Pizza</td>
+            </tr>
+            <tr>
+              <td>Max Coffee (all income)</td>
+              <td id="t-maxcoffee">25.0 units</td>
+              <td>Income ÷ Price of Coffee</td>
+            </tr>
+            <tr id="t-row-optimum" style="display:none;">
+              <td>Optimal Bundle</td>
+              <td id="t-optimum">—</td>
+              <td>Utility-maximizing quantities (Pizza*, Coffee*)</td>
+            </tr>
+            <tr id="t-row-utility" style="display:none;">
+              <td>Utility Level</td>
+              <td id="t-utility">—</td>
+              <td>Utility achieved at the optimal bundle</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Educational Tabs -->
+        <div>
+          <div class="edu-tabs" role="tablist" aria-label="Educational content">
+            <button class="edu-tab active" role="tab" id="etab-concepts"
+                    aria-selected="true" aria-controls="epanel-concepts"
+                    onclick="switchEdu('concepts', this)">📚 Key Concepts</button>
+            <button class="edu-tab" role="tab" id="etab-solution"
+                    aria-selected="false" aria-controls="epanel-solution"
+                    onclick="switchEdu('solution', this)">🔢 Step-by-Step</button>
+            <button class="edu-tab" role="tab" id="etab-whatif"
+                    aria-selected="false" aria-controls="epanel-whatif"
+                    onclick="switchEdu('whatif', this)">🧮 What-If Calculator</button>
+          </div>
+
+          <!-- Concepts panel -->
+          <div class="edu-content">
+            <div id="epanel-concepts" class="edu-panel active" role="tabpanel" aria-labelledby="etab-concepts">
+              <div class="concepts-grid">
+                <div class="concept-card">
+                  <h4>Budget Constraint</h4>
+                  <p>Shows all combinations affordable with given income and prices. The intercepts are Income/Px and Income/Py.</p>
+                  <div class="formula">Px × Qx + Py × Qy = Income</div>
+                </div>
+                <div class="concept-card">
+                  <h4>Indifference Curves</h4>
+                  <p>Combinations yielding equal utility. Downward sloping (trade-offs exist) and convex (diminishing MRS).</p>
+                </div>
+                <div class="concept-card">
+                  <h4>Marginal Rate of Substitution (MRS)</h4>
+                  <p>How much coffee you willingly give up for one more pizza while staying equally happy. Equals the slope of the indifference curve.</p>
+                  <div class="formula">MRS = MU<sub>pizza</sub> / MU<sub>coffee</sub></div>
+                </div>
+                <div class="concept-card">
+                  <h4>Optimization Condition</h4>
+                  <p>The optimal bundle is found where the slope of the indifference curve equals the slope of the budget line.</p>
+                  <div class="formula">MRS = Px / Py</div>
+                </div>
+                <div class="concept-card" id="pref-concept-card">
+                  <h4 id="pref-concept-title">Cobb-Douglas Preferences</h4>
+                  <p id="pref-concept-text">Consumer spends fixed shares of income: α on pizza, (1−α) on coffee — regardless of prices.</p>
+                  <div class="formula" id="pref-concept-formula">U = Pizza<sup>α</sup> × Coffee<sup>1−α</sup></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step-by-step panel -->
+            <div id="epanel-solution" class="edu-panel" role="tabpanel" aria-labelledby="etab-solution" hidden>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <h3 style="color:var(--msu-green);font-size:1rem;">
+                  Solution: <span id="sol-pref-name">Cobb-Douglas</span> Preferences
+                </h3>
+                <button class="btn btn-secondary" style="padding:6px 12px;font-size:0.8rem;"
+                        onclick="refreshSolution()" aria-label="Refresh solution with current values">↻ Refresh</button>
+              </div>
+              <div class="solution-grid" id="solution-steps">
+                <!-- populated by JS -->
+              </div>
+            </div>
+
+            <!-- What-if panel -->
+            <div id="epanel-whatif" class="edu-panel" role="tabpanel" aria-labelledby="etab-whatif" hidden>
+              <div class="whatif-grid">
+                <div class="whatif-box">
+                  <h4>Test Different Scenarios</h4>
+                  <fieldset style="border:none;padding:0;">
+                    <legend class="sr-only">What-if scenario inputs</legend>
+                    <div class="whatif-row">
+                      <label for="wi-income">Income ($):</label>
+                      <input type="number" id="wi-income" value="100" min="10" max="500"
+                             aria-label="What-if weekly income in dollars">
+                    </div>
+                    <div class="whatif-row">
+                      <label for="wi-px">Pizza Price ($):</label>
+                      <input type="number" id="wi-px" value="8" min="1" max="20" step="0.5"
+                             aria-label="What-if price of pizza">
+                    </div>
+                    <div class="whatif-row">
+                      <label for="wi-py">Coffee Price ($):</label>
+                      <input type="number" id="wi-py" value="4" min="1" max="15" step="0.5"
+                             aria-label="What-if price of coffee">
+                    </div>
+                    <div class="whatif-row" id="wi-alpha-row">
+                      <label for="wi-alpha">α (Pizza Preference):</label>
+                      <input type="number" id="wi-alpha" value="0.6" min="0.1" max="0.9" step="0.1"
+                             aria-label="What-if alpha preference parameter">
+                    </div>
+                  </fieldset>
+                  <div class="btn-row" style="margin-top:12px;">
+                    <button class="btn btn-primary" onclick="calcWhatIf()"
+                            aria-label="Calculate optimal bundle for what-if scenario">Calculate</button>
+                    <button class="btn btn-secondary" onclick="applyWhatIf()"
+                            aria-label="Apply what-if values to main graph">Apply to Graph</button>
+                  </div>
+                </div>
+                <div class="whatif-box">
+                  <h4>Results</h4>
+                  <div class="result-box">
+                    <div class="rlabel">Optimal Bundle:</div>
+                    <div class="rvalue" id="wi-bundle">Pizza: 7.5, Coffee: 10.0</div>
+                  </div>
+                  <div class="result-box">
+                    <div class="rlabel">Spending Allocation:</div>
+                    <div class="rvalue" id="wi-spending">Pizza: $60, Coffee: $40</div>
+                  </div>
+                  <div class="result-box">
+                    <div class="rlabel">Utility Level:</div>
+                    <div class="rvalue" id="wi-utility">8.49</div>
+                  </div>
+                  <div class="tip-box">
+                    <strong>💡 Try This:</strong> How does doubling income affect the optimal bundle?
+                    What about doubling both prices? Try different α values to see how preferences
+                    shift spending patterns.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div><!-- end edu-content -->
+        </div><!-- end edu tabs wrapper -->
+
+      </div><!-- end graph-panel -->
+    </div><!-- end content-wrapper -->
+  </main>
+</div><!-- end wrapper -->
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let currentPref = 'cobb-douglas';
+let showIC      = true;
+let optimumShown = false;
+
+// ── Utility ────────────────────────────────────────────────────────────────
+function getValues() {
+  return {
+    income: parseFloat(document.getElementById('income').value),
+    px:     parseFloat(document.getElementById('price-x').value),
+    py:     parseFloat(document.getElementById('price-y').value),
+    alpha:  parseFloat(document.getElementById('alpha').value)
+  };
+}
+
+function announce(msg) {
+  const el = document.getElementById('live-updates');
+  el.textContent = '';
+  setTimeout(() => { el.textContent = msg; }, 50);
+}
+
+// ── Slider handler ─────────────────────────────────────────────────────────
+function handleSlider(el) {
+  const v = parseFloat(el.value);
+  const id = el.id;
+
+  // Update badge
+  let text;
+  if (id === 'income')  text = '$' + v;
+  else if (id === 'price-x' || id === 'price-y') text = '$' + v.toFixed(2);
+  else text = v.toFixed(1);
+
+  document.getElementById(id + '-display').textContent = text;
+  el.setAttribute('aria-valuenow', v);
+  el.setAttribute('aria-valuetext', text);
+
+  optimumShown = false;
+  document.getElementById('m-optimum-card').style.display = 'none';
+  document.getElementById('m-utility-card').style.display = 'none';
+  document.getElementById('t-row-optimum').style.display = 'none';
+  document.getElementById('t-row-utility').style.display = 'none';
+
+  updateAll();
+}
+
+// ── Preference switch ──────────────────────────────────────────────────────
+function setPreference(pref, btn) {
+  currentPref = pref;
+  optimumShown = false;
+  document.getElementById('m-optimum-card').style.display = 'none';
+  document.getElementById('m-utility-card').style.display = 'none';
+  document.getElementById('t-row-optimum').style.display = 'none';
+  document.getElementById('t-row-utility').style.display = 'none';
+
+  // Tabs
+  document.querySelectorAll('.pref-tab').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-selected', 'false');
+  });
+  btn.classList.add('active');
+  btn.setAttribute('aria-selected', 'true');
+
+  // Panels
+  document.querySelectorAll('.pref-section').forEach(p => {
+    p.classList.remove('active');
+    p.hidden = true;
+  });
+  const panel = document.getElementById('panel-' + (pref === 'cobb-douglas' ? 'cd' : pref === 'substitutes' ? 'subs' : 'comp'));
+  panel.classList.add('active');
+  panel.hidden = false;
+
+  // Alpha row visibility in what-if
+  document.getElementById('wi-alpha-row').style.display = pref === 'cobb-douglas' ? 'flex' : 'none';
+
+  updateConceptCard();
+  updateAll();
+  announce('Preference changed to ' + prefLabel(pref));
+}
+
+function prefLabel(p) {
+  return p === 'cobb-douglas' ? 'Cobb-Douglas' : p === 'substitutes' ? 'Perfect Substitutes' : 'Perfect Complements';
+}
+
+// ── Update all outputs ─────────────────────────────────────────────────────
+function updateAll() {
+  updateMetrics();
+  updateGraph();
+  updateGraphDescription();
+  updateTable();
+  refreshSolution();
+  calcWhatIf();
+}
+
+// ── Metrics panel ──────────────────────────────────────────────────────────
+function updateMetrics() {
+  const { income, px, py } = getValues();
+  const slope    = -(px / py);
+  const pratio   = px / py;
+  const maxPizza = income / px;
+  const maxCoff  = income / py;
+
+  document.getElementById('m-slope').textContent    = slope.toFixed(2);
+  document.getElementById('m-pratio').textContent   = pratio.toFixed(2);
+  document.getElementById('m-maxpizza').textContent = maxPizza.toFixed(1);
+  document.getElementById('m-maxcoffee').textContent= maxCoff.toFixed(1);
+}
+
+// ── Plotly graph ───────────────────────────────────────────────────────────
+function updateGraph() {
+  const { income, px, py, alpha } = getValues();
+  const maxX = income / px;
+  const maxY = income / py;
+  const traces = [];
+
+  // Budget line
+  traces.push({
+    x: [0, maxX], y: [maxY, 0],
+    mode: 'lines', name: 'Budget Line',
+    line: { color: '#e74c3c', width: 3 }
+  });
+
+  // Indifference curves
+  if (showIC) {
+    traces.push(...buildICurves(alpha));
+  }
+
+  // Optimal point if shown
+  if (optimumShown) {
+    const { ox, oy } = calcOptimum();
+    traces.push({
+      x: [ox], y: [oy],
+      mode: 'markers', name: 'Optimal Bundle',
+      marker: { color: '#18453B', size: 16, symbol: 'star', line: { color: 'white', width: 2 } }
+    });
+  }
+
+  const layout = {
+    title: { text: 'Consumer Choice: Pizza vs Coffee', font: { size: 15 } },
+    xaxis: { title: 'Pizza (units)', range: [0, 30], showgrid: true, gridcolor: '#f0f0f0', fixedrange: true },
+    yaxis: { title: 'Coffee (units)', range: [0, 60], showgrid: true, gridcolor: '#f0f0f0', fixedrange: true },
+    plot_bgcolor: 'white', paper_bgcolor: 'white',
+    showlegend: true,
+    legend: { x: 0.65, y: 0.98, bgcolor: 'rgba(255,255,255,0.85)' },
+    margin: { t: 50, r: 30, b: 55, l: 55 },
+    autosize: false,
+    width: 650,
+    height: 500
+  };
+
+  Plotly.newPlot('consumption-graph', traces, layout, {
+    responsive: false,
+    displayModeBar: false,
+    staticPlot: false
+  });
+}
+
+function buildICurves(alpha) {
+  const curves = [];
+
+  if (currentPref === 'cobb-douglas') {
+    [2, 4, 6, 8, 10].forEach((u, i) => {
+      const xs = [], ys = [];
+      for (let x = 0.1; x <= 28; x += 0.2) {
+        const y = Math.pow(u / Math.pow(x, alpha), 1 / (1 - alpha));
+        if (y > 0 && y <= 58) { xs.push(x); ys.push(y); }
+      }
+      curves.push({
+        x: xs, y: ys,
+        mode: 'lines',
+        name: i === 2 ? 'Indifference Curves' : '',
+        showlegend: i === 2,
+        line: { color: '#3498db', width: 2, dash: 'dot' }
+      });
+    });
+
+  } else if (currentPref === 'substitutes') {
+    [5, 10, 15, 20, 25].forEach((lvl, i) => {
+      curves.push({
+        x: [0, lvl], y: [lvl, 0],
+        mode: 'lines',
+        name: i === 2 ? 'Indifference Curves' : '',
+        showlegend: i === 2,
+        line: { color: '#3498db', width: 2, dash: 'dot' }
+      });
+    });
+
+  } else { // complements
+    [3, 6, 9, 12, 15].forEach((lvl, i) => {
+      curves.push({
+        x: [lvl, lvl, lvl + 15], y: [lvl + 20, lvl, lvl],
+        mode: 'lines',
+        name: i === 2 ? 'Indifference Curves' : '',
+        showlegend: i === 2,
+        line: { color: '#3498db', width: 2, dash: 'dot' }
+      });
+    });
+  }
+  return curves;
+}
+
+// ── Compute optimum ────────────────────────────────────────────────────────
+function calcOptimum() {
+  const { income, px, py, alpha } = getValues();
+  let ox, oy, label;
+
+  if (currentPref === 'cobb-douglas') {
+    ox = (alpha * income) / px;
+    oy = ((1 - alpha) * income) / py;
+    label = `(${ox.toFixed(1)}, ${oy.toFixed(1)})`;
+  } else if (currentPref === 'substitutes') {
+    if (px < py)      { ox = income / px; oy = 0; label = `Buy only Pizza: (${ox.toFixed(1)}, 0)`; }
+    else if (py < px) { ox = 0; oy = income / py; label = `Buy only Coffee: (0, ${oy.toFixed(1)})`; }
+    else              { ox = income / (2 * px); oy = income / (2 * py); label = 'Any point on budget line'; }
+  } else {
+    ox = oy = income / (px + py);
+    label = `(${ox.toFixed(1)}, ${oy.toFixed(1)})`;
+  }
+  return { ox, oy, label };
+}
+
+// ── Show Optimum ───────────────────────────────────────────────────────────
+function showOptimum() {
+  const { income, alpha } = getValues();
+  optimumShown = true;
+  updateGraph();
+
+  const { ox, oy, label } = calcOptimum();
+
+  // Metrics
+  document.getElementById('m-optimum-card').style.display = 'block';
+  document.getElementById('m-optimum').textContent = label;
+
+  if (currentPref === 'cobb-douglas') {
+    const util = Math.pow(ox, alpha) * Math.pow(oy, 1 - alpha);
+    document.getElementById('m-utility-card').style.display = 'block';
+    document.getElementById('m-utility').textContent = util.toFixed(3);
+    document.getElementById('t-row-utility').style.display = '';
+    document.getElementById('t-utility').textContent = util.toFixed(3);
+  }
+
+  document.getElementById('t-row-optimum').style.display = '';
+  document.getElementById('t-optimum').textContent = label;
+
+  updateGraphDescription();
+  announce(`Optimal bundle shown: ${label}`);
+}
+
+// ── Toggle IC ──────────────────────────────────────────────────────────────
+function toggleIC() {
+  showIC = !showIC;
+  const btn = document.getElementById('toggle-ic-btn');
+  btn.textContent   = showIC ? 'Hide Indifference Curves' : 'Show Indifference Curves';
+  btn.setAttribute('aria-pressed', showIC);
+  updateGraph();
+  announce(showIC ? 'Indifference curves shown' : 'Indifference curves hidden');
+}
+
+// ── Reset ──────────────────────────────────────────────────────────────────
+function resetGraph() {
+  optimumShown = false;
+  document.getElementById('m-optimum-card').style.display = 'none';
+  document.getElementById('m-utility-card').style.display = 'none';
+  document.getElementById('t-row-optimum').style.display = 'none';
+  document.getElementById('t-row-utility').style.display = 'none';
+  updateGraph();
+  updateGraphDescription();
+  announce('Graph reset');
+}
+
+// ── Graph text description ─────────────────────────────────────────────────
+function updateGraphDescription() {
+  const { income, px, py, alpha } = getValues();
+  const maxPizza = (income / px).toFixed(1);
+  const maxCoff  = (income / py).toFixed(1);
+  const slope    = (-(px / py)).toFixed(2);
+
+  let desc = `The budget line shows affordable combinations with a $${income} weekly budget, ` +
+    `pizza at $${px.toFixed(2)}, and coffee at $${py.toFixed(2)}. ` +
+    `Maximum affordable pizza (all income) is ${maxPizza} units; maximum coffee is ${maxCoff} units. ` +
+    `The slope is ${slope}, equal to the negative price ratio. `;
+
+  if (showIC) {
+    if (currentPref === 'cobb-douglas') {
+      desc += `Cobb-Douglas indifference curves (U = Pizza^${alpha} × Coffee^${(1-alpha).toFixed(1)}) are shown, ` +
+        `bowed inward toward the origin, reflecting diminishing MRS. `;
+    } else if (currentPref === 'substitutes') {
+      desc += `Perfect substitutes indifference curves are shown as straight downward-sloping lines. `;
+    } else {
+      desc += `Perfect complements indifference curves are shown as L-shaped curves with corners on the 45-degree line. `;
+    }
+  }
+
+  if (optimumShown) {
+    const { ox, oy, label } = calcOptimum();
+    desc += `The optimal bundle is marked with a star at ${label}.`;
+  }
+
+  document.getElementById('graph-desc-para').textContent = desc;
+}
+
+// ── Data table ─────────────────────────────────────────────────────────────
+function updateTable() {
+  const { income, px, py } = getValues();
+  document.getElementById('t-income').textContent   = '$' + income;
+  document.getElementById('t-px').textContent       = '$' + px.toFixed(2);
+  document.getElementById('t-py').textContent       = '$' + py.toFixed(2);
+  document.getElementById('t-slope').textContent    = '−' + (px/py).toFixed(2);
+  document.getElementById('t-maxpizza').textContent = (income/px).toFixed(1) + ' units';
+  document.getElementById('t-maxcoffee').textContent= (income/py).toFixed(1) + ' units';
+}
+
+// ── Educational concept card ───────────────────────────────────────────────
+function updateConceptCard() {
+  const map = {
+    'cobb-douglas': {
+      title: 'Cobb-Douglas Preferences',
+      text:  'Consumer spends fixed income shares: α on pizza, (1−α) on coffee — independent of prices.',
+      formula: 'U = Pizza<sup>α</sup> × Coffee<sup>1−α</sup>'
+    },
+    'substitutes': {
+      title: 'Perfect Substitutes',
+      text:  'Goods are interchangeable (constant MRS). The consumer buys only the cheaper good.',
+      formula: 'U = Pizza + Coffee'
+    },
+    'complements': {
+      title: 'Perfect Complements',
+      text:  'Goods must be consumed in fixed proportions. Extra units of one good without the other add no utility.',
+      formula: 'U = min(Pizza, Coffee)'
+    }
+  };
+  const m = map[currentPref];
+  document.getElementById('pref-concept-title').textContent = m.title;
+  document.getElementById('pref-concept-text').textContent  = m.text;
+  document.getElementById('pref-concept-formula').innerHTML = m.formula;
+  document.getElementById('sol-pref-name').textContent = prefLabel(currentPref);
+}
+
+// ── Step-by-step solution ──────────────────────────────────────────────────
+function refreshSolution() {
+  const { income, px, py, alpha } = getValues();
+  const container = document.getElementById('solution-steps');
+  document.getElementById('sol-pref-name').textContent = prefLabel(currentPref);
+
+  let steps = [];
+  if (currentPref === 'cobb-douglas') {
+    const ox = (alpha * income) / px;
+    const oy = ((1 - alpha) * income) / py;
+    steps = [
+      { n:1, t:'Set Up Budget Constraint',
+        c:`$${px.toFixed(2)} × Pizza + $${py.toFixed(2)} × Coffee = $${income}` },
+      { n:2, t:'Write Utility Function and MRS',
+        c:`U = Pizza^${alpha} × Coffee^${(1-alpha).toFixed(1)}<br>MRS = (α/(1−α)) × (Coffee/Pizza) = (${alpha}/${(1-alpha).toFixed(1)}) × (Coffee/Pizza)` },
+      { n:3, t:'Apply Optimization: MRS = Price Ratio',
+        c:`MRS = Px/Py = $${px.toFixed(2)} / $${py.toFixed(2)} = ${(px/py).toFixed(2)}<br>⇒ Coffee/Pizza = (1−α)/α × Px/Py` },
+      { n:4, t:'Solve for Optimal Quantities',
+        c:`Pizza* = (α × Income) ÷ Px = (${alpha} × $${income}) ÷ $${px.toFixed(2)} = <strong>${ox.toFixed(2)}</strong><br>Coffee* = ((1−α) × Income) ÷ Py = (${(1-alpha).toFixed(1)} × $${income}) ÷ $${py.toFixed(2)} = <strong>${oy.toFixed(2)}</strong>` },
+      { n:5, t:'Verify Budget Exhaustion',
+        c:`$${px.toFixed(2)} × ${ox.toFixed(2)} + $${py.toFixed(2)} × ${oy.toFixed(2)} = $${(px*ox + py*oy).toFixed(2)} ✓` }
+    ];
+  } else if (currentPref === 'substitutes') {
+    const cheaperGood = px < py ? 'pizza' : (py < px ? 'coffee' : 'either');
+    const optQty = px <= py ? (income/px).toFixed(2) : (income/py).toFixed(2);
+    steps = [
+      { n:1, t:'Utility Function',
+        c:`U = Pizza + Coffee  (perfect substitutes: MRS = 1 always)` },
+      { n:2, t:'Compare Prices',
+        c:`Px = $${px.toFixed(2)}, Py = $${py.toFixed(2)}<br>${px < py ? 'Pizza is cheaper per unit of utility.' : px > py ? 'Coffee is cheaper per unit of utility.' : 'Prices are equal — consumer is indifferent.'}` },
+      { n:3, t:'Corner Solution',
+        c:`With perfect substitutes, the consumer specializes in the cheaper good.<br>Buy only ${cheaperGood === 'either' ? 'either (any mix works)' : cheaperGood + ': ' + optQty + ' units'}.` },
+      { n:4, t:'Budget Check',
+        c:`Total spending: $${income} ✓` }
+    ];
+  } else {
+    const ox = (income / (px + py)).toFixed(2);
+    steps = [
+      { n:1, t:'Utility Function',
+        c:`U = min(Pizza, Coffee)  (perfect complements, consumed 1:1)` },
+      { n:2, t:'Kink Point Condition',
+        c:`At the optimum, both goods are consumed equally: Pizza = Coffee = Q*` },
+      { n:3, t:'Substitute Into Budget',
+        c:`Px × Q* + Py × Q* = Income<br>(${px.toFixed(2)} + ${py.toFixed(2)}) × Q* = $${income}<br>Q* = $${income} ÷ $${(px+py).toFixed(2)} = <strong>${ox}</strong>` },
+      { n:4, t:'Optimal Bundle',
+        c:`Pizza* = Coffee* = ${ox} units` },
+      { n:5, t:'Budget Check',
+        c:`$${px.toFixed(2)} × ${ox} + $${py.toFixed(2)} × ${ox} = $${(px*parseFloat(ox) + py*parseFloat(ox)).toFixed(2)} ✓` }
+    ];
+  }
+
+  container.innerHTML = steps.map(s => `
+    <div class="solution-step">
+      <div class="step-title">
+        <span class="step-badge" aria-hidden="true">${s.n}</span>
+        <span class="sr-only">Step ${s.n}:</span>${s.t}
+      </div>
+      <div class="step-content">${s.c}</div>
+    </div>`).join('');
+}
+
+// ── What-If Calculator ─────────────────────────────────────────────────────
+function calcWhatIf() {
+  const income = parseFloat(document.getElementById('wi-income').value) || 100;
+  const px     = parseFloat(document.getElementById('wi-px').value)     || 8;
+  const py     = parseFloat(document.getElementById('wi-py').value)     || 4;
+  const alpha  = parseFloat(document.getElementById('wi-alpha').value)  || 0.6;
+
+  let bundleText, spendText, utilText;
+
+  if (currentPref === 'cobb-douglas') {
+    const ox = (alpha * income) / px;
+    const oy = ((1 - alpha) * income) / py;
+    bundleText = `Pizza: ${ox.toFixed(1)}, Coffee: ${oy.toFixed(1)}`;
+    spendText  = `Pizza: $${(px*ox).toFixed(0)}, Coffee: $${(py*oy).toFixed(0)}`;
+    utilText   = (Math.pow(ox, alpha) * Math.pow(oy, 1-alpha)).toFixed(3);
+
+  } else if (currentPref === 'substitutes') {
+    if (px < py) {
+      const ox = income / px;
+      bundleText = `Pizza: ${ox.toFixed(1)}, Coffee: 0`;
+      spendText  = `Pizza: $${income}, Coffee: $0`;
+      utilText   = ox.toFixed(2);
+    } else if (py < px) {
+      const oy = income / py;
+      bundleText = `Pizza: 0, Coffee: ${oy.toFixed(1)}`;
+      spendText  = `Pizza: $0, Coffee: $${income}`;
+      utilText   = oy.toFixed(2);
+    } else {
+      bundleText = 'Any point on budget line';
+      spendText  = 'Flexible allocation';
+      utilText   = (income/px).toFixed(2);
+    }
+  } else {
+    const q = income / (px + py);
+    bundleText = `Pizza: ${q.toFixed(1)}, Coffee: ${q.toFixed(1)}`;
+    spendText  = `Pizza: $${(px*q).toFixed(0)}, Coffee: $${(py*q).toFixed(0)}`;
+    utilText   = q.toFixed(3);
+  }
+
+  document.getElementById('wi-bundle').textContent  = bundleText;
+  document.getElementById('wi-spending').textContent = spendText;
+  document.getElementById('wi-utility').textContent  = utilText;
+}
+
+function applyWhatIf() {
+  const income = document.getElementById('wi-income').value;
+  const px     = document.getElementById('wi-px').value;
+  const py     = document.getElementById('wi-py').value;
+  const alpha  = document.getElementById('wi-alpha').value;
+
+  document.getElementById('income').value  = income;
+  document.getElementById('price-x').value = px;
+  document.getElementById('price-y').value = py;
+  document.getElementById('alpha').value   = alpha;
+
+  // Sync badges
+  document.getElementById('income-display').textContent  = '$' + income;
+  document.getElementById('price-x-display').textContent = '$' + parseFloat(px).toFixed(2);
+  document.getElementById('price-y-display').textContent = '$' + parseFloat(py).toFixed(2);
+  document.getElementById('alpha-display').textContent   = parseFloat(alpha).toFixed(1);
+
+  optimumShown = false;
+  document.getElementById('m-optimum-card').style.display = 'none';
+  document.getElementById('m-utility-card').style.display = 'none';
+
+  updateAll();
+  announce('What-if values applied to main graph');
+}
+
+// ── Educational tabs ───────────────────────────────────────────────────────
+function switchEdu(panel, btn) {
+  document.querySelectorAll('.edu-tab').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-selected', 'false');
+  });
+  btn.classList.add('active');
+  btn.setAttribute('aria-selected', 'true');
+
+  document.querySelectorAll('.edu-panel').forEach(p => {
+    p.classList.remove('active');
+    p.hidden = true;
+  });
+  const target = document.getElementById('epanel-' + panel);
+  target.classList.add('active');
+  target.hidden = false;
+
+  if (panel === 'solution') refreshSolution();
+  if (panel === 'whatif')   calcWhatIf();
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function () {
+  updateAll();
+});
+</script>
+</body>
+</html>

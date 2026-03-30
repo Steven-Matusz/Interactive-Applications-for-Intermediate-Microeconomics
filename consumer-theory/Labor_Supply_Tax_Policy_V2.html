@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Labor Supply &amp; Tax Policy</title>
+  <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+  <style>
+    /* ── Skip Link ── */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: #18453B;
+      color: white;
+      padding: 8px 16px;
+      z-index: 9999;
+      font-weight: 700;
+      text-decoration: none;
+      border-radius: 0 0 6px 0;
+      transition: top 0.2s;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ── Screen-reader only ── */
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ── Live region ── */
+    .live-region {
+      position: absolute;
+      left: -10000px;
+      width: 1px; height: 1px;
+      overflow: hidden;
+    }
+
+    /* ── Reset / Root ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --msu-green:  #18453B;
+      --msu-green2: #2d5a4f;
+      --msu-gold:   #C89A2A;
+      --bg-page:    #f0f4f0;
+      --bg-white:   #ffffff;
+      --border:     #cdd9d6;
+      --text-dark:  #1a1a1a;
+      --text-mid:   #444444;
+      --focus-ring: #C89A2A;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg-page);
+      color: var(--text-dark);
+      min-height: 100vh;
+      padding: 16px;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    /* ── Focus ── */
+    :focus-visible {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
+
+    /* ── Wrapper ── */
+    .wrapper {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: var(--bg-white);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, var(--msu-green), var(--msu-green2));
+      color: white;
+      padding: 24px 32px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .header p {
+      font-size: 1rem;
+      opacity: 0.9;
+    }
+
+    /* ── Worker Selector ── */
+    .worker-selector {
+      background: #f8f9fa;
+      padding: 20px 32px;
+      border-bottom: 3px solid var(--msu-green);
+    }
+    .worker-selector h2 {
+      color: var(--msu-green);
+      font-size: 1.1rem;
+      margin-bottom: 12px;
+    }
+    .worker-buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .worker-btn {
+      flex: 1;
+      min-width: 160px;
+      padding: 12px 18px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border: 3px solid var(--msu-green);
+      background: white;
+      color: var(--msu-green);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, transform 0.15s;
+    }
+    .worker-btn:hover {
+      background: var(--msu-green);
+      color: white;
+      transform: translateY(-2px);
+    }
+    .worker-btn.active,
+    .worker-btn[aria-pressed="true"] {
+      background: var(--msu-green);
+      color: white;
+    }
+
+    /* ── Main layout ── */
+    .main-layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      min-height: 600px;
+    }
+
+    /* ── Control Panel ── */
+    .control-panel {
+      padding: 28px 24px;
+      background: #f8f9fa;
+      border-right: 3px solid #e9ecef;
+      overflow-y: auto;
+      max-height: 820px;
+    }
+    .control-panel h2 {
+      color: var(--msu-green);
+      font-size: 1.1rem;
+      margin-bottom: 18px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    /* ── Slider group ── */
+    .slider-group {
+      background: white;
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 16px;
+      border: 2px solid #e9ecef;
+    }
+    .slider-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .slider-label-row label {
+      font-weight: 600;
+      color: var(--text-dark);
+      font-size: 0.95rem;
+    }
+    .slider-value {
+      font-weight: 700;
+      color: var(--msu-green);
+      font-size: 1rem;
+      background: #e8f5e9;
+      padding: 2px 10px;
+      border-radius: 12px;
+      min-width: 70px;
+      text-align: center;
+    }
+    input[type="range"] {
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      background: #d3d3d3;
+      outline: none;
+      cursor: pointer;
+      accent-color: var(--msu-green);
+      margin: 6px 0;
+    }
+    .slider-hint {
+      font-size: 0.8rem;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    /* ── Worker bio ── */
+    .worker-bio {
+      background: #e8f5e9;
+      border-left: 4px solid var(--msu-green);
+      border-radius: 0 8px 8px 0;
+      padding: 14px;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+    }
+    .worker-bio h3 {
+      color: var(--msu-green);
+      font-size: 1rem;
+      margin-bottom: 6px;
+    }
+
+    /* ── Results cards ── */
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .result-card {
+      background: white;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+      border: 2px solid #e9ecef;
+    }
+    .result-card .r-label {
+      font-size: 0.78rem;
+      color: #666;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-bottom: 4px;
+    }
+    .result-card .r-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--msu-green);
+    }
+    .result-card.highlight {
+      background: #fff8e1;
+      border-color: var(--msu-gold);
+    }
+    .result-card.highlight .r-value {
+      color: #7a5a00;
+    }
+
+    /* ── Concept box ── */
+    .concept-box {
+      background: #e7f3ff;
+      border: 2px solid #1565C0;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 14px;
+      font-size: 0.88rem;
+    }
+    .concept-box h4 {
+      color: #1565C0;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+    }
+
+    /* ── Graph panel ── */
+    .graph-panel {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ── Tabs ── */
+    .tab-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+    .tab-btn {
+      padding: 10px 22px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border: 2px solid var(--msu-green);
+      background: white;
+      color: var(--msu-green);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .tab-btn:hover {
+      background: var(--msu-green);
+      color: white;
+    }
+    .tab-btn.active,
+    .tab-btn[aria-selected="true"] {
+      background: var(--msu-green);
+      color: white;
+    }
+
+    /* ── Graph wrapper ── */
+    .graph-wrapper {
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      overflow: hidden;
+      background: white;
+    }
+    .graph-desc {
+      padding: 10px 16px;
+      font-size: 0.85rem;
+      color: #555;
+      border-top: 1px solid #e9ecef;
+      background: #fafafa;
+    }
+
+    /* ── Data table ── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid #e9ecef;
+      font-size: 0.88rem;
+    }
+    .data-table caption {
+      padding: 10px 14px;
+      font-weight: 700;
+      color: var(--msu-green);
+      text-align: left;
+      background: #f8f9fa;
+      border-bottom: 2px solid #e9ecef;
+    }
+    .data-table th, .data-table td {
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid #e9ecef;
+    }
+    .data-table th {
+      background: #f8f9fa;
+      font-weight: 700;
+      color: var(--msu-green);
+    }
+    .data-table tr:hover td { background: #f0f7f0; }
+
+    /* ── Insight box ── */
+    .insight-box {
+      background: #fff3cd;
+      border: 2px solid #ffc107;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 0.88rem;
+    }
+    .insight-box strong { color: #856404; }
+
+    /* ── Hidden ── */
+    .hidden { display: none !important; }
+
+    @media (max-width: 900px) {
+      .main-layout { grid-template-columns: 1fr; }
+      .control-panel { border-right: none; border-bottom: 3px solid #e9ecef; max-height: none; }
+    }
+  </style>
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<div aria-live="polite" aria-atomic="true" class="live-region" id="live-updates"></div>
+
+<div class="wrapper">
+  <!-- Header -->
+  <div class="header" role="banner">
+    <h1>💼 Labor Supply &amp; Tax Policy</h1>
+    <p>Explore how workers respond to wage changes and taxes — and discover the Laffer Curve</p>
+  </div>
+
+  <!-- Worker Selector -->
+  <section class="worker-selector" aria-labelledby="worker-heading">
+    <h2 id="worker-heading">Choose a Worker Profile</h2>
+    <div class="worker-buttons" role="group" aria-labelledby="worker-heading">
+      <button class="worker-btn active" id="btn-alex"
+              aria-pressed="true"
+              onclick="selectWorker('alex', this)">
+        👤 Alex — Rideshare Driver
+      </button>
+      <button class="worker-btn" id="btn-mark"
+              aria-pressed="false"
+              onclick="selectWorker('mark', this)">
+        👔 Mark — Salaried Worker
+      </button>
+      <button class="worker-btn" id="btn-lisa"
+              aria-pressed="false"
+              onclick="selectWorker('lisa', this)">
+        💼 Lisa — Consultant
+      </button>
+    </div>
+  </section>
+
+  <!-- Main -->
+  <main id="main-content" class="main-layout">
+
+    <!-- ── Control Panel ── -->
+    <aside class="control-panel" aria-labelledby="controls-heading">
+      <h2 id="controls-heading">⚙️ Parameters</h2>
+
+      <!-- Worker bio -->
+      <div class="worker-bio" id="worker-bio" role="region" aria-live="polite">
+        <h3 id="worker-bio-name">Alex — Rideshare Driver</h3>
+        <p id="worker-bio-desc">Alex is a young rideshare driver with flexible hours. His labor supply shows upward-sloping behavior at lower wages, then becomes backward-bending as higher wages allow him to work less.</p>
+      </div>
+
+      <!-- Wage slider -->
+      <div class="slider-group">
+        <div class="slider-label-row">
+          <label for="wage-slider">Wage Rate ($/hr)</label>
+          <span class="slider-value" id="wage-display" aria-live="polite">$8.00/hr</span>
+        </div>
+        <input type="range" id="wage-slider"
+               min="1" max="15" value="8" step="0.5"
+               aria-describedby="wage-hint"
+               oninput="updateAll()">
+        <p class="slider-hint" id="wage-hint">Use arrow keys for fine control. Shift+arrow for large steps.</p>
+      </div>
+
+      <!-- Tax slider -->
+      <div class="slider-group">
+        <div class="slider-label-row">
+          <label for="tax-slider">Income Tax Rate</label>
+          <span class="slider-value" id="tax-display" aria-live="polite">0%</span>
+        </div>
+        <input type="range" id="tax-slider"
+               min="0" max="90" value="0" step="5"
+               aria-describedby="tax-hint"
+               oninput="updateAll()">
+        <p class="slider-hint" id="tax-hint">Move to see the Laffer Curve effects on tax revenue.</p>
+      </div>
+
+      <!-- Results -->
+      <div class="results-grid" role="region" aria-label="Calculated outcomes">
+        <div class="result-card">
+          <div class="r-label">Take-Home Wage</div>
+          <div class="r-value" id="takehome-val">$8.00/hr</div>
+        </div>
+        <div class="result-card">
+          <div class="r-label">Hours Worked</div>
+          <div class="r-value" id="hours-val">6 hrs</div>
+        </div>
+        <div class="result-card">
+          <div class="r-label">Weekly Earnings</div>
+          <div class="r-value" id="earnings-val">$48</div>
+        </div>
+        <div class="result-card highlight">
+          <div class="r-label">Tax Revenue</div>
+          <div class="r-value" id="revenue-val">$0</div>
+        </div>
+      </div>
+
+      <!-- Concept box -->
+      <div class="concept-box" role="note">
+        <h4 id="concept-title">💡 Concept</h4>
+        <p id="concept-text">At $8/hr Alex is near the turning point of his labor supply curve. A small wage increase could increase or decrease hours worked.</p>
+      </div>
+
+      <!-- Insight box -->
+      <div class="insight-box" role="note" id="insight-box">
+        <strong>📈 Labor Supply Shape:</strong>
+        <span id="insight-text">Alex's labor supply is upward-sloping here — higher wages induce more work (substitution effect dominates).</span>
+      </div>
+    </aside>
+
+    <!-- ── Graph Panel ── -->
+    <section class="graph-panel" aria-label="Graph visualizations">
+      <!-- Tabs -->
+      <div class="tab-bar" role="tablist" aria-label="Graph type">
+        <button class="tab-btn active" id="tab-labor"
+                role="tab" aria-selected="true" aria-controls="panel-labor"
+                onclick="switchTab('labor', this)">
+          Labor Supply Curve
+        </button>
+        <button class="tab-btn" id="tab-laffer"
+                role="tab" aria-selected="false" aria-controls="panel-laffer"
+                onclick="switchTab('laffer', this)">
+          Laffer Curve
+        </button>
+      </div>
+
+      <!-- Labor Supply panel -->
+      <div id="panel-labor" role="tabpanel" aria-labelledby="tab-labor">
+        <div class="graph-wrapper">
+          <div id="labor-graph" aria-label="Labor supply curve graph"></div>
+          <p class="graph-desc" id="labor-graph-desc" aria-live="polite">
+            Labor supply curve showing hours worked at each wage rate. Red dot = current choice.
+          </p>
+        </div>
+      </div>
+
+      <!-- Laffer Curve panel -->
+      <div id="panel-laffer" role="tabpanel" aria-labelledby="tab-laffer" class="hidden">
+        <div class="graph-wrapper">
+          <div id="laffer-graph" aria-label="Laffer curve graph"></div>
+          <p class="graph-desc" id="laffer-graph-desc" aria-live="polite">
+            Laffer Curve showing total tax revenue at each tax rate. Revenue peaks at the revenue-maximizing rate.
+          </p>
+        </div>
+      </div>
+
+      <!-- Data table (accessible alternative) -->
+      <table class="data-table" id="summary-table">
+        <caption>Current Scenario Summary</caption>
+        <thead>
+          <tr>
+            <th scope="col">Parameter</th>
+            <th scope="col">Value</th>
+            <th scope="col">Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Pre-tax wage</td>
+            <td id="tbl-wage">$8.00/hr</td>
+            <td>Set by wage slider</td>
+          </tr>
+          <tr>
+            <td>Tax rate</td>
+            <td id="tbl-tax">0%</td>
+            <td>Set by tax slider</td>
+          </tr>
+          <tr>
+            <td>Take-home wage</td>
+            <td id="tbl-takehome">$8.00/hr</td>
+            <td>Pre-tax × (1 − tax rate)</td>
+          </tr>
+          <tr>
+            <td>Hours worked</td>
+            <td id="tbl-hours">6 hrs/wk</td>
+            <td>From worker's labor supply function</td>
+          </tr>
+          <tr>
+            <td>Weekly earnings</td>
+            <td id="tbl-earnings">$48</td>
+            <td>Take-home wage × hours</td>
+          </tr>
+          <tr>
+            <td>Gov't tax revenue</td>
+            <td id="tbl-revenue">$0</td>
+            <td>Tax/hr × hours worked</td>
+          </tr>
+          <tr>
+            <td>Revenue-maximizing tax rate</td>
+            <td id="tbl-maxrate">—</td>
+            <td>Peak of Laffer Curve</td>
+          </tr>
+        </tbody>
+      </table>
+
+    </section>
+  </main>
+</div><!-- /.wrapper -->
+
+<script>
+// ────────────────────────────────────────────
+//  DATA
+// ────────────────────────────────────────────
+const workerProfiles = {
+  alex: {
+    name: 'Alex',
+    type: 'Rideshare Driver',
+    desc: 'Alex is a young rideshare driver with flexible hours. His labor supply curve is backward-bending — upward-sloping below the turning point (~$8/hr), then backward-bending above it. The income effect eventually dominates the substitution effect.',
+    wageMin: 1, wageMax: 15, defaultWage: 8,
+    // L*(w) = 1350*(w − 7.5) / w² — turns at w = 2*7.5 = 15, zero at w = 7.5
+    supply: w => {
+      const L = 1350 * (w - 7.5) / (w * w);
+      return Math.max(0, L);
+    }
+  },
+  mark: {
+    name: 'Mark',
+    type: 'Salaried Worker',
+    desc: 'Mark works a standard 40-hour week with no flexibility to vary hours. His labor supply is perfectly inelastic — he works exactly 40 hours regardless of the wage rate.',
+    wageMin: 10, wageMax: 80, defaultWage: 25,
+    supply: () => 40
+  },
+  lisa: {
+    name: 'Lisa',
+    type: 'High-Paid Consultant',
+    desc: 'Lisa operates in the backward-bending region of her labor supply curve. She is already well above the turning point, so higher wages consistently cause her to work fewer hours — the income effect dominates throughout her wage range.',
+    wageMin: 20, wageMax: 80, defaultWage: 40,
+    supply: w => {
+      const L = 1350 * (w - 7.5) / (w * w);
+      return Math.max(0, L);
+    }
+  }
+};
+
+let currentWorker = 'alex';
+let currentTab = 'labor';
+
+// ────────────────────────────────────────────
+//  WORKER SELECTION
+// ────────────────────────────────────────────
+function selectWorker(worker, btn) {
+  currentWorker = worker;
+
+  // Update pressed states
+  document.querySelectorAll('.worker-btn').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-pressed', 'false');
+  });
+  btn.classList.add('active');
+  btn.setAttribute('aria-pressed', 'true');
+
+  const profile = workerProfiles[worker];
+
+  // Update wage slider range
+  const ws = document.getElementById('wage-slider');
+  ws.min = profile.wageMin;
+  ws.max = profile.wageMax;
+  ws.value = profile.defaultWage;
+
+  // Update bio
+  document.getElementById('worker-bio-name').textContent = `${profile.name} — ${profile.type}`;
+  document.getElementById('worker-bio-desc').textContent = profile.desc;
+
+  announce(`Switched to ${profile.name}, ${profile.type}. Wage range updated to $${profile.wageMin}–$${profile.wageMax} per hour.`);
+
+  updateAll();
+}
+
+// ────────────────────────────────────────────
+//  TAB SWITCHING
+// ────────────────────────────────────────────
+function switchTab(tab, btn) {
+  currentTab = tab;
+
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-selected', 'false');
+  });
+  btn.classList.add('active');
+  btn.setAttribute('aria-selected', 'true');
+
+  document.getElementById('panel-labor').classList.toggle('hidden', tab !== 'labor');
+  document.getElementById('panel-laffer').classList.toggle('hidden', tab !== 'laffer');
+
+  updateAll();
+}
+
+// ────────────────────────────────────────────
+//  MAIN UPDATE
+// ────────────────────────────────────────────
+function updateAll() {
+  const profile = workerProfiles[currentWorker];
+  const wage    = parseFloat(document.getElementById('wage-slider').value);
+  const taxRate = parseFloat(document.getElementById('tax-slider').value) / 100;
+
+  const takeHome    = wage * (1 - taxRate);
+  const hours       = profile.supply(takeHome);
+  const earnings    = takeHome * hours;
+  const taxRevenue  = wage * taxRate * hours;
+  const taxPerHour  = wage * taxRate;
+
+  // ── Display values ──
+  document.getElementById('wage-display').textContent    = `$${wage.toFixed(2)}/hr`;
+  document.getElementById('tax-display').textContent     = `${Math.round(taxRate * 100)}%`;
+  document.getElementById('takehome-val').textContent    = `$${takeHome.toFixed(2)}/hr`;
+  document.getElementById('hours-val').textContent       = `${Math.round(hours)} hrs`;
+  document.getElementById('earnings-val').textContent    = `$${earnings.toFixed(0)}`;
+  document.getElementById('revenue-val').textContent     = `$${taxRevenue.toFixed(0)}`;
+
+  // ── Table ──
+  document.getElementById('tbl-wage').textContent      = `$${wage.toFixed(2)}/hr`;
+  document.getElementById('tbl-tax').textContent       = `${Math.round(taxRate * 100)}%`;
+  document.getElementById('tbl-takehome').textContent  = `$${takeHome.toFixed(2)}/hr`;
+  document.getElementById('tbl-hours').textContent     = `${Math.round(hours)} hrs/wk`;
+  document.getElementById('tbl-earnings').textContent  = `$${earnings.toFixed(0)}`;
+  document.getElementById('tbl-revenue').textContent   = `$${taxRevenue.toFixed(0)}`;
+
+  // Revenue-maximizing rate
+  const { maxRate, maxRev } = findMaxRevRate(profile, wage);
+  document.getElementById('tbl-maxrate').textContent = `~${maxRate}% ($${maxRev.toFixed(0)})`;
+
+  // ── Concept / Insight ──
+  updateConceptBox(profile, wage, takeHome, hours, taxRate);
+
+  // ── Graphs ──
+  if (currentTab === 'labor') {
+    drawLaborSupply(profile, wage, takeHome, hours, taxPerHour, taxRate);
+  } else {
+    drawLaffer(profile, wage, taxRate, taxRevenue);
+  }
+}
+
+// ────────────────────────────────────────────
+//  CONCEPT BOX
+// ────────────────────────────────────────────
+function updateConceptBox(profile, wage, takeHome, hours, taxRate) {
+  let concept = '', insight = '';
+
+  if (profile.supply === workerProfiles.mark.supply) {
+    concept = 'Mark\'s labor supply is <strong>perfectly inelastic</strong> — he always works 40 hours regardless of wage. A tax reduces his take-home pay but not his hours.';
+    insight = 'Perfectly inelastic supply: the entire tax burden falls on the worker. Tax revenue = tax/hr × 40 hrs.';
+  } else {
+    // Derivative of L*(w) = 1350*(w-7.5)/w²  →  dL/dw = 1350*(7.5 - w)/w³
+    const dLdw = 1350 * (7.5 - takeHome) / Math.pow(takeHome, 3);
+    if (takeHome < 7.5 && hours > 0) {
+      concept = 'At this take-home wage, <strong>substitution effect > income effect</strong>. Higher wages pull the worker away from leisure (substitution) more than they encourage leisure (income).';
+      insight = `Labor supply is <strong>upward-sloping</strong> at $${takeHome.toFixed(2)}/hr. Increasing take-home wage raises hours worked.`;
+    } else if (Math.abs(takeHome - 7.5) < 0.5) {
+      concept = 'Near the <strong>turning point</strong> of the backward-bending labor supply curve. The substitution and income effects are roughly equal in magnitude.';
+      insight = 'Labor supply is nearly flat here — a wage change has little effect on hours worked.';
+    } else {
+      concept = 'At this take-home wage, <strong>income effect > substitution effect</strong>. Higher wages make the worker wealthy enough to "buy" more leisure.';
+      insight = `Labor supply is <strong>backward-bending</strong> at $${takeHome.toFixed(2)}/hr. Increasing take-home wage reduces hours worked.`;
+    }
+  }
+
+  if (taxRate > 0) {
+    concept += `<br><br><em>The ${Math.round(taxRate*100)}% tax drives a wedge between the pre-tax wage and what the worker keeps, distorting the labor-leisure trade-off.</em>`;
+  }
+
+  document.getElementById('concept-title').textContent = '💡 Economic Insight';
+  document.getElementById('concept-text').innerHTML = concept;
+  document.getElementById('insight-text').innerHTML = insight;
+}
+
+// ────────────────────────────────────────────
+//  FIND REVENUE-MAXIMIZING TAX RATE
+// ────────────────────────────────────────────
+function findMaxRevRate(profile, wage) {
+  let maxRev = 0, maxRate = 0;
+  for (let t = 0; t <= 95; t += 1) {
+    const tr = t / 100;
+    const th = wage * (1 - tr);
+    const h  = profile.supply(th);
+    const rev = wage * tr * h;
+    if (rev > maxRev) { maxRev = rev; maxRate = t; }
+  }
+  return { maxRate, maxRev };
+}
+
+// ────────────────────────────────────────────
+//  DRAW LABOR SUPPLY GRAPH
+// ────────────────────────────────────────────
+function drawLaborSupply(profile, wage, takeHome, hours, taxPerHour, taxRate) {
+  const wMin = profile.wageMin;
+  const wMax = profile.wageMax;
+
+  // Build curve
+  const curveH = [], curveW = [];
+  for (let w = Math.max(wMin, 0.1); w <= wMax; w += (wMax - wMin) / 200) {
+    const h = profile.supply(w);
+    if (h >= 0) { curveH.push(h); curveW.push(w); }
+  }
+
+  const traces = [
+    {
+      x: curveH, y: curveW,
+      mode: 'lines',
+      name: 'Labor Supply',
+      line: { color: '#1565C0', width: 3 },
+      hovertemplate: 'Hours: %{x:.1f}<br>Wage: $%{y:.2f}/hr<extra></extra>'
+    },
+    {
+      x: [hours], y: [takeHome],
+      mode: 'markers',
+      name: 'Current Choice',
+      marker: { color: '#c62828', size: 13, symbol: 'circle',
+                line: { color: 'white', width: 2 } },
+      hovertemplate: `Current: ${Math.round(hours)} hrs @ $${takeHome.toFixed(2)}/hr<extra></extra>`
+    }
+  ];
+
+  // Tax revenue rectangle
+  if (taxRate > 0 && hours > 0) {
+    traces.push({
+      x: [0, hours, hours, 0, 0],
+      y: [takeHome, takeHome, wage, wage, takeHome],
+      fill: 'toself',
+      fillcolor: 'rgba(198,40,40,0.18)',
+      line: { color: 'rgba(198,40,40,0.6)', width: 2 },
+      name: 'Tax Revenue',
+      hovertemplate: `Tax Revenue: $${(taxPerHour * hours).toFixed(0)}<extra></extra>`
+    });
+    // Pre-tax marker
+    traces.push({
+      x: [hours], y: [wage],
+      mode: 'markers',
+      name: 'Pre-tax Wage',
+      marker: { color: '#f57c00', size: 10, symbol: 'square',
+                line: { color: 'white', width: 2 } },
+      hovertemplate: `Pre-tax: $${wage.toFixed(2)}/hr<extra></extra>`
+    });
+  }
+
+  const xMax = profile.supply === workerProfiles.mark.supply ? 60 : Math.max(14, Math.ceil(curveH[curveH.length-1] * 1.2));
+  const yMax = wMax * 1.1;
+
+  const layout = {
+    title: { text: `${profile.name}'s Labor Supply Curve`, font: { size: 16, color: '#1a1a1a' } },
+    xaxis: { title: 'Hours Worked per Week', range: [0, xMax], fixedrange: true, autorange: false, gridcolor: '#e9ecef' },
+    yaxis: { title: 'Wage Rate ($/hr)',        range: [0, yMax], fixedrange: true, autorange: false, gridcolor: '#e9ecef', tickprefix: '$' },
+    plot_bgcolor: '#ffffff',
+    paper_bgcolor: '#ffffff',
+    margin: { l: 65, r: 30, t: 55, b: 65 },
+    autosize: false,
+    width: 640,
+    height: 440,
+    legend: { orientation: 'h', x: 0.5, xanchor: 'center', y: -0.2 },
+    shapes: taxRate > 0 && hours > 0 ? [
+      { type: 'line', x0: 0, x1: hours, y0: takeHome, y1: takeHome,
+        line: { color: '#1565C0', width: 2, dash: 'dot' } },
+      { type: 'line', x0: hours, x1: hours, y0: 0, y1: wage,
+        line: { color: '#888', width: 1.5, dash: 'dot' } }
+    ] : []
+  };
+
+  Plotly.newPlot('labor-graph', traces, layout, { responsive: false, displayModeBar: false });
+
+  // Update text description
+  const desc = `${profile.name}'s labor supply curve. At take-home wage $${takeHome.toFixed(2)}/hr, ${profile.name} works ${Math.round(hours)} hours per week. ` +
+    (taxRate > 0 ? `The red shaded rectangle represents tax revenue of $${(taxPerHour * hours).toFixed(0)} per week.` : '');
+  document.getElementById('labor-graph-desc').textContent = desc;
+}
+
+// ────────────────────────────────────────────
+//  DRAW LAFFER CURVE
+// ────────────────────────────────────────────
+function drawLaffer(profile, wage, taxRate, currentRev) {
+  const taxRates = [], revenues = [];
+
+  for (let t = 0; t <= 1; t += 0.01) {
+    const th = wage * (1 - t);
+    const h  = profile.supply(th);
+    revenues.push(wage * t * h);
+    taxRates.push(Math.round(t * 100));
+  }
+
+  const { maxRate, maxRev } = findMaxRevRate(profile, wage);
+
+  const traces = [
+    {
+      x: taxRates, y: revenues,
+      mode: 'lines',
+      name: 'Tax Revenue',
+      line: { color: '#18453B', width: 3 },
+      fill: 'tozeroy',
+      fillcolor: 'rgba(24,69,59,0.08)',
+      hovertemplate: 'Tax Rate: %{x}%<br>Revenue: $%{y:.0f}<extra></extra>'
+    },
+    {
+      x: [Math.round(taxRate * 100)], y: [currentRev],
+      mode: 'markers',
+      name: 'Current Policy',
+      marker: { color: '#c62828', size: 13, symbol: 'circle',
+                line: { color: 'white', width: 2 } },
+      hovertemplate: `Current: ${Math.round(taxRate*100)}% → $${currentRev.toFixed(0)}<extra></extra>`
+    },
+    {
+      x: [maxRate], y: [maxRev],
+      mode: 'markers',
+      name: 'Revenue Maximum',
+      marker: { color: '#f57c00', size: 13, symbol: 'star',
+                line: { color: 'white', width: 2 } },
+      hovertemplate: `Revenue max: ${maxRate}% → $${maxRev.toFixed(0)}<extra></extra>`
+    }
+  ];
+
+  const layout = {
+    title: { text: `Laffer Curve — ${profile.name} (Wage $${wage.toFixed(0)}/hr)`, font: { size: 16, color: '#1a1a1a' } },
+    xaxis: { title: 'Tax Rate (%)',          range: [0, 100], fixedrange: true, autorange: false, gridcolor: '#e9ecef', ticksuffix: '%' },
+    yaxis: { title: 'Weekly Tax Revenue ($)', range: [0, maxRev * 1.3 + 5], fixedrange: true, autorange: false, gridcolor: '#e9ecef', tickprefix: '$' },
+    plot_bgcolor: '#ffffff',
+    paper_bgcolor: '#ffffff',
+    margin: { l: 70, r: 30, t: 55, b: 65 },
+    autosize: false,
+    width: 640,
+    height: 440,
+    legend: { orientation: 'h', x: 0.5, xanchor: 'center', y: -0.2 },
+    annotations: [{
+      x: maxRate, y: maxRev,
+      text: `Peak: ${maxRate}%`,
+      showarrow: true, arrowhead: 2, arrowcolor: '#f57c00',
+      font: { size: 12, color: '#f57c00' },
+      ax: 30, ay: -30
+    }]
+  };
+
+  Plotly.newPlot('laffer-graph', traces, layout, { responsive: false, displayModeBar: false });
+
+  // Update description
+  const side = Math.round(taxRate*100) < maxRate ? 'left (revenue-increasing) side' : Math.round(taxRate*100) > maxRate ? 'right (revenue-decreasing) side' : 'revenue-maximizing point';
+  const desc = `Laffer Curve for ${profile.name} at pre-tax wage $${wage.toFixed(2)}/hr. Revenue peaks at ${maxRate}% tax rate ($${maxRev.toFixed(0)}/wk). Current rate ${Math.round(taxRate*100)}% is on the ${side}. Revenue: $${currentRev.toFixed(0)}/wk.`;
+  document.getElementById('laffer-graph-desc').textContent = desc;
+}
+
+// ────────────────────────────────────────────
+//  ANNOUNCE (screen reader)
+// ────────────────────────────────────────────
+function announce(msg) {
+  const el = document.getElementById('live-updates');
+  el.textContent = '';
+  setTimeout(() => { el.textContent = msg; }, 50);
+}
+
+// ────────────────────────────────────────────
+//  KEYBOARD SUPPORT FOR SLIDERS
+// ────────────────────────────────────────────
+function addSliderKeyboard(id, largeStep) {
+  document.getElementById(id).addEventListener('keydown', function(e) {
+    if (!e.shiftKey) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      this.value = Math.min(+this.value + largeStep, +this.max);
+      updateAll();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      this.value = Math.max(+this.value - largeStep, +this.min);
+      updateAll();
+    }
+  });
+}
+
+// ────────────────────────────────────────────
+//  INIT
+// ────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  addSliderKeyboard('wage-slider', 2);
+  addSliderKeyboard('tax-slider', 10);
+  updateAll();
+});
+</script>
+</body>
+</html>
