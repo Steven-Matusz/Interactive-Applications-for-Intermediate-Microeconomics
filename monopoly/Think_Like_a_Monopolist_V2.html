@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Think Like a Monopolist</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Skip Link ── */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: #18453B;
+      color: white;
+      padding: 8px 16px;
+      text-decoration: none;
+      border-radius: 0 0 4px 0;
+      z-index: 9999;
+      font-weight: 700;
+      transition: top 0.2s;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ── Screen-reader only ── */
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ── Live region ── */
+    .live-region {
+      position: absolute;
+      left: -10000px;
+      width: 1px; height: 1px;
+      overflow: hidden;
+    }
+
+    /* ── Focus ── */
+    :focus-visible {
+      outline: 3px solid #C89A2A;
+      outline-offset: 2px;
+    }
+
+    /* ── Root vars ── */
+    :root {
+      --msu-green:  #18453B;
+      --msu-green2: #2d5a4f;
+      --msu-gold:   #C89A2A;
+      --cs-color:   rgba(255, 210, 0, 0.40);
+      --ps-color:   rgba(24, 69, 59, 0.35);
+      --dwl-color:  rgba(200, 50, 50, 0.40);
+      --bg-page:    #f0f4f0;
+      --border:     #cdd9d6;
+      --text-dark:  #1a1a1a;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg-page);
+      color: var(--text-dark);
+      min-height: 100vh;
+      padding: 16px;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    /* ── Wrapper ── */
+    .wrapper {
+      max-width: 1380px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, var(--msu-green), var(--msu-green2));
+      color: white;
+      padding: 24px 32px;
+      text-align: center;
+    }
+    .header h1 { font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 700; margin-bottom: 6px; }
+    .header p { opacity: 0.9; font-size: 1rem; }
+    .product-badge {
+      display: inline-block;
+      margin-top: 8px;
+      background: var(--msu-gold);
+      color: #1a1a1a;
+      font-weight: 700;
+      font-size: 1.05rem;
+      padding: 4px 16px;
+      border-radius: 20px;
+    }
+
+    /* ── Scenario selector ── */
+    .scenario-selector {
+      background: #f8f9fa;
+      padding: 16px 24px;
+      border-bottom: 3px solid var(--msu-green);
+    }
+    .scenario-selector h2 { color: var(--msu-green); margin-bottom: 12px; font-size: 1.1rem; }
+    .scenario-buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .scenario-btn {
+      flex: 1;
+      min-width: 180px;
+      padding: 12px 16px;
+      font-size: 1rem;
+      border: 3px solid var(--msu-green);
+      background: white;
+      color: var(--msu-green);
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .scenario-btn:hover,
+    .scenario-btn:focus {
+      background: var(--msu-green);
+      color: white;
+    }
+    .scenario-btn.active,
+    .scenario-btn[aria-pressed="true"] {
+      background: var(--msu-green);
+      color: white;
+    }
+    .scenario-info {
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: white;
+      border-left: 4px solid var(--msu-green);
+      border-radius: 4px;
+      font-size: 0.95rem;
+    }
+
+    /* ── Main two-column layout ── */
+    main { display: block; }
+    .content-wrapper {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 0;
+      min-height: 600px;
+    }
+
+    /* ── Control panel ── */
+    .control-panel {
+      background: #f8f9fa;
+      padding: 24px;
+      border-right: 3px solid #e9ecef;
+      overflow-y: auto;
+    }
+    .control-panel h3 {
+      color: var(--msu-green);
+      margin-bottom: 12px;
+      font-size: 1.15rem;
+    }
+
+    /* Story box */
+    .story-box {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border: 2px solid #f59e0b;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .story-box h3 { color: #92400e; margin-bottom: 8px; }
+
+    /* Equations box */
+    .equations-box {
+      background: #f1f5f9;
+      border-left: 4px solid var(--msu-green);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      font-size: 0.95rem;
+    }
+    .equations-box h4 { color: var(--msu-green); margin-bottom: 8px; }
+
+    /* Challenge box */
+    .challenge-box {
+      background: #eaf4ee;
+      border: 2px solid var(--msu-green);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .challenge-box h4 { color: var(--msu-green); margin-bottom: 8px; }
+
+    /* Slider control */
+    .slider-control {
+      background: white;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .slider-control h4 { color: var(--msu-green); margin-bottom: 12px; }
+
+    .form-label {
+      display: block;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 8px;
+      border-radius: 5px;
+      background: #d3d3d3;
+      outline: none;
+      cursor: pointer;
+      -webkit-appearance: none;
+      margin: 10px 0;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--msu-green);
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--msu-green);
+      cursor: pointer;
+      border: none;
+    }
+    input[type="range"]:focus-visible {
+      outline: 3px solid var(--msu-gold);
+      outline-offset: 3px;
+    }
+
+    .slider-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      color: #555;
+      margin-top: 4px;
+    }
+    .current-value-display {
+      text-align: center;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--msu-green);
+      margin: 8px 0;
+      padding: 8px;
+      background: #eaf4ee;
+      border-radius: 6px;
+    }
+
+    /* Checkboxes */
+    .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .checkbox-group label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 0.95rem;
+    }
+    .checkbox-group input[type="checkbox"] {
+      width: 20px; height: 20px;
+      cursor: pointer;
+      accent-color: var(--msu-green);
+    }
+
+    /* Reset button */
+    .reset-btn {
+      width: 100%;
+      padding: 10px;
+      background: white;
+      border: 2px solid var(--msu-green);
+      color: var(--msu-green);
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-top: 8px;
+      transition: all 0.2s;
+    }
+    .reset-btn:hover, .reset-btn:focus {
+      background: var(--msu-green);
+      color: white;
+    }
+
+    /* Metrics */
+    .metrics-container {
+      background: white;
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+    .metrics-container h4 { color: var(--msu-green); margin-bottom: 12px; }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .metric-card {
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      border: 2px solid;
+    }
+    .metric-card.quantity   { background: rgba(24,69,59,0.07);  border-color: var(--msu-green); }
+    .metric-card.price-card { background: rgba(200,154,42,0.1); border-color: var(--msu-gold);  }
+    .metric-card.cs         { background: rgba(255,210,0,0.15); border-color: #d4a800; }
+    .metric-card.ps         { background: rgba(24,69,59,0.12);  border-color: var(--msu-green); }
+    .metric-card.dwl        { background: rgba(200,50,50,0.10); border-color: #c03030; }
+    .metric-card.profit-pos { background: rgba(24,69,59,0.10);  border-color: var(--msu-green); }
+    .metric-card.profit-neg { background: rgba(200,50,50,0.10); border-color: #c03030; }
+    .metric-label { font-size: 0.8rem; color: #555; font-weight: 600; margin-bottom: 4px; text-transform: uppercase; }
+    .metric-value { font-size: 1.25rem; font-weight: 700; color: #1a1a1a; }
+
+    /* Accessible data table */
+    .data-table {
+      width: 100%;
+      margin-top: 16px;
+      border-collapse: collapse;
+      background: white;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 0.9rem;
+    }
+    .data-table caption {
+      padding: 10px;
+      font-weight: 700;
+      color: var(--msu-green);
+      text-align: left;
+      background: #f8f9fa;
+      border-bottom: 2px solid #e9ecef;
+      caption-side: top;
+    }
+    .data-table th, .data-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e9ecef;
+    }
+    .data-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: var(--msu-green);
+    }
+    .data-table tr:last-child th,
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover { background: #f8f9fa; }
+
+    /* Market insight */
+    .market-insight {
+      background: #fff3cd;
+      border: 2px solid #ffc107;
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 16px;
+      font-size: 0.9rem;
+    }
+    .market-insight strong { color: #856404; }
+
+    /* Concept box */
+    .concept-box {
+      background: #e7f3ee;
+      border: 2px solid var(--msu-green);
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 12px;
+      font-size: 0.9rem;
+    }
+    .concept-box h5 { color: var(--msu-green); margin-bottom: 6px; }
+
+    /* ── Graph panel ── */
+    .graph-panel {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .graph-wrapper {
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      overflow: hidden;
+      background: white;
+    }
+    .graph-legend {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding: 12px 16px;
+      background: #f8f9fa;
+      border-bottom: 1px solid #e9ecef;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    .legend-swatch {
+      width: 20px; height: 16px;
+      border-radius: 3px;
+      border: 1px solid rgba(0,0,0,0.15);
+    }
+
+    /* Thinking questions */
+    .thinking-box {
+      background: #f8f9fa;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .thinking-box h4 { color: var(--msu-green); margin-bottom: 10px; }
+    .thinking-box ul { margin-left: 20px; line-height: 1.9; }
+
+
+
+    /* Equilibrium badge */
+    .eq-badge {
+      display: none;
+      background: #d4edda;
+      border: 2px solid #28a745;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-top: 10px;
+      font-size: 0.9rem;
+      color: #155724;
+      font-weight: 600;
+    }
+    .eq-badge.show { display: block; }
+
+    @media (max-width: 1024px) {
+      .content-wrapper { grid-template-columns: 1fr; }
+      .control-panel { border-right: none; border-bottom: 3px solid #e9ecef; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- ARIA live region for screen reader announcements -->
+<div id="live-updates" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+<div class="wrapper">
+
+  <!-- ── Header ── -->
+  <header class="header">
+    <h1>⚡ Think Like a Monopolist</h1>
+    <p>Quirky Goods, Serious Strategy — Explore Monopoly Pricing and Welfare</p>
+    <div class="product-badge" id="product-badge" aria-label="Current product scenario"></div>
+  </header>
+
+  <!-- ── Scenario selector ── -->
+  <section class="scenario-selector" aria-label="Product scenario selection">
+    <h2 id="scenario-heading">Choose Your Product:</h2>
+    <div class="scenario-buttons" role="group" aria-labelledby="scenario-heading">
+      <button class="scenario-btn active"
+              aria-pressed="true"
+              aria-describedby="sc-low-desc"
+              onclick="selectScenario('low')">
+        🦆 Glow Duck Hats
+      </button>
+      <button class="scenario-btn"
+              aria-pressed="false"
+              aria-describedby="sc-mid-desc"
+              onclick="selectScenario('mid')">
+        🪴 Singing Plant Pots
+      </button>
+      <button class="scenario-btn"
+              aria-pressed="false"
+              aria-describedby="sc-high-desc"
+              onclick="selectScenario('high')">
+        ☁️ Inflatable Dividers
+      </button>
+    </div>
+    <span id="sc-low-desc"  class="sr-only">Low-cost novelty product with moderate fixed costs</span>
+    <span id="sc-mid-desc"  class="sr-only">Mid-range novelty product with higher fixed costs</span>
+    <span id="sc-high-desc" class="sr-only">Premium novelty product with high fixed costs</span>
+    <div id="scenario-info" class="scenario-info" aria-live="polite"></div>
+  </section>
+
+  <!-- ── Main content ── -->
+  <main id="main-content">
+    <div class="content-wrapper">
+
+      <!-- ── Left: Controls ── -->
+      <aside class="control-panel" aria-label="Monopolist controls and market data">
+
+        <div class="story-box">
+          <h3>📖 Your Business</h3>
+          <p>You've launched <strong id="story-product"></strong> — a quirky novelty item gaining cult popularity!
+            As the <strong>only seller in town</strong>, you have monopoly power. Your challenge:
+            find the output level that maximizes your profit.</p>
+        </div>
+
+        <div class="equations-box" id="equations-box" aria-label="Market equations">
+          <h4>📊 Market Conditions</h4>
+          <!-- filled by JS -->
+        </div>
+
+        <div class="challenge-box">
+          <h4>🎯 Your Optimization Problem</h4>
+          <p>Set MR = MC to find Q*. Then read P* off the demand curve.</p>
+          <ol style="margin-left: 20px; margin-top: 8px; line-height: 1.8;">
+            <li>Set MR = MC</li>
+            <li>Solve for Q*</li>
+            <li>Find P* from the demand curve</li>
+          </ol>
+          <p style="margin-top: 10px; font-size: 0.88rem; color: #444;">
+            <em>Write down your answer, then test it with the slider!</em>
+          </p>
+        </div>
+
+        <!-- Quantity slider -->
+        <div class="slider-control">
+          <h4>🎚️ Set Your Output Level</h4>
+
+          <label for="quantity-slider" class="form-label">
+            Quantity to Produce:
+          </label>
+          <div id="qty-slider-desc" class="sr-only">
+            Move this slider to choose how many units to produce as the monopolist.
+            Watch how price, profit, consumer surplus, and deadweight loss respond.
+            Use arrow keys for fine adjustment.
+          </div>
+          <input type="range"
+                 id="quantity-slider"
+                 min="0" max="10" step="0.1" value="0"
+                 aria-label="Quantity to produce"
+                 aria-describedby="qty-slider-desc"
+                 aria-valuemin="0"
+                 aria-valuemax="10"
+                 aria-valuenow="0"
+                 aria-valuetext="0.0 units">
+
+          <div class="slider-labels">
+            <span>0</span>
+            <div class="current-value-display" id="qty-display" aria-live="polite">0.0 units</div>
+            <span id="slider-max-label">10</span>
+          </div>
+
+          <button class="reset-btn"
+                  aria-label="Reset quantity to zero"
+                  onclick="resetQty()">
+            Reset to Q = 0
+          </button>
+
+          <!-- Show optimal badge -->
+          <div class="eq-badge" id="eq-badge" role="status" aria-live="polite">
+            ✅ <strong>At Optimal Q*!</strong> Profit is maximized here.
+          </div>
+
+          <div class="checkbox-group">
+            <label>
+              <input type="checkbox" id="toggle-mr" aria-describedby="mr-desc">
+              Show Marginal Revenue curve
+            </label>
+            <span id="mr-desc" class="sr-only">Toggle display of the MR curve on the graph</span>
+            <label>
+              <input type="checkbox" id="toggle-solution" aria-describedby="sol-desc">
+              Show Optimal Solution (Q*, P*)
+            </label>
+            <span id="sol-desc" class="sr-only">Toggle display of the optimal quantity and price on the graph</span>
+          </div>
+        </div>
+
+        <!-- Metrics -->
+        <div class="metrics-container" aria-label="Market outcome metrics">
+          <h4>Market Outcomes</h4>
+          <div class="metrics-grid" id="metrics-grid">
+            <!-- filled by JS -->
+          </div>
+        </div>
+
+        <!-- Accessible data table -->
+        <table class="data-table" aria-label="Current market values">
+          <caption>Detailed Market Values</caption>
+          <thead>
+            <tr>
+              <th scope="col">Measure</th>
+              <th scope="col">Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">Quantity (Q)</th><td id="tbl-q">—</td></tr>
+            <tr><th scope="row">Price (P)</th><td id="tbl-p">—</td></tr>
+            <tr><th scope="row">Marginal Revenue</th><td id="tbl-mr">—</td></tr>
+            <tr><th scope="row">Marginal Cost</th><td id="tbl-mc">—</td></tr>
+            <tr><th scope="row">Total Revenue</th><td id="tbl-tr">—</td></tr>
+            <tr><th scope="row">Total Cost</th><td id="tbl-tc">—</td></tr>
+            <tr><th scope="row">Profit (TR − TC)</th><td id="tbl-profit">—</td></tr>
+            <tr><th scope="row">Optimal Q*</th><td id="tbl-qstar">—</td></tr>
+            <tr><th scope="row">Optimal P*</th><td id="tbl-pstar">—</td></tr>
+            <tr><th scope="row">Competitive Q<sub>c</sub></th><td id="tbl-qcomp">—</td></tr>
+          </tbody>
+        </table>
+
+        <!-- Market insight -->
+        <div class="market-insight" role="status" aria-live="polite">
+          <div id="insight-text"></div>
+        </div>
+
+        <!-- Concept reminder -->
+        <div class="concept-box">
+          <h5>💡 Key Insight</h5>
+          <p>The monopolist <strong>restricts output</strong> below the competitive level to keep price above marginal cost.
+            This creates <strong>deadweight loss</strong> — trades that would benefit both buyer and seller don't happen.</p>
+        </div>
+
+      </aside>
+
+      <!-- ── Right: Graph ── -->
+      <section class="graph-panel" aria-label="Monopoly graph visualization">
+
+        <!-- Legend -->
+        <div class="graph-legend" aria-label="Graph legend">
+          <div class="legend-item">
+            <div class="legend-swatch" style="background: var(--cs-color); border-color: #d4a800;"></div>
+            <span>Consumer Surplus</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-swatch" style="background: var(--ps-color); border-color: var(--msu-green);"></div>
+            <span>Producer Surplus</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-swatch" style="background: var(--dwl-color); border-color: #c03030;"></div>
+            <span>Deadweight Loss</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-swatch" style="background: black; width: 28px; height: 3px; border-radius: 2px; border: none; margin-bottom: 6px;"></div>
+            <span>Demand</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-swatch" style="background: green; width: 28px; height: 3px; border-radius: 2px; border: none; margin-bottom: 6px;"></div>
+            <span>MC</span>
+          </div>
+        </div>
+
+        <!-- Graph -->
+        <div class="graph-wrapper">
+          <div id="monopoly-graph"
+               role="img"
+               aria-label="Monopoly supply and demand graph showing consumer surplus, producer surplus, and deadweight loss areas"></div>
+          <!-- Screen-reader text description of graph -->
+          <div id="graph-description" class="sr-only" aria-live="polite"></div>
+        </div>
+
+        <!-- Thinking questions -->
+        <div class="thinking-box">
+          <h4>💭 Think About It</h4>
+          <ul id="thinking-questions">
+            <li>How does the monopolist's optimal Q differ from the competitive Q?</li>
+            <li>Why is MR &lt; P for the monopolist but MR = P for a competitive firm?</li>
+            <li>What does the deadweight loss triangle represent economically?</li>
+            <li>What happens to consumer surplus as the monopolist raises price?</li>
+          </ul>
+        </div>
+
+      </section>
+    </div><!-- end content-wrapper -->
+  </main>
+
+
+
+</div><!-- end wrapper -->
+
+<script>
+// ─────────────────────────────────────────────
+// SCENARIO DEFINITIONS
+// ─────────────────────────────────────────────
+const SCENARIOS = {
+  low: {
+    label: 'Glow-in-the-Dark Duck Hats',
+    a: 10, b: 1, c: 1, d: 0.2, F: 4,
+    description: 'Low-cost novelty: Demand P = 10 − Q, MC = 1 + 0.2Q, Fixed Cost = $4'
+  },
+  mid: {
+    label: 'Personalized Singing Plant Pots',
+    a: 12, b: 1, c: 2, d: 0.3, F: 6,
+    description: 'Mid-range novelty: Demand P = 12 − Q, MC = 2 + 0.3Q, Fixed Cost = $6'
+  },
+  high: {
+    label: 'Inflatable Office Dividers',
+    a: 13, b: 1, c: 3, d: 0.4, F: 5,
+    description: 'Premium novelty: Demand P = 13 − Q, MC = 3 + 0.4Q, Fixed Cost = $5'
+  }
+};
+
+// Active scenario params
+let S = {};          // current scenario object
+let qStar = 0;       // monopoly optimal Q
+let pStar = 0;       // monopoly optimal P
+let qComp = 0;       // competitive Q (P=MC)
+let pComp = 0;       // competitive P
+
+// ─────────────────────────────────────────────
+// ECONOMIC FUNCTIONS  (depend on S)
+// ─────────────────────────────────────────────
+function demand(q)         { return Math.max(0, S.a - S.b * q); }
+function marginalRev(q)    { return S.a - 2 * S.b * q; }
+function marginalCost(q)   { return S.c + S.d * q; }
+function totalCost(q)      { return S.F + S.c * q + 0.5 * S.d * q * q; }
+function totalRevenue(q)   { return demand(q) * q; }
+function profitFn(q)       { return totalRevenue(q) - totalCost(q); }
+
+// ─────────────────────────────────────────────
+// ANNOUNCE to screen reader
+// ─────────────────────────────────────────────
+function announce(msg) {
+  const el = document.getElementById('live-updates');
+  el.textContent = '';
+  requestAnimationFrame(() => { el.textContent = msg; });
+}
+
+// ─────────────────────────────────────────────
+// SELECT SCENARIO
+// ─────────────────────────────────────────────
+function selectScenario(key) {
+  S = { ...SCENARIOS[key] };
+
+  // Derived equilibria
+  // MR = MC  ➜  a − 2bQ = c + dQ  ➜  Q* = (a−c)/(2b+d)
+  qStar = (S.a - S.c) / (2 * S.b + S.d);
+  pStar = demand(qStar);
+  // Competitive: P = MC  ➜  a − bQ = c + dQ  ➜  Qc = (a−c)/(b+d)
+  qComp = (S.a - S.c) / (S.b + S.d);
+  pComp = demand(qComp);
+
+  // Update scenario buttons
+  const keys = ['low', 'mid', 'high'];
+  document.querySelectorAll('.scenario-btn').forEach((btn, i) => {
+    const active = keys[i] === key;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+
+  // Update product display
+  document.getElementById('product-badge').textContent = S.label;
+  document.getElementById('story-product').textContent = S.label;
+
+  // Update equations box
+  document.getElementById('equations-box').innerHTML = `
+    <h4>📊 Market Conditions</h4>
+    <p><strong>Inverse Demand:</strong> P = ${S.a} − ${S.b}Q</p>
+    <p><strong>Marginal Revenue:</strong> MR = ${S.a} − ${2*S.b}Q</p>
+    <p><strong>Total Cost:</strong> TC = ${S.F} + ${S.c}Q + ${(S.d/2).toFixed(2)}Q²</p>
+    <p><strong>Marginal Cost:</strong> MC = ${S.c} + ${S.d.toFixed(2)}Q</p>
+    <p><strong>Fixed Cost:</strong> F = $${S.F}</p>
+  `;
+
+  // Scenario info bar
+  document.getElementById('scenario-info').innerHTML =
+    `<strong>${S.label}</strong> &nbsp;|&nbsp; ${S.description}`;
+
+  // Update slider range
+  const slider = document.getElementById('quantity-slider');
+  const sliderMax = Math.ceil(qComp + 1);
+  slider.max  = sliderMax;
+  slider.step = 0.1;
+  slider.value = 0;
+  slider.setAttribute('aria-valuemax', sliderMax);
+  slider.setAttribute('aria-valuenow', 0);
+  slider.setAttribute('aria-valuetext', '0.0 units');
+  document.getElementById('slider-max-label').textContent = sliderMax.toFixed(1);
+  document.getElementById('qty-display').textContent = '0.0 units';
+
+  // Update table static values
+  document.getElementById('tbl-qstar').textContent = qStar.toFixed(2);
+  document.getElementById('tbl-pstar').textContent = '$' + pStar.toFixed(2);
+  document.getElementById('tbl-qcomp').textContent = qComp.toFixed(2);
+
+  // Update thinking questions
+  document.getElementById('thinking-questions').innerHTML = `
+    <li>At Q* = ${qStar.toFixed(2)}, what is MR and what is MC? Are they equal?</li>
+    <li>Why does the monopolist set Q = ${qStar.toFixed(2)} instead of Q = ${qComp.toFixed(2)}?</li>
+    <li>How large is the deadweight loss triangle? What does it cost society?</li>
+    <li>If the government regulated price at P = MC, what quantity would be produced?</li>
+  `;
+
+  announce(`Switched to ${S.label}. Optimal quantity Q* = ${qStar.toFixed(2)}, price P* = $${pStar.toFixed(2)}.`);
+
+  updateDisplay();
+}
+
+// ─────────────────────────────────────────────
+// RESET
+// ─────────────────────────────────────────────
+function resetQty() {
+  const slider = document.getElementById('quantity-slider');
+  slider.value = 0;
+  slider.setAttribute('aria-valuenow', 0);
+  slider.setAttribute('aria-valuetext', '0.0 units');
+  document.getElementById('qty-display').textContent = '0.0 units';
+  announce('Quantity reset to zero.');
+  updateDisplay();
+}
+
+// ─────────────────────────────────────────────
+// UPDATE DISPLAY
+// ─────────────────────────────────────────────
+function updateDisplay() {
+  const slider = document.getElementById('quantity-slider');
+  const q = parseFloat(slider.value);
+  const p = demand(q);
+  const mr = marginalRev(q);
+  const mc = marginalCost(q);
+  const tr = totalRevenue(q);
+  const tc = totalCost(q);
+  const pi = profitFn(q);
+
+  // Consumer surplus: triangle above price, below demand, from 0 to q
+  const cs = 0.5 * q * (S.a - p);
+
+  // Producer surplus: area above MC curve, below price, 0 to q
+  // MC(0) = c. Area under MC from 0 to q = c*q + 0.5*d*q^2 (variable cost)
+  // PS = price*q − variable cost
+  const varCost = S.c * q + 0.5 * S.d * q * q;
+  const ps = Math.max(0, p * q - varCost);
+
+  // DWL triangle: between demand and MC from q to qComp
+  // = 0.5 * (qComp - q) * (demand(q) - marginalCost(q))
+  const dwl = q < qComp - 0.01
+    ? 0.5 * (qComp - q) * (demand(q) - marginalCost(q))
+    : 0;
+
+  // ── Slider ARIA update ──
+  slider.setAttribute('aria-valuenow', q);
+  slider.setAttribute('aria-valuetext', `${q.toFixed(1)} units`);
+  document.getElementById('qty-display').textContent = `${q.toFixed(1)} units`;
+
+  // ── Optimal badge ──
+  const atOptimal = Math.abs(q - qStar) < 0.15;
+  document.getElementById('eq-badge').classList.toggle('show', atOptimal);
+
+  // ── Metrics grid ──
+  const profitClass = pi >= 0 ? 'profit-pos' : 'profit-neg';
+  document.getElementById('metrics-grid').innerHTML = `
+    <div class="metric-card quantity" role="region" aria-label="Quantity produced">
+      <div class="metric-label">Quantity (Q)</div>
+      <div class="metric-value" aria-live="polite">${q.toFixed(2)}</div>
+    </div>
+    <div class="metric-card price-card" role="region" aria-label="Price charged">
+      <div class="metric-label">Price (P)</div>
+      <div class="metric-value" aria-live="polite">$${p.toFixed(2)}</div>
+    </div>
+    <div class="metric-card cs" role="region" aria-label="Consumer surplus">
+      <div class="metric-label">Consumer Surplus</div>
+      <div class="metric-value" aria-live="polite">$${cs.toFixed(2)}</div>
+    </div>
+    <div class="metric-card ps" role="region" aria-label="Producer surplus">
+      <div class="metric-label">Producer Surplus</div>
+      <div class="metric-value" aria-live="polite">$${ps.toFixed(2)}</div>
+    </div>
+    <div class="metric-card dwl" role="region" aria-label="Deadweight loss">
+      <div class="metric-label">Deadweight Loss</div>
+      <div class="metric-value" aria-live="polite">$${dwl.toFixed(2)}</div>
+    </div>
+    <div class="metric-card ${profitClass}" role="region" aria-label="Economic profit">
+      <div class="metric-label">Profit (TR − TC)</div>
+      <div class="metric-value" aria-live="polite">$${pi.toFixed(2)}</div>
+    </div>
+  `;
+
+  // ── Data table ──
+  document.getElementById('tbl-q').textContent   = q.toFixed(2);
+  document.getElementById('tbl-p').textContent   = '$' + p.toFixed(2);
+  document.getElementById('tbl-mr').textContent  = '$' + mr.toFixed(2);
+  document.getElementById('tbl-mc').textContent  = '$' + mc.toFixed(2);
+  document.getElementById('tbl-tr').textContent  = '$' + tr.toFixed(2);
+  document.getElementById('tbl-tc').textContent  = '$' + tc.toFixed(2);
+  document.getElementById('tbl-profit').textContent = '$' + pi.toFixed(2);
+
+  // ── Market insight text ──
+  let insightHtml = '';
+  if (q === 0) {
+    insightHtml = '<strong>Starting point:</strong> No production yet. Move the slider to explore.';
+  } else if (mr > mc + 0.05) {
+    insightHtml = `<strong>MR &gt; MC ($${mr.toFixed(2)} &gt; $${mc.toFixed(2)}):</strong>
+      Each additional unit adds more to revenue than to cost — <em>increase output</em> to raise profit!`;
+  } else if (mc > mr + 0.05) {
+    insightHtml = `<strong>MC &gt; MR ($${mc.toFixed(2)} &gt; $${mr.toFixed(2)}):</strong>
+      Each additional unit costs more than it brings in — <em>reduce output</em> to raise profit!`;
+  } else {
+    insightHtml = `<strong>MR ≈ MC ($${mr.toFixed(2)} ≈ $${mc.toFixed(2)}):</strong>
+      This is the <em>profit-maximizing point</em>! Q* = ${qStar.toFixed(2)}, P* = $${pStar.toFixed(2)}.`;
+  }
+  document.getElementById('insight-text').innerHTML = insightHtml;
+
+  // ── Screen-reader graph description ──
+  const graphDesc = `Graph shows demand curve from P=${S.a} at Q=0. At current quantity Q=${q.toFixed(2)}, 
+    price is $${p.toFixed(2)}, MR is $${mr.toFixed(2)}, MC is $${mc.toFixed(2)}. 
+    Consumer surplus area: $${cs.toFixed(2)}. Producer surplus area: $${ps.toFixed(2)}. 
+    Deadweight loss area: $${dwl.toFixed(2)}. 
+    Optimal monopoly point: Q*=${qStar.toFixed(2)}, P*=$${pStar.toFixed(2)}. 
+    Competitive outcome: Qc=${qComp.toFixed(2)}, Pc=$${pComp.toFixed(2)}.`;
+  document.getElementById('graph-description').textContent = graphDesc;
+
+  // ── Draw graph ──
+  drawGraph(q, p, mr, mc, cs, ps, dwl);
+}
+
+// ─────────────────────────────────────────────
+// DRAW GRAPH  (Plotly, fixed dimensions)
+// ─────────────────────────────────────────────
+function drawGraph(q, p, mr, mc, cs, ps, dwl) {
+  const showMR  = document.getElementById('toggle-mr').checked;
+  const showSol = document.getElementById('toggle-solution').checked;
+
+  // Curve data
+  const qMax  = Math.ceil(qComp + 2);
+  const pts   = 200;
+  const qs    = Array.from({length: pts + 1}, (_, i) => (i / pts) * qMax);
+
+  const dVals  = qs.map(demand);
+  const mrVals = qs.map(marginalRev);
+  const mcVals = qs.map(marginalCost);
+
+  // Key points for surplus shading
+  const mcAtQ    = marginalCost(q);
+  const mcAtZero = marginalCost(0);   // = S.c
+  const chokeP   = S.a;
+
+  const traces = [];
+
+  // ── Consumer surplus fill ──
+  // Triangle: (0, chokeP) → (0, p) → (Q, p) → back to start
+  // i.e. above the price line, below the demand curve, left of Q
+  if (q > 0.01) {
+    traces.push({
+      x: [0, 0, q],
+      y: [chokeP, p, p],
+      fill: 'toself',
+      fillcolor: 'rgba(255,210,0,0.40)',
+      type: 'scatter', mode: 'none',
+      name: 'Consumer Surplus', showlegend: false,
+      hoverinfo: 'skip'
+    });
+  }
+
+  // ── Producer surplus fill (above MC curve, below price, left of Q) ──
+  // Polygon traced clockwise:
+  //   Start at (0, MC(0))  →  follow MC curve right to (Q, MC(Q))
+  //   →  go up to (Q, P)   →  go left along price to (0, P)
+  //   →  go down to (0, MC(0))
+  if (q > 0.01) {
+    const nPts = 60;
+    // MC curve points from Q=0 to Q=q  (left to right along bottom)
+    const qFwd = Array.from({length: nPts}, (_, i) => (i / (nPts - 1)) * q);
+    const mcFwd = qFwd.map(x => marginalCost(x));
+    // Close the polygon: up to price at Q, left along price to 0, close
+    const psX = [...qFwd,  q,   0];
+    const psY = [...mcFwd, p,   p];
+    traces.push({
+      x: psX, y: psY,
+      fill: 'toself',
+      fillcolor: 'rgba(24,69,59,0.30)',
+      type: 'scatter', mode: 'none',
+      name: 'Producer Surplus', showlegend: false,
+      hoverinfo: 'skip'
+    });
+  }
+
+  // ── Deadweight loss fill ──
+  // Polygon between demand curve (top) and MC curve (bottom) from Q to Qc
+  // Traced: follow demand left→right from q to qComp,
+  //         then follow MC right→left from qComp back to q
+  if (q < qComp - 0.05) {
+    const nPts = 60;
+    const qRange = Array.from({length: nPts}, (_, i) => q + (i / (nPts - 1)) * (qComp - q));
+    const demandTop = qRange.map(demand);
+    const mcBottom  = qRange.map(marginalCost);
+    // Forward along demand, then backward along MC
+    const dwlX = [...qRange, ...[...qRange].reverse()];
+    const dwlY = [...demandTop, ...[...mcBottom].reverse()];
+    traces.push({
+      x: dwlX, y: dwlY,
+      fill: 'toself',
+      fillcolor: 'rgba(200,50,50,0.38)',
+      type: 'scatter', mode: 'none',
+      name: 'Deadweight Loss', showlegend: false,
+      hoverinfo: 'skip'
+    });
+  }
+
+  // ── Demand curve ──
+  traces.push({
+    x: qs, y: dVals,
+    name: 'Demand',
+    mode: 'lines',
+    line: { color: 'black', width: 2.5 },
+    hovertemplate: 'Q=%{x:.2f}<br>P=$%{y:.2f}<extra>Demand</extra>'
+  });
+
+  // ── MC curve ──
+  traces.push({
+    x: qs, y: mcVals,
+    name: 'MC',
+    mode: 'lines',
+    line: { color: '#18453B', width: 2.5, dash: 'dot' },
+    hovertemplate: 'Q=%{x:.2f}<br>MC=$%{y:.2f}<extra>Marginal Cost</extra>'
+  });
+
+  // ── MR curve (optional) ──
+  if (showMR) {
+    traces.push({
+      x: qs, y: mrVals,
+      name: 'MR',
+      mode: 'lines',
+      line: { color: '#c03030', width: 2.5, dash: 'dash' },
+      hovertemplate: 'Q=%{x:.2f}<br>MR=$%{y:.2f}<extra>Marginal Revenue</extra>'
+    });
+  }
+
+  // ── Dotted lines from current Q to axes ──
+  if (q > 0.01) {
+    traces.push({
+      x: [q, q], y: [0, p],
+      mode: 'lines',
+      line: { color: 'gray', dash: 'dot', width: 1 },
+      showlegend: false, hoverinfo: 'skip'
+    });
+    traces.push({
+      x: [0, q], y: [p, p],
+      mode: 'lines',
+      line: { color: 'gray', dash: 'dot', width: 1 },
+      showlegend: false, hoverinfo: 'skip'
+    });
+  }
+
+  // ── Optimal solution markers ──
+  if (showSol) {
+    traces.push({
+      x: [qStar, qStar], y: [0, pStar],
+      mode: 'lines',
+      line: { color: '#C89A2A', dash: 'dash', width: 2 },
+      showlegend: false, hoverinfo: 'skip'
+    });
+    traces.push({
+      x: [0, qStar], y: [pStar, pStar],
+      mode: 'lines',
+      line: { color: '#C89A2A', dash: 'dash', width: 2 },
+      showlegend: false, hoverinfo: 'skip'
+    });
+    traces.push({
+      x: [qStar], y: [pStar],
+      mode: 'markers+text',
+      marker: { color: '#C89A2A', size: 12, symbol: 'star' },
+      text: [`  Q*=${qStar.toFixed(1)}, P*=$${pStar.toFixed(1)}`],
+      textposition: 'right',
+      showlegend: false,
+      hovertemplate: `Q*=${qStar.toFixed(2)}<br>P*=$${pStar.toFixed(2)}<extra>Optimal</extra>`
+    });
+    // Competitive benchmark
+    traces.push({
+      x: [qComp], y: [pComp],
+      mode: 'markers+text',
+      marker: { color: 'gray', size: 10, symbol: 'circle-open' },
+      text: [`  Qc=${qComp.toFixed(1)}`],
+      textposition: 'right',
+      showlegend: false,
+      hovertemplate: `Qc=${qComp.toFixed(2)}<br>Pc=$${pComp.toFixed(2)}<extra>Competitive Q</extra>`
+    });
+  }
+
+  // ── Curve label annotations ──
+  const annotations = [
+    {
+      x: qMax * 0.82, y: demand(qMax * 0.82) + 0.3,
+      text: 'Demand', showarrow: false,
+      font: { size: 13, color: 'black', weight: 700 }
+    },
+    {
+      x: qMax * 0.85, y: marginalCost(qMax * 0.85) + 0.3,
+      text: 'MC', showarrow: false,
+      font: { size: 13, color: '#18453B', weight: 700 }
+    }
+  ];
+  if (showMR) {
+    const mrLabelQ = (S.a / (2 * S.b)) * 0.65;
+    annotations.push({
+      x: mrLabelQ, y: marginalRev(mrLabelQ) - 0.5,
+      text: 'MR', showarrow: false,
+      font: { size: 13, color: '#c03030', weight: 700 }
+    });
+  }
+
+  // ── Layout — fixed dimensions per protocol ──
+  const layout = {
+    xaxis: {
+      title: { text: 'Quantity (Q)', font: { size: 14 } },
+      range: [0, qMax],
+      fixedrange: true,
+      zeroline: true, zerolinewidth: 1, zerolinecolor: '#888'
+    },
+    yaxis: {
+      title: { text: 'Price / Cost ($)', font: { size: 14 } },
+      range: [0, S.a + 1],
+      fixedrange: true,
+      zeroline: true, zerolinewidth: 1, zerolinecolor: '#888'
+    },
+    showlegend: false,
+    margin: { l: 64, r: 40, t: 40, b: 64 },
+    autosize: false,
+    width: 680,
+    height: 480,
+    annotations: annotations,
+    plot_bgcolor: '#fff',
+    paper_bgcolor: '#fff'
+  };
+
+  const config = {
+    responsive: false,
+    displayModeBar: false,
+    staticPlot: false
+  };
+
+  Plotly.newPlot('monopoly-graph', traces, layout, config);
+}
+
+// ─────────────────────────────────────────────
+// EVENT WIRING
+// ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function () {
+
+  // Slider input
+  const slider = document.getElementById('quantity-slider');
+  slider.addEventListener('input', function () {
+    const q = parseFloat(this.value);
+    document.getElementById('qty-display').textContent = `${q.toFixed(1)} units`;
+    updateDisplay();
+  });
+
+  // Slider keyboard: Shift+Arrow for fine control
+  slider.addEventListener('keydown', function (e) {
+    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && e.shiftKey) {
+      e.preventDefault();
+      const dir = e.key === 'ArrowRight' ? 1 : -1;
+      const fine = 0.02;
+      const newVal = Math.max(0, Math.min(parseFloat(this.max), parseFloat(this.value) + dir * fine));
+      this.value = newVal.toFixed(2);
+      this.dispatchEvent(new Event('input'));
+    }
+  });
+
+  // Checkbox toggles
+  document.getElementById('toggle-mr').addEventListener('change', updateDisplay);
+  document.getElementById('toggle-solution').addEventListener('change', updateDisplay);
+
+  // Initialize with 'low' scenario
+  selectScenario('low');
+});
+</script>
+
+</body>
+</html>

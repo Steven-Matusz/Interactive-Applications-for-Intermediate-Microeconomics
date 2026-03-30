@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monopoly Price Regulation</title>
+<script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+<style>
+  /* ── Skip Link ── */
+  .skip-link {
+    position: absolute; top: -40px; left: 0;
+    background: #18453B; color: white;
+    padding: 8px 16px; z-index: 9999;
+    font-weight: 700; text-decoration: none;
+    border-radius: 0 0 6px 0; transition: top 0.2s;
+  }
+  .skip-link:focus { top: 0; }
+
+  /* ── Screen-reader only ── */
+  .sr-only {
+    position: absolute; width: 1px; height: 1px;
+    padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+  }
+
+  /* ── Live region ── */
+  .live-region {
+    position: absolute; left: -10000px;
+    width: 1px; height: 1px; overflow: hidden;
+  }
+
+  :root {
+    --msu-green: #18453B;
+    --msu-green2: #2d5a4f;
+    --msu-gold: #C89A2A;
+    --bg-page: #f0f4f0;
+    --border: #cdd9d6;
+    --focus-ring: #C89A2A;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--bg-page);
+    color: #1a1a1a;
+    min-height: 100vh;
+    padding: 16px;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 3px;
+  }
+
+  .wrapper {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    overflow: hidden;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(135deg, var(--msu-green), var(--msu-green2));
+    color: white; padding: 24px 32px; text-align: center;
+  }
+  .header h1 { font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 700; margin-bottom: 6px; }
+  .header p { font-size: 1rem; opacity: 0.9; }
+
+  /* ── Scenarios bar ── */
+  .scenarios-bar {
+    background: #f8f9fa;
+    padding: 16px 24px;
+    border-bottom: 3px solid var(--border);
+  }
+  .scenarios-bar h2 {
+    font-size: 0.9rem; font-weight: 700; color: var(--msu-green);
+    text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;
+  }
+  .scenario-buttons {
+    display: flex; flex-wrap: wrap; gap: 10px;
+  }
+  .scenario-btn {
+    padding: 10px 18px;
+    border: 2px solid var(--msu-green);
+    border-radius: 8px;
+    background: white; color: var(--msu-green);
+    font-weight: 600; font-size: 0.95rem;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .scenario-btn:hover {
+    background: var(--msu-green); color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(24,69,59,0.25);
+  }
+  .scenario-btn:focus { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+  .scenario-btn.active { background: var(--msu-green); color: white; }
+  .scenario-btn[aria-pressed="true"] { background: var(--msu-green); color: white; }
+
+  /* ── Main layout ── */
+  .content-wrapper {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    min-height: 620px;
+  }
+
+  /* ── Control panel ── */
+  .control-panel {
+    background: #f8f9fa;
+    padding: 28px 24px;
+    border-right: 3px solid var(--border);
+    overflow-y: auto;
+  }
+
+  .control-section { margin-bottom: 24px; }
+  .control-section h3 {
+    font-size: 0.85rem; font-weight: 700; color: var(--msu-green);
+    text-transform: uppercase; letter-spacing: 0.05em;
+    margin-bottom: 14px; padding-bottom: 6px;
+    border-bottom: 2px solid var(--border);
+  }
+
+  .slider-block {
+    background: white; border-radius: 10px;
+    padding: 16px; border: 2px solid var(--border);
+  }
+
+  .form-label {
+    display: block; font-weight: 600;
+    color: #333; margin-bottom: 8px;
+    font-size: 0.95rem;
+  }
+
+  .slider-row { display: flex; align-items: center; gap: 10px; }
+  .price-slider {
+    flex: 1; height: 8px; border-radius: 4px;
+    background: #d3d3d3; outline: none; cursor: pointer;
+    accent-color: var(--msu-green);
+  }
+  .price-slider:focus { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
+
+  .slider-limits { display: flex; justify-content: space-between; font-size: 0.8rem; color: #666; margin-top: 4px; }
+
+  .value-badge {
+    background: var(--msu-green); color: white;
+    font-weight: 700; font-size: 1.1rem;
+    padding: 4px 12px; border-radius: 20px;
+    min-width: 70px; text-align: center;
+  }
+
+  .status-badge {
+    display: inline-block; margin-top: 10px;
+    padding: 5px 12px; border-radius: 20px;
+    font-weight: 700; font-size: 0.85rem;
+  }
+  .status-not-binding { background: #d1fae5; color: #065f46; border: 2px solid #6ee7b7; }
+  .status-binding { background: #fef3c7; color: #92400e; border: 2px solid #fcd34d; }
+  .status-low { background: #fee2e2; color: #991b1b; border: 2px solid #fca5a5; }
+
+  /* ── Checkboxes ── */
+  .checkbox-list { background: white; border-radius: 10px; padding: 14px; border: 2px solid var(--border); }
+  .checkbox-item { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .checkbox-item:last-child { margin-bottom: 0; }
+  .checkbox-item input[type="checkbox"] {
+    width: 20px; height: 20px; cursor: pointer;
+    accent-color: var(--msu-green); flex-shrink: 0;
+  }
+  .checkbox-item label { font-size: 0.9rem; cursor: pointer; }
+
+  /* ── Metrics ── */
+  .metrics-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin-bottom: 16px;
+  }
+  .metric-card {
+    background: white; border-radius: 8px;
+    padding: 12px; text-align: center;
+    border: 2px solid var(--border);
+  }
+  .metric-label { font-size: 0.78rem; color: #555; font-weight: 600; margin-bottom: 4px; }
+  .metric-value { font-size: 1.25rem; font-weight: 700; color: var(--msu-green); }
+
+  .metric-card.consumer { border-color: #3b82f6; }
+  .metric-card.consumer .metric-value { color: #1d4ed8; }
+  .metric-card.producer { border-color: #f59e0b; }
+  .metric-card.producer .metric-value { color: #92400e; }
+  .metric-card.total { border-color: #10b981; }
+  .metric-card.total .metric-value { color: #065f46; }
+  .metric-card.dwl { border-color: #ef4444; }
+  .metric-card.dwl .metric-value { color: #991b1b; }
+
+  .welfare-banner {
+    padding: 12px 16px; border-radius: 8px;
+    font-weight: 700; font-size: 1rem; text-align: center;
+    margin-top: 6px;
+  }
+  .welfare-gain { background: #d1fae5; color: #065f46; border: 2px solid #6ee7b7; }
+  .welfare-loss { background: #fee2e2; color: #991b1b; border: 2px solid #fca5a5; }
+  .welfare-neutral { background: #f3f4f6; color: #374151; border: 2px solid #d1d5db; }
+
+  /* ── Insight box ── */
+  .insight-box {
+    background: #fffbeb; border: 2px solid var(--msu-gold);
+    border-radius: 10px; padding: 14px; margin-top: 16px;
+  }
+  .insight-box h4 { color: #92400e; font-size: 0.85rem; font-weight: 700; margin-bottom: 6px; }
+  .insight-box p { font-size: 0.88rem; color: #78350f; line-height: 1.5; }
+
+  /* ── Graph panel ── */
+  .graph-panel {
+    padding: 24px;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+
+  .graph-wrapper {
+    border: 2px solid var(--border);
+    border-radius: 10px; overflow: hidden;
+    background: white;
+  }
+
+  /* ── Data table ── */
+  .data-table {
+    width: 100%; border-collapse: collapse;
+    background: white; border-radius: 8px;
+    overflow: hidden; border: 2px solid var(--border);
+    font-size: 0.9rem;
+  }
+  .data-table caption {
+    padding: 10px 14px; font-weight: 700;
+    color: var(--msu-green); text-align: left;
+    background: #f8f9fa; border-bottom: 2px solid var(--border);
+    font-size: 0.95rem;
+  }
+  .data-table th, .data-table td {
+    padding: 10px 14px; text-align: left;
+    border-bottom: 1px solid #e9ecef;
+  }
+  .data-table th { background: #f8f9fa; font-weight: 700; color: var(--msu-green); }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: #f8f9fa; }
+
+  /* ── Graph text description ── */
+  .graph-description {
+    background: #f0f9f6; border: 2px solid var(--border);
+    border-radius: 10px; padding: 16px; font-size: 0.9rem;
+  }
+  .graph-description h3 {
+    color: var(--msu-green); font-size: 0.95rem;
+    font-weight: 700; margin-bottom: 10px;
+  }
+
+  @media (max-width: 1024px) {
+    .content-wrapper { grid-template-columns: 1fr; }
+    .control-panel { border-right: none; border-bottom: 3px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<div id="live-updates" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+<div class="wrapper">
+  <div class="header">
+    <h1>Monopoly Price Regulation</h1>
+    <p>Explore how price caps affect monopoly pricing, output, and social welfare</p>
+  </div>
+
+  <!-- Scenario Selector -->
+  <nav class="scenarios-bar" aria-label="Regulation scenarios">
+    <h2 id="scenario-label">Choose a Scenario</h2>
+    <div class="scenario-buttons" role="group" aria-labelledby="scenario-label">
+      <button class="scenario-btn active" aria-pressed="true"
+              onclick="applyScenario('unregulated', this)" id="btn-unregulated">
+        No Regulation
+      </button>
+      <button class="scenario-btn" aria-pressed="false"
+              onclick="applyScenario('efficient', this)" id="btn-efficient">
+        Efficient Cap (P = MC)
+      </button>
+      <button class="scenario-btn" aria-pressed="false"
+              onclick="applyScenario('moderate', this)" id="btn-moderate">
+        Moderate Cap
+      </button>
+      <button class="scenario-btn" aria-pressed="false"
+              onclick="applyScenario('too-low', this)" id="btn-toolow">
+        Cap Too Low
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main layout -->
+  <div class="content-wrapper">
+
+    <!-- Control Panel -->
+    <aside class="control-panel" aria-label="Controls and market outcomes">
+
+      <!-- Price cap slider -->
+      <div class="control-section">
+        <h3>Price Cap</h3>
+        <div class="slider-block">
+          <label class="form-label" for="price-cap-slider">
+            Maximum allowed price ($/unit)
+          </label>
+          <div class="slider-row">
+            <input type="range" class="price-slider" id="price-cap-slider"
+                   min="2" max="20" step="0.5" value="20"
+                   aria-valuemin="2" aria-valuemax="20" aria-valuenow="20"
+                   aria-label="Price cap in dollars per unit"
+                   oninput="onSliderInput(this)">
+            <div class="value-badge" id="price-cap-badge" aria-live="polite" aria-atomic="true">$20</div>
+          </div>
+          <div class="slider-limits"><span>$2</span><span>$20</span></div>
+          <div style="text-align:center; margin-top:10px;">
+            <span class="status-badge status-not-binding" id="cap-status-badge" role="status" aria-live="polite">
+              Not binding
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Display options -->
+      <div class="control-section">
+        <h3>Display Options</h3>
+        <fieldset class="checkbox-list" style="border:none;padding:0;">
+          <legend class="sr-only">Graph display options</legend>
+          <div class="checkbox-item">
+            <input type="checkbox" id="show-unregulated" checked onchange="updateGraph()">
+            <label for="show-unregulated">Show unregulated monopoly point</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="show-surplus" checked onchange="updateGraph()">
+            <label for="show-surplus">Show consumer &amp; producer surplus</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="show-dwl" onchange="updateGraph()">
+            <label for="show-dwl">Show deadweight loss</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="show-competitive" onchange="updateGraph()">
+            <label for="show-competitive">Show competitive equilibrium</label>
+          </div>
+        </fieldset>
+      </div>
+
+      <!-- Market outcomes -->
+      <div class="control-section">
+        <h3>Market Outcomes</h3>
+        <div class="metrics-grid" role="region" aria-label="Market outcome metrics">
+          <div class="metric-card">
+            <div class="metric-label">Regulated Price</div>
+            <div class="metric-value" id="out-price">$12.00</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Quantity Sold</div>
+            <div class="metric-value" id="out-qty">4.00</div>
+          </div>
+          <div class="metric-card consumer">
+            <div class="metric-label">Consumer Surplus</div>
+            <div class="metric-value" id="out-cs">$8.00</div>
+          </div>
+          <div class="metric-card producer">
+            <div class="metric-label">Producer Surplus</div>
+            <div class="metric-value" id="out-ps">$8.00</div>
+          </div>
+          <div class="metric-card total">
+            <div class="metric-label">Total Surplus</div>
+            <div class="metric-value" id="out-ts">$16.00</div>
+          </div>
+          <div class="metric-card dwl">
+            <div class="metric-label">Deadweight Loss</div>
+            <div class="metric-value" id="out-dwl">$0.00</div>
+          </div>
+        </div>
+        <div class="welfare-banner welfare-neutral" id="welfare-banner" role="status" aria-live="polite">
+          Adjust the price cap to see welfare effects
+        </div>
+      </div>
+
+      <!-- Insight box -->
+      <div class="insight-box" aria-live="polite" id="insight-box">
+        <h4>📌 Economic Insight</h4>
+        <p id="insight-text">Move the slider to explore how different price caps affect the monopolist's behavior and market efficiency.</p>
+      </div>
+    </aside>
+
+    <!-- Graph + table panel -->
+    <main class="graph-panel" id="main-content">
+      <div class="graph-wrapper" role="img" aria-labelledby="graph-title" aria-describedby="graph-desc-text">
+        <div id="monopoly-graph"></div>
+      </div>
+      <p id="graph-title" class="sr-only">Monopoly price regulation graph</p>
+
+      <!-- Graph text description for screen readers -->
+      <div class="graph-description" aria-live="polite" id="graph-description-box">
+        <h3>📊 Graph Description</h3>
+        <p id="graph-desc-text">Loading market analysis...</p>
+      </div>
+
+      <!-- Accessible data table -->
+      <table class="data-table" aria-live="polite">
+        <caption>Monopoly Regulation: Key Values</caption>
+        <thead>
+          <tr>
+            <th scope="col">Outcome</th>
+            <th scope="col">Unregulated Monopoly</th>
+            <th scope="col">With Price Cap</th>
+            <th scope="col">Competitive Benchmark</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Price ($/unit)</th>
+            <td id="tbl-pm"></td>
+            <td id="tbl-pr"></td>
+            <td id="tbl-pc"></td>
+          </tr>
+          <tr>
+            <th scope="row">Quantity</th>
+            <td id="tbl-qm"></td>
+            <td id="tbl-qr"></td>
+            <td id="tbl-qc"></td>
+          </tr>
+          <tr>
+            <th scope="row">Consumer Surplus</th>
+            <td id="tbl-csm"></td>
+            <td id="tbl-csr"></td>
+            <td id="tbl-csc"></td>
+          </tr>
+          <tr>
+            <th scope="row">Producer Surplus</th>
+            <td id="tbl-psm"></td>
+            <td id="tbl-psr"></td>
+            <td id="tbl-psc"></td>
+          </tr>
+          <tr>
+            <th scope="row">Total Surplus</th>
+            <td id="tbl-tsm"></td>
+            <td id="tbl-tsr"></td>
+            <td id="tbl-tsc"></td>
+          </tr>
+          <tr>
+            <th scope="row">Deadweight Loss</th>
+            <td id="tbl-dwlm"></td>
+            <td id="tbl-dwlr"></td>
+            <td id="tbl-dwlc">$0.00</td>
+          </tr>
+        </tbody>
+      </table>
+    </main>
+  </div><!-- end content-wrapper -->
+</div><!-- end wrapper -->
+
+<script>
+// ── Model parameters ──────────────────────────────────────────────
+// Demand: P = 20 - Q  →  Q = 20 - P
+// MC:     P = 2 + Q   (linear, upward sloping)
+// MR:     P = 20 - 2Q
+const dInt = 20, dSlope = 1;   // demand: P = dInt - dSlope*Q
+const mcInt = 2, mcSlope = 1;  // MC:     P = mcInt + mcSlope*Q
+
+function demandP(q) { return dInt - dSlope * q; }
+function demandQ(p) { return (dInt - p) / dSlope; }
+function mcP(q)     { return mcInt + mcSlope * q; }
+function mcQ(p)     { return (p - mcInt) / mcSlope; }
+function mrP(q)     { return dInt - 2 * dSlope * q; }
+
+// Equilibria
+const qMono = (dInt - mcInt) / (2 * dSlope + mcSlope);  // MR = MC → 20-2Q = 2+Q → Q=6
+const pMono = demandP(qMono);
+const qComp = (dInt - mcInt) / (dSlope + mcSlope);      // D = MC → 20-Q = 2+Q → Q=9
+const pComp = demandP(qComp);
+
+// Welfare helpers
+function calcCS(p, q) { return 0.5 * q * (dInt - p); }
+function calcPS(p, q) {
+  // Area between price line and MC curve from 0 to q
+  return q * p - (mcInt * q + 0.5 * mcSlope * q * q);
+}
+function calcTotalCost(q) { return mcInt * q + 0.5 * mcSlope * q * q; }
+
+// Scenarios
+const SCENARIOS = {
+  unregulated: { cap: 20,   label: 'No Regulation' },
+  efficient:   { cap: pComp, label: 'Efficient Cap (P = MC)' },
+  moderate:    { cap: (pMono + pComp) / 2, label: 'Moderate Cap' },
+  'too-low':   { cap: 3,   label: 'Cap Too Low' }
+};
+
+// ── Announce helper ───────────────────────────────────────────────
+function announce(msg) {
+  const el = document.getElementById('live-updates');
+  el.textContent = '';
+  setTimeout(() => { el.textContent = msg; }, 50);
+}
+
+// ── Slider input ──────────────────────────────────────────────────
+function onSliderInput(slider) {
+  updateGraph();
+}
+
+// ── Apply scenario ────────────────────────────────────────────────
+function applyScenario(key, btn) {
+  document.querySelectorAll('.scenario-btn').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-pressed', 'false');
+  });
+  btn.classList.add('active');
+  btn.setAttribute('aria-pressed', 'true');
+
+  const cap = SCENARIOS[key].cap;
+  const slider = document.getElementById('price-cap-slider');
+  slider.value = Math.min(Math.max(cap, 2), 20).toFixed(1);
+  slider.setAttribute('aria-valuenow', slider.value);
+  updateGraph();
+  announce(`Scenario: ${SCENARIOS[key].label}. Price cap set to $${parseFloat(slider.value).toFixed(2)}.`);
+}
+
+// ── Main update function ───────────────────────────────────────────
+function updateGraph() {
+  const cap = parseFloat(document.getElementById('price-cap-slider').value);
+  document.getElementById('price-cap-badge').textContent = '$' + cap.toFixed(2);
+  document.getElementById('price-cap-slider').setAttribute('aria-valuenow', cap);
+
+  const showUnreg = document.getElementById('show-unregulated').checked;
+  const showSurplus = document.getElementById('show-surplus').checked;
+  const showDWL = document.getElementById('show-dwl').checked;
+  const showComp = document.getElementById('show-competitive').checked;
+
+  // Determine regulated outcome
+  let qReg, pReg, capStatus, capClass;
+  if (cap >= pMono) {
+    qReg = qMono; pReg = pMono;
+    capStatus = 'Not binding'; capClass = 'status-not-binding';
+  } else {
+    const qAtCap = demandQ(cap);
+    const mcAtCap = mcP(qAtCap);
+    if (cap >= mcAtCap) {
+      qReg = qAtCap; pReg = cap;
+      capStatus = 'Binding'; capClass = 'status-binding';
+    } else {
+      const qMcEqCap = mcQ(cap);
+      if (qMcEqCap >= 0) {
+        qReg = qMcEqCap; pReg = cap;
+        capStatus = 'Binding (MC limited)'; capClass = 'status-binding';
+      } else {
+        qReg = 0; pReg = cap;
+        capStatus = 'Too low — output = 0'; capClass = 'status-low';
+      }
+    }
+  }
+
+  // Welfare at regulated outcome
+  const csReg = qReg > 0 ? calcCS(pReg, qReg) : 0;
+  const psReg = qReg > 0 ? calcPS(pReg, qReg) : 0;
+  const tsReg = csReg + psReg;
+  const dwlReg = (calcCS(pMono, qMono) + calcPS(pMono, qMono)) - tsReg; // relative to monopoly? No — vs competitive
+  // DWL = competitive TS - current TS
+  const tsComp = calcCS(pComp, qComp) + calcPS(pComp, qComp);
+  const dwlActual = Math.max(0, tsComp - tsReg);
+
+  // Welfare at monopoly
+  const csMono = calcCS(pMono, qMono);
+  const psMono = calcPS(pMono, qMono);
+  const tsMono = csMono + psMono;
+  const dwlMono = Math.max(0, tsComp - tsMono);
+
+  // Welfare at competitive
+  const csComp = calcCS(pComp, qComp);
+  const psComp = calcPS(pComp, qComp);
+
+  // Update status badge
+  const badge = document.getElementById('cap-status-badge');
+  badge.textContent = capStatus;
+  badge.className = 'status-badge ' + capClass;
+
+  // Update metric cards
+  document.getElementById('out-price').textContent = '$' + pReg.toFixed(2);
+  document.getElementById('out-qty').textContent = qReg.toFixed(2);
+  document.getElementById('out-cs').textContent = '$' + csReg.toFixed(2);
+  document.getElementById('out-ps').textContent = '$' + psReg.toFixed(2);
+  document.getElementById('out-ts').textContent = '$' + tsReg.toFixed(2);
+  document.getElementById('out-dwl').textContent = '$' + dwlActual.toFixed(2);
+
+  // Welfare banner
+  const wBanner = document.getElementById('welfare-banner');
+  const wChange = tsReg - tsMono;
+  if (Math.abs(wChange) < 0.5) {
+    wBanner.className = 'welfare-banner welfare-neutral';
+    wBanner.textContent = 'Welfare unchanged from unregulated monopoly';
+  } else if (wChange > 0) {
+    wBanner.className = 'welfare-banner welfare-gain';
+    wBanner.textContent = `▲ Welfare gain of $${wChange.toFixed(2)} vs. unregulated monopoly`;
+  } else {
+    wBanner.className = 'welfare-banner welfare-loss';
+    wBanner.textContent = `▼ Welfare loss of $${Math.abs(wChange).toFixed(2)} vs. unregulated monopoly`;
+  }
+
+  // Update table
+  document.getElementById('tbl-pm').textContent = '$' + pMono.toFixed(2);
+  document.getElementById('tbl-pr').textContent = '$' + pReg.toFixed(2);
+  document.getElementById('tbl-pc').textContent = '$' + pComp.toFixed(2);
+  document.getElementById('tbl-qm').textContent = qMono.toFixed(2);
+  document.getElementById('tbl-qr').textContent = qReg.toFixed(2);
+  document.getElementById('tbl-qc').textContent = qComp.toFixed(2);
+  document.getElementById('tbl-csm').textContent = '$' + csMono.toFixed(2);
+  document.getElementById('tbl-csr').textContent = '$' + csReg.toFixed(2);
+  document.getElementById('tbl-csc').textContent = '$' + csComp.toFixed(2);
+  document.getElementById('tbl-psm').textContent = '$' + psMono.toFixed(2);
+  document.getElementById('tbl-psr').textContent = '$' + psReg.toFixed(2);
+  document.getElementById('tbl-psc').textContent = '$' + psComp.toFixed(2);
+  document.getElementById('tbl-tsm').textContent = '$' + tsMono.toFixed(2);
+  document.getElementById('tbl-tsr').textContent = '$' + tsReg.toFixed(2);
+  document.getElementById('tbl-tsc').textContent = '$' + tsComp.toFixed(2);
+  document.getElementById('tbl-dwlm').textContent = '$' + dwlMono.toFixed(2);
+  document.getElementById('tbl-dwlr').textContent = '$' + dwlActual.toFixed(2);
+
+  // Insight text
+  updateInsight(cap, capStatus, qReg, pReg, dwlActual, wChange);
+
+  // Graph description
+  updateGraphDescription(cap, capStatus, pReg, qReg, csReg, psReg, dwlActual);
+
+  // Plot
+  drawGraph(cap, qReg, pReg, showUnreg, showSurplus, showDWL, showComp);
+}
+
+// ── Insight text ──────────────────────────────────────────────────
+function updateInsight(cap, status, qReg, pReg, dwl, wChange) {
+  let text = '';
+  if (status === 'Not binding') {
+    text = `A price cap of $${cap.toFixed(2)} exceeds the monopoly price ($${pMono.toFixed(2)}), so it has no effect. The monopolist still sets P = $${pMono.toFixed(2)} and Q = ${qMono.toFixed(2)}.`;
+  } else if (status.includes('Too low')) {
+    text = `The cap of $${cap.toFixed(2)} is below marginal cost at all positive quantities. The monopolist will not produce — output collapses to zero. This makes consumers worse off than even unregulated monopoly.`;
+  } else if (dwl < 0.5) {
+    text = `The price cap of $${cap.toFixed(2)} forces the monopolist to price at or near marginal cost. This achieves near-competitive efficiency with minimal deadweight loss ($${dwl.toFixed(2)}).`;
+  } else if (wChange > 0) {
+    text = `The price cap of $${cap.toFixed(2)} is binding. Output rises to Q = ${qReg.toFixed(2)} and price falls to $${pReg.toFixed(2)}. Welfare improves by $${wChange.toFixed(2)} compared to unregulated monopoly, though some deadweight loss ($${dwl.toFixed(2)}) remains.`;
+  } else {
+    text = `The cap of $${cap.toFixed(2)} reduces price to $${pReg.toFixed(2)} and quantity to ${qReg.toFixed(2)}. Compared to unregulated monopoly, this cap reduces total welfare by $${Math.abs(wChange).toFixed(2)}.`;
+  }
+  document.getElementById('insight-text').textContent = text;
+}
+
+// ── Graph description for screen readers ─────────────────────────
+function updateGraphDescription(cap, status, pReg, qReg, cs, ps, dwl) {
+  let desc = `The graph shows demand (P = 20 − Q), marginal cost (MC = 2 + Q), and marginal revenue (MR = 20 − 2Q). `;
+  desc += `The unregulated monopoly equilibrium is at price $${pMono.toFixed(2)} and quantity ${qMono.toFixed(2)}. `;
+  desc += `The competitive benchmark is at price $${pComp.toFixed(2)} and quantity ${qComp.toFixed(2)}. `;
+  if (status === 'Not binding') {
+    desc += `The current price cap of $${cap.toFixed(2)} is above the monopoly price, so it is not binding and the market outcome equals the unregulated monopoly outcome.`;
+  } else if (status.includes('Too low')) {
+    desc += `The current cap of $${cap.toFixed(2)} is below marginal cost, causing zero production.`;
+  } else {
+    desc += `With a binding cap of $${cap.toFixed(2)}, the regulated outcome is price $${pReg.toFixed(2)} and quantity ${qReg.toFixed(2)}. `;
+    desc += `Consumer surplus is $${cs.toFixed(2)}, producer surplus is $${ps.toFixed(2)}, and deadweight loss is $${dwl.toFixed(2)}.`;
+  }
+  document.getElementById('graph-desc-text').textContent = desc;
+}
+
+// ── Plotly graph ──────────────────────────────────────────────────
+function drawGraph(cap, qReg, pReg, showUnreg, showSurplus, showDWL, showComp) {
+  const traces = [];
+
+  // Demand
+  const dQs = [], dPs = [];
+  for (let q = 0; q <= 20; q += 0.25) { dQs.push(q); dPs.push(demandP(q)); }
+  traces.push({ x: dQs, y: dPs, mode: 'lines', name: 'Demand',
+    line: { color: '#3b82f6', width: 3 } });
+
+  // MC
+  const mcQs = [], mcPs = [];
+  for (let q = 0; q <= 20; q += 0.25) { mcQs.push(q); mcPs.push(mcP(q)); }
+  traces.push({ x: mcQs, y: mcPs, mode: 'lines', name: 'MC',
+    line: { color: '#f59e0b', width: 3 } });
+
+  // MR — modified when price cap is binding
+  if (cap < pMono) {
+    const qAtCap = demandQ(cap);
+    // Horizontal segment at cap from Q=0 to qAtCap
+    traces.push({ x: [0, qAtCap], y: [cap, cap], mode: 'lines',
+      name: 'MR (with cap)', line: { color: '#ef4444', width: 3 } });
+    // Vertical drop
+    traces.push({ x: [qAtCap, qAtCap], y: [cap, mrP(qAtCap)], mode: 'lines',
+      showlegend: false, line: { color: '#ef4444', width: 2, dash: 'dot' } });
+    // Original MR below kink
+    const mrQs = [], mrPs = [];
+    for (let q = qAtCap; q <= 10.5; q += 0.25) { mrQs.push(q); mrPs.push(mrP(q)); }
+    traces.push({ x: mrQs, y: mrPs, mode: 'lines', name: 'MR (original)',
+      line: { color: '#ef4444', width: 3, dash: 'dash' } });
+  } else {
+    const mrQs = [], mrPs = [];
+    for (let q = 0; q <= 10.5; q += 0.25) { mrQs.push(q); mrPs.push(mrP(q)); }
+    traces.push({ x: mrQs, y: mrPs, mode: 'lines', name: 'MR',
+      line: { color: '#ef4444', width: 3 } });
+  }
+
+  // Price cap line
+  if (cap < pMono) {
+    traces.push({ x: [0, 20], y: [cap, cap], mode: 'lines',
+      name: 'Price Cap', line: { color: '#7c3aed', width: 2, dash: 'dash' } });
+  }
+
+  // Surplus areas
+  if (showSurplus && qReg > 0) {
+    const demandAtQReg = demandP(qReg);
+    // Consumer surplus
+    if (pReg < demandAtQReg - 0.1) {
+      // Trapezoid
+      traces.push({ x: [0, qReg, qReg, 0], y: [dInt, demandAtQReg, pReg, pReg],
+        fill: 'toself', fillcolor: 'rgba(59,130,246,0.25)',
+        line: { width: 0 }, name: 'Consumer Surplus', hoverinfo: 'skip' });
+    } else {
+      // Triangle
+      traces.push({ x: [0, qReg, 0], y: [pReg, pReg, dInt],
+        fill: 'toself', fillcolor: 'rgba(59,130,246,0.25)',
+        line: { width: 0 }, name: 'Consumer Surplus', hoverinfo: 'skip' });
+    }
+    // Producer surplus
+    traces.push({ x: [0, qReg, qReg, 0], y: [pReg, pReg, mcP(qReg), mcP(0)],
+      fill: 'toself', fillcolor: 'rgba(245,158,11,0.25)',
+      line: { width: 0 }, name: 'Producer Surplus', hoverinfo: 'skip' });
+  }
+
+  // DWL
+  if (showDWL && qReg < qComp && qReg > 0) {
+    const dwlX = [qReg], dwlY = [demandP(qReg)];
+    for (let q = qReg; q <= qComp; q += 0.05) { dwlX.push(q); dwlY.push(demandP(q)); }
+    dwlX.push(qComp); dwlY.push(pComp);
+    for (let q = qComp; q >= qReg; q -= 0.05) { dwlX.push(q); dwlY.push(mcP(q)); }
+    dwlX.push(qReg); dwlY.push(mcP(qReg));
+    traces.push({ x: dwlX, y: dwlY, fill: 'toself', fillcolor: 'rgba(239,68,68,0.35)',
+      line: { width: 0 }, name: 'Deadweight Loss', hoverinfo: 'skip' });
+  }
+
+  // Points
+  if (showUnreg) {
+    traces.push({ x: [qMono], y: [pMono], mode: 'markers+text',
+      name: 'Unregulated Monopoly',
+      marker: { color: '#8b5cf6', size: 13, symbol: 'diamond' },
+      text: ['Monopoly'], textposition: 'top center',
+      textfont: { size: 12, color: '#7c3aed' } });
+  }
+
+  if (qReg > 0 && (Math.abs(qReg - qMono) > 0.15 || Math.abs(pReg - pMono) > 0.15)) {
+    traces.push({ x: [qReg], y: [pReg], mode: 'markers+text',
+      name: 'Regulated Outcome',
+      marker: { color: '#10b981', size: 13, symbol: 'circle' },
+      text: ['Regulated'], textposition: 'bottom center',
+      textfont: { size: 12, color: '#059669' } });
+  }
+
+  if (showComp) {
+    traces.push({ x: [qComp], y: [pComp], mode: 'markers+text',
+      name: 'Competitive Equilibrium',
+      marker: { color: '#06b6d4', size: 13, symbol: 'square' },
+      text: ['Competitive'], textposition: 'top right',
+      textfont: { size: 12, color: '#0284c7' } });
+  }
+
+  const layout = {
+    title: { text: 'Monopoly Market with Price Cap', font: { size: 16, color: '#18453B' } },
+    xaxis: { title: { text: 'Quantity (units)', font: { size: 13 } }, range: [0, 22], fixedrange: true },
+    yaxis: { title: { text: 'Price ($/unit)', font: { size: 13 } }, range: [0, 22], fixedrange: true },
+    margin: { l: 65, r: 20, t: 60, b: 60 },
+    autosize: false, width: 700, height: 500,
+    showlegend: true,
+    legend: { x: 0.01, y: 0.99, bgcolor: 'rgba(255,255,255,0.85)', bordercolor: '#cdd9d6', borderwidth: 1 },
+    plot_bgcolor: '#f9fafb', paper_bgcolor: 'white'
+  };
+
+  Plotly.newPlot('monopoly-graph', traces, layout, { responsive: false, displayModeBar: false });
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  updateGraph();
+});
+</script>
+</body>
+</html>
