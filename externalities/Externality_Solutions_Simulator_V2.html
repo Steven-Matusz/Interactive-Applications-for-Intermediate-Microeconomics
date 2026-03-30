@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Externality Solutions Simulator</title>
+  <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --msu-green:  #18453B;
+      --msu-green2: #2d5a4f;
+      --msu-gold:   #C89A2A;
+      --bg-page:    #f0f4f0;
+      --bg-white:   #ffffff;
+      --border:     #cdd9d6;
+      --text-dark:  #1a1a1a;
+      --text-mid:   #444444;
+      --focus-ring: #C89A2A;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg-page);
+      color: var(--text-dark);
+      min-height: 100vh;
+      padding: 16px;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    /* ── Skip Link ── */
+    .skip-link {
+      position: absolute;
+      top: -40px; left: 0;
+      background: var(--msu-green);
+      color: white;
+      padding: 8px 16px;
+      z-index: 9999;
+      font-weight: 700;
+      text-decoration: none;
+      border-radius: 0 0 6px 0;
+      transition: top 0.2s;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ── Focus visible (WCAG 2.4.11) ── */
+    :focus-visible {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 3px;
+    }
+
+    /* ── Screen reader only ── */
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ── Live region ── */
+    .live-region {
+      position: absolute;
+      left: -10000px;
+      width: 1px; height: 1px;
+      overflow: hidden;
+    }
+
+    /* ── Wrapper ── */
+    .wrapper {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: var(--bg-white);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, var(--msu-green), var(--msu-green2));
+      color: white;
+      padding: 24px 32px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .header p { font-size: 1.05rem; opacity: 0.9; }
+
+    /* ── Scenario strip ── */
+    .scenario-strip {
+      background: #f8f9fa;
+      padding: 18px 24px;
+      border-bottom: 3px solid var(--msu-green);
+    }
+    .scenario-strip h2 {
+      color: var(--msu-green);
+      font-size: 1.05rem;
+      margin-bottom: 10px;
+    }
+    .scenario-buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .scenario-btn {
+      flex: 1;
+      min-width: 180px;
+      padding: 12px 16px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border: 2px solid var(--msu-green);
+      background: white;
+      color: var(--msu-green);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, transform 0.15s;
+      text-align: left;
+    }
+    .scenario-btn:hover,
+    .scenario-btn:focus-visible {
+      background: var(--msu-green);
+      color: white;
+      transform: translateY(-2px);
+    }
+    .scenario-btn[aria-pressed="true"] {
+      background: var(--msu-green);
+      color: white;
+    }
+    .scenario-btn small {
+      display: block;
+      font-weight: 400;
+      font-size: 0.82rem;
+      margin-top: 3px;
+      opacity: 0.85;
+    }
+
+    /* ── Main two-column layout ── */
+    .content-wrapper {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      min-height: 620px;
+    }
+
+    /* ── Control panel ── */
+    .control-panel {
+      background: #f8f9fa;
+      padding: 24px;
+      border-right: 3px solid #e9ecef;
+      overflow-y: auto;
+    }
+
+    .panel-section {
+      margin-bottom: 24px;
+    }
+    .panel-section h3 {
+      color: var(--msu-green);
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    /* ── Solution tabs ── */
+    .tab-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 9px 12px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border: 2px solid var(--msu-green);
+      background: white;
+      color: var(--msu-green);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .tab-btn[aria-selected="true"] {
+      background: var(--msu-green);
+      color: white;
+    }
+    .tab-btn:hover:not([aria-selected="true"]) {
+      background: #e8f0ed;
+    }
+
+    /* ── Sliders ── */
+    .slider-group {
+      background: white;
+      padding: 14px 16px;
+      border-radius: 8px;
+      border: 2px solid var(--border);
+      margin-bottom: 14px;
+    }
+    .slider-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+    .slider-label-row label {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--msu-green);
+    }
+    .slider-val {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--msu-green);
+      min-width: 50px;
+      text-align: right;
+    }
+    input[type="range"] {
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      accent-color: var(--msu-green);
+      cursor: pointer;
+      margin: 4px 0;
+    }
+    .range-bounds {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    /* ── Property rights buttons ── */
+    .rights-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .rights-btn {
+      padding: 10px 14px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border: 2px solid var(--msu-green);
+      background: white;
+      color: var(--msu-green);
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.2s, color 0.2s;
+    }
+    .rights-btn[aria-pressed="true"] {
+      background: var(--msu-green);
+      color: white;
+    }
+    .rights-btn:hover:not([aria-pressed="true"]) {
+      background: #e8f0ed;
+    }
+
+    /* ── Info box ── */
+    .info-box {
+      background: #fff8e1;
+      border-left: 4px solid var(--msu-gold);
+      padding: 14px 16px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      color: #5a4000;
+    }
+    .info-box strong { display: block; margin-bottom: 4px; color: #3d2b00; }
+
+    /* ── Feedback boxes ── */
+    .feedback-inline {
+      margin-top: 12px;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+    .fb-hint   { background: #fff3cd; border: 2px solid #ffc107; color: #6b4a00; }
+    .fb-ok     { background: #d4edda; border: 2px solid #28a745; color: #155724; }
+    .fb-warn   { background: #f8d7da; border: 2px solid #dc3545; color: #721c24; }
+
+    /* ── Graph panel ── */
+    .graph-panel {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .graph-wrapper {
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      overflow: hidden;
+      background: white;
+    }
+
+    /* ── Metrics grid ── */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .metric-card {
+      padding: 14px 12px;
+      border-radius: 8px;
+      border: 2px solid;
+      text-align: center;
+    }
+    .metric-card.market   { border-color: #007bff; background: rgba(0,123,255,0.07); }
+    .metric-card.efficient{ border-color: #28a745; background: rgba(40,167,69,0.07); }
+    .metric-card.dwl      { border-color: #dc3545; background: rgba(220,53,69,0.07); }
+    .metric-card.external { border-color: var(--msu-gold); background: rgba(200,154,42,0.07); }
+
+    .metric-label {
+      font-size: 0.78rem;
+      color: var(--text-mid);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .metric-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--msu-green);
+    }
+
+    /* ── Outcome message ── */
+    .outcome-box {
+      padding: 16px 18px;
+      border-radius: 8px;
+      border: 2px solid;
+      font-size: 0.92rem;
+    }
+    .outcome-box.success { border-color: #28a745; background: #d4edda; color: #155724; }
+    .outcome-box.failure { border-color: #dc3545; background: #f8d7da; color: #721c24; }
+    .outcome-box.neutral { border-color: var(--msu-gold); background: #fff8e1; color: #5a4000; }
+    .outcome-box h4 { margin-bottom: 6px; font-size: 1rem; }
+    .outcome-box p  { margin-bottom: 4px; }
+
+    /* ── Accessible data table ── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid #e9ecef;
+      font-size: 0.88rem;
+    }
+    .data-table caption {
+      padding: 8px 12px;
+      font-weight: 700;
+      color: var(--msu-green);
+      text-align: left;
+      background: #f8f9fa;
+      border-bottom: 2px solid #e9ecef;
+    }
+    .data-table th,
+    .data-table td {
+      padding: 9px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e9ecef;
+    }
+    .data-table th {
+      background: #f0f4f0;
+      font-weight: 600;
+      color: var(--msu-green);
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover { background: #f8f9fa; }
+
+    /* ── Tab panel hidden ── */
+    [role="tabpanel"][hidden] { display: none; }
+
+    @media (max-width: 1050px) {
+      .content-wrapper { grid-template-columns: 1fr; }
+      .control-panel { border-right: none; border-bottom: 3px solid #e9ecef; }
+      .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .metrics-grid { grid-template-columns: 1fr 1fr; }
+      .scenario-buttons { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Skip navigation -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Screen reader live region -->
+<div id="live-updates" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+<div class="wrapper" role="main">
+
+  <!-- Header -->
+  <header class="header">
+    <h1>Externality Solutions Simulator</h1>
+    <p>Exploring Coase Bargaining and Pigouvian Policies</p>
+  </header>
+
+  <!-- Scenario selector -->
+  <section class="scenario-strip" aria-label="Scenario selection">
+    <h2 id="scenario-heading">Choose a Scenario</h2>
+    <div class="scenario-buttons" role="group" aria-labelledby="scenario-heading">
+      <button class="scenario-btn" aria-pressed="true"
+              onclick="selectScenario('pollution', this)">
+        🏭 Factory Pollution
+        <small>Negative production externality</small>
+      </button>
+      <button class="scenario-btn" aria-pressed="false"
+              onclick="selectScenario('traffic', this)">
+        🚗 Traffic Congestion
+        <small>Negative consumption externality</small>
+      </button>
+      <button class="scenario-btn" aria-pressed="false"
+              onclick="selectScenario('vaccination', this)">
+        💉 Vaccination Program
+        <small>Positive consumption externality</small>
+      </button>
+      <button class="scenario-btn" aria-pressed="false"
+              onclick="selectScenario('research', this)">
+        🔬 R&amp;D Spillovers
+        <small>Positive production externality</small>
+      </button>
+    </div>
+  </section>
+
+  <!-- Main content -->
+  <div class="content-wrapper" id="main-content">
+
+    <!-- ── Control Panel ── -->
+    <aside class="control-panel" aria-label="Controls">
+
+      <!-- Solution approach tabs -->
+      <div class="panel-section">
+        <h3 id="solution-heading">Solution Approach</h3>
+        <div class="tab-group" role="tablist" aria-label="Solution approach">
+          <button class="tab-btn" role="tab" id="tab-coase"
+                  aria-selected="true" aria-controls="panel-coase"
+                  onclick="switchTab('coase')">Coase Bargaining</button>
+          <button class="tab-btn" role="tab" id="tab-pigouvian"
+                  aria-selected="false" aria-controls="panel-pigouvian"
+                  onclick="switchTab('pigouvian')">Pigouvian Policy</button>
+        </div>
+
+        <!-- Coase panel -->
+        <div id="panel-coase" role="tabpanel" aria-labelledby="tab-coase">
+          <div class="slider-group">
+            <div class="slider-label-row">
+              <label for="transaction-cost-slider">Transaction Costs</label>
+              <span class="slider-val" id="tc-val" aria-live="polite">$50</span>
+            </div>
+            <input type="range" id="transaction-cost-slider"
+                   min="0" max="200" value="50" step="10"
+                   aria-describedby="tc-desc"
+                   oninput="updateTC(this.value)">
+            <div class="range-bounds" aria-hidden="true">
+              <span>$0</span><span>$200</span>
+            </div>
+            <p id="tc-desc" class="sr-only">
+              Slide to set transaction costs from $0 to $200. Lower costs allow Coase bargaining to succeed.
+            </p>
+          </div>
+
+          <div class="panel-section">
+            <h3 id="rights-heading">Property Rights Assignment</h3>
+            <div class="rights-group" role="group" aria-labelledby="rights-heading">
+              <button class="rights-btn" aria-pressed="true"
+                      id="rights-polluter"
+                      onclick="setPropertyRights('polluter', this)">
+                Rights to Polluter / Actor
+              </button>
+              <button class="rights-btn" aria-pressed="false"
+                      id="rights-victim"
+                      onclick="setPropertyRights('victim', this)">
+                Rights to Victim / Affected Party
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pigouvian panel -->
+        <div id="panel-pigouvian" role="tabpanel" aria-labelledby="tab-pigouvian" hidden>
+          <div class="slider-group">
+            <div class="slider-label-row">
+              <label for="policy-slider" id="policy-label">Tax per Unit</label>
+              <span class="slider-val" id="policy-val" aria-live="polite">$0</span>
+            </div>
+            <input type="range" id="policy-slider"
+                   min="0" max="100" value="0" step="5"
+                   aria-describedby="policy-desc"
+                   oninput="updatePolicy(this.value)">
+            <div class="range-bounds" aria-hidden="true">
+              <span>$0</span><span>$100</span>
+            </div>
+            <p id="policy-desc" class="sr-only">
+              Slide to set a tax or subsidy per unit. Try to find the optimal Pigouvian level.
+            </p>
+          </div>
+          <div id="pigouvian-feedback" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <!-- Contextual hint -->
+      <div class="info-box" id="hint-box" aria-label="How to use this tool">
+        <strong>💡 How to Use</strong>
+        <p id="hint-text">Adjust transaction costs and property rights to see when Coase bargaining succeeds or fails. Low transaction costs enable efficient private bargaining.</p>
+      </div>
+
+    </aside>
+
+    <!-- ── Graph Panel ── -->
+    <section class="graph-panel" aria-label="Graph and results">
+
+      <!-- Plotly graph -->
+      <div class="graph-wrapper">
+        <div id="externality-graph"
+             role="img"
+             aria-label="Supply and demand curves showing externality and policy effects"
+             aria-describedby="graph-description"></div>
+      </div>
+
+      <!-- Screen reader graph description -->
+      <p id="graph-description" class="sr-only" aria-live="polite"></p>
+
+      <!-- Metrics -->
+      <div class="metrics-grid" role="region" aria-label="Key market statistics">
+        <div class="metric-card market">
+          <div class="metric-label">Market Quantity</div>
+          <div class="metric-value" id="stat-market-q" aria-live="polite">—</div>
+        </div>
+        <div class="metric-card efficient">
+          <div class="metric-label">Efficient Quantity</div>
+          <div class="metric-value" id="stat-eff-q" aria-live="polite">—</div>
+        </div>
+        <div class="metric-card dwl">
+          <div class="metric-label">Deadweight Loss</div>
+          <div class="metric-value" id="stat-dwl" aria-live="polite">—</div>
+        </div>
+        <div class="metric-card external">
+          <div class="metric-label" id="external-label">External Cost</div>
+          <div class="metric-value" id="stat-external" aria-live="polite">—</div>
+        </div>
+      </div>
+
+      <!-- Outcome message -->
+      <div id="outcome-message" aria-live="polite" aria-atomic="true"></div>
+
+      <!-- Data table for screen readers / low-vision users -->
+      <table class="data-table" id="data-table">
+        <caption>Scenario Data Summary</caption>
+        <thead>
+          <tr>
+            <th scope="col">Metric</th>
+            <th scope="col">Value</th>
+            <th scope="col">Notes</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <tr><td>Scenario</td><td id="tbl-scenario">—</td><td id="tbl-type">—</td></tr>
+          <tr><td>Market Quantity (Qm)</td><td id="tbl-qm">—</td><td>Where PMB = PMC</td></tr>
+          <tr><td>Efficient Quantity (Q*)</td><td id="tbl-qeff">—</td><td>Where SMB = SMC</td></tr>
+          <tr><td>Deadweight Loss</td><td id="tbl-dwl">—</td><td>Welfare loss from externality</td></tr>
+          <tr><td id="tbl-external-label">External Cost (total)</td><td id="tbl-external">—</td><td>At market quantity</td></tr>
+          <tr><td>Optimal Policy Level</td><td id="tbl-optimal">—</td><td>Pigouvian tax/subsidy</td></tr>
+          <tr><td>Coase: Gains from Bargaining</td><td id="tbl-gains">—</td><td>= Deadweight Loss eliminated</td></tr>
+          <tr><td>Transaction Costs</td><td id="tbl-tc">$50</td><td>Set with slider</td></tr>
+          <tr><td>Bargaining Outcome</td><td id="tbl-bargain" colspan="2">—</td></tr>
+        </tbody>
+      </table>
+
+    </section>
+  </div><!-- end content-wrapper -->
+</div><!-- end wrapper -->
+
+<script>
+// ── State ──────────────────────────────────────────────────────
+let currentScenario = 'pollution';
+let currentTab      = 'coase';
+let transactionCost = 50;
+let propertyRights  = 'polluter';
+let policyLevel     = 0;
+
+// ── Scenario definitions ──────────────────────────────────────
+const scenarios = {
+  pollution: {
+    name: 'Factory Pollution',
+    type: 'Negative production externality',
+    description: 'A factory produces steel and emits pollution that harms downstream residents',
+    PMC: q => 20 + 0.5 * q,
+    SMC: q => 20 + 1.0 * q,
+    PMB: q => 100 - 0.5 * q,
+    SMB: q => 100 - 0.5 * q,
+    externalCost: q => 0.5 * q,
+    marketQ: 80,
+    efficientQ: 53.33,
+    optimalTax: 26.67,
+    optimalSubsidy: null,
+    isNegative: true,
+    isProduction: true,
+    yMax: 130,
+    xMax: 160
+  },
+  traffic: {
+    name: 'Traffic Congestion',
+    type: 'Negative consumption externality',
+    description: 'Drivers create congestion that slows everyone down',
+    PMC: q => 10 + 0.3 * q,
+    SMC: q => 10 + 0.3 * q,
+    PMB: q => 80 - 0.5 * q,
+    SMB: q => 80 - 0.9 * q,
+    externalCost: q => 0.4 * q,
+    marketQ: 87.5,
+    efficientQ: 58.33,
+    optimalTax: 23.33,
+    optimalSubsidy: null,
+    isNegative: true,
+    isProduction: false,
+    yMax: 110,
+    xMax: 160
+  },
+  vaccination: {
+    name: 'Vaccination Program',
+    type: 'Positive consumption externality',
+    description: 'Individuals get vaccinated, creating herd immunity benefits for others',
+    PMC: q => 20 + 0.4 * q,
+    SMC: q => 20 + 0.4 * q,
+    PMB: q => 100 - 0.6 * q,
+    SMB: q => 100 - 0.2 * q,
+    externalBenefit: q => 0.4 * q,
+    marketQ: 80,
+    efficientQ: 133.33,
+    optimalTax: null,
+    optimalSubsidy: 53.33,
+    isNegative: false,
+    isProduction: false,
+    yMax: 130,
+    xMax: 160
+  },
+  research: {
+    name: 'R&D Spillovers',
+    type: 'Positive production externality',
+    description: 'A firm invests in R&D, creating knowledge spillovers that benefit other firms',
+    // PMC = 40 + 0.6q,  PMB = 120 - 0.5q,  SMB = 120 - 0.2q  (SMB > PMB: spillover captured by others)
+    // Market eq (PMB = PMC): 120 - 0.5q = 40 + 0.6q  →  q* = 72.73,  P ≈ 83.6
+    // Efficient eq (SMB = PMC): 120 - 0.2q = 40 + 0.6q  →  q* = 100,  P = 100
+    // Optimal subsidy = SMB(100) - PMB(100) = 100 - 70 = 30
+    PMC: q => 40 + 0.6 * q,
+    SMC: q => 40 + 0.6 * q,
+    PMB: q => 120 - 0.5 * q,
+    SMB: q => 120 - 0.2 * q,
+    externalBenefit: q => 0.3 * q,
+    marketQ: 72.73,
+    efficientQ: 100,
+    optimalTax: null,
+    optimalSubsidy: 30,
+    isNegative: false,
+    isProduction: true,
+    yMax: 150,
+    xMax: 160
+  }
+};
+
+// ── Helpers ───────────────────────────────────────────────────
+function calculateDWL(s) {
+  const dQ = Math.abs(s.marketQ - s.efficientQ);
+  if (s.isNegative && s.isProduction) {
+    return 0.5 * dQ * (s.SMC(s.marketQ) - s.PMC(s.marketQ));
+  } else if (s.isNegative && !s.isProduction) {
+    return 0.5 * dQ * (s.PMB(s.marketQ) - s.SMB(s.marketQ));
+  } else {
+    return 0.5 * dQ * (s.SMB ? s.SMB(s.marketQ) - s.PMB(s.marketQ) : 0);
+  }
+}
+
+function calculateTotalExternal(s) {
+  if (s.isNegative) {
+    return s.externalCost ? s.externalCost(s.marketQ) * s.marketQ / 2 + s.externalCost(0) * s.marketQ / 2 : 0;
+  } else {
+    return s.externalBenefit ? s.externalBenefit(s.efficientQ) * s.efficientQ / 2 : 0;
+  }
+}
+
+function announceChange(msg) {
+  const el = document.getElementById('live-updates');
+  el.textContent = '';
+  requestAnimationFrame(() => { el.textContent = msg; });
+}
+
+// ── Event wiring ───────────────────────────────────────────────
+function updateTC(val) {
+  transactionCost = parseInt(val);
+  document.getElementById('tc-val').textContent = '$' + transactionCost;
+  renderAll();
+}
+
+function updatePolicy(val) {
+  policyLevel = parseInt(val);
+  document.getElementById('policy-val').textContent = '$' + policyLevel;
+  renderAll();
+}
+
+// ── Scenario selection ────────────────────────────────────────
+function selectScenario(key, btn) {
+  currentScenario = key;
+
+  // Reset Pigouvian slider
+  policyLevel = 0;
+  document.getElementById('policy-slider').value = 0;
+  document.getElementById('policy-val').textContent = '$0';
+
+  // Update pressed state
+  document.querySelectorAll('.scenario-btn').forEach(b => b.setAttribute('aria-pressed', 'false'));
+  btn.setAttribute('aria-pressed', 'true');
+
+  renderAll();
+  announceChange('Scenario changed to ' + scenarios[key].name + '. ' + scenarios[key].description);
+}
+
+// ── Tab switching ─────────────────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+
+  // Tab buttons
+  document.getElementById('tab-coase').setAttribute('aria-selected', tab === 'coase' ? 'true' : 'false');
+  document.getElementById('tab-pigouvian').setAttribute('aria-selected', tab === 'pigouvian' ? 'true' : 'false');
+
+  // Tab panels
+  document.getElementById('panel-coase').hidden     = (tab !== 'coase');
+  document.getElementById('panel-pigouvian').hidden = (tab !== 'pigouvian');
+
+  // Reset policy slider when switching to Pigouvian
+  if (tab === 'pigouvian') {
+    policyLevel = 0;
+    document.getElementById('policy-slider').value = 0;
+    document.getElementById('policy-val').textContent = '$0';
+  }
+
+  renderAll();
+  announceChange('Switched to ' + (tab === 'coase' ? 'Coase Bargaining' : 'Pigouvian Policy') + ' view.');
+}
+
+// ── Property rights ───────────────────────────────────────────
+function setPropertyRights(rights, btn) {
+  propertyRights = rights;
+  document.querySelectorAll('.rights-btn').forEach(b => b.setAttribute('aria-pressed', 'false'));
+  btn.setAttribute('aria-pressed', 'true');
+  renderAll();
+}
+
+// ── Master render ─────────────────────────────────────────────
+function renderAll() {
+  const s = scenarios[currentScenario];
+  updatePolicyLabel(s);
+  updateGraph(s);
+  updateMetrics(s);
+  updateHint(s);
+  updateDataTable(s);
+}
+
+function updatePolicyLabel(s) {
+  document.getElementById('policy-label').textContent =
+    s.isNegative ? 'Tax per Unit' : 'Subsidy per Unit';
+}
+
+// ── Graph ─────────────────────────────────────────────────────
+function updateGraph(s) {
+  const maxQ  = s.xMax;
+  const maxP  = s.yMax;
+  const qs    = Array.from({length: maxQ + 1}, (_, i) => i);
+  const traces = [];
+  const shapes = [];
+
+  // PMC
+  traces.push({
+    x: qs, y: qs.map(q => s.PMC(q)),
+    mode: 'lines',
+    name: (s.isProduction && !s.isNegative) ? 'PMC = SMC' : 'PMC',
+    line: { color: '#1565C0', width: 3 },
+    hovertemplate: 'PMC: $%{y:.1f}<extra></extra>'
+  });
+
+  // PMB
+  traces.push({
+    x: qs, y: qs.map(q => s.PMB(q)),
+    mode: 'lines',
+    name: (s.isNegative && s.isProduction) ? 'PMB = SMB' : 'PMB',
+    line: { color: '#2E7D32', width: 3 },
+    hovertemplate: 'PMB: $%{y:.1f}<extra></extra>'
+  });
+
+  // Social curve
+  if (s.isNegative && s.isProduction) {
+    traces.push({
+      x: qs, y: qs.map(q => s.SMC(q)),
+      mode: 'lines', name: 'SMC (Social MC)',
+      line: { color: '#C62828', width: 3, dash: 'dash' },
+      hovertemplate: 'SMC: $%{y:.1f}<extra></extra>'
+    });
+  } else {
+    traces.push({
+      x: qs, y: qs.map(q => s.SMB(q)),
+      mode: 'lines', name: 'SMB (Social MB)',
+      line: { color: '#7B1FA2', width: 3, dash: 'dash' },
+      hovertemplate: 'SMB: $%{y:.1f}<extra></extra>'
+    });
+  }
+
+  // DWL shading (no policy applied)
+  if (currentTab === 'coase' || policyLevel === 0) {
+    if (s.isNegative && s.isProduction) {
+      shapes.push({
+        type: 'path',
+        path: `M ${s.efficientQ},${s.PMB(s.efficientQ)} L ${s.marketQ},${s.SMC(s.marketQ)} L ${s.marketQ},${s.PMC(s.marketQ)} Z`,
+        fillcolor: 'rgba(255,87,34,0.25)',
+        line: { color: 'rgba(255,87,34,0.6)', width: 1.5 }
+      });
+    } else if (s.isNegative && !s.isProduction) {
+      shapes.push({
+        type: 'path',
+        path: `M ${s.efficientQ},${s.SMB(s.efficientQ)} L ${s.marketQ},${s.PMB(s.marketQ)} L ${s.marketQ},${s.SMB(s.marketQ)} Z`,
+        fillcolor: 'rgba(255,87,34,0.25)',
+        line: { color: 'rgba(255,87,34,0.6)', width: 1.5 }
+      });
+    } else {
+      // Positive externality (production or consumption): SMB > PMB, market under-produces
+      // DWL triangle: vertical gap at Qm between PMB(Qm) and SMB(Qm), apex at efficient eq (Q*, PMC(Q*))
+      shapes.push({
+        type: 'path',
+        path: `M ${s.marketQ},${s.PMB(s.marketQ)} L ${s.efficientQ},${s.PMC(s.efficientQ)} L ${s.marketQ},${s.SMB(s.marketQ)} Z`,
+        fillcolor: 'rgba(255,87,34,0.25)',
+        line: { color: 'rgba(255,87,34,0.6)', width: 1.5 }
+      });
+    }
+  }
+
+  // Pigouvian shifted curve
+  if (currentTab === 'pigouvian' && policyLevel > 0) {
+    if (s.isNegative) {
+      traces.push({
+        x: qs, y: qs.map(q => s.PMC(q) + policyLevel),
+        mode: 'lines', name: 'PMC + Tax',
+        line: { color: '#E65100', width: 3 },
+        hovertemplate: 'PMC+Tax: $%{y:.1f}<extra></extra>'
+      });
+    } else {
+      traces.push({
+        x: qs, y: qs.map(q => s.PMB(q) + policyLevel),
+        mode: 'lines', name: 'PMB + Subsidy',
+        line: { color: '#E65100', width: 3 },
+        hovertemplate: 'PMB+Sub: $%{y:.1f}<extra></extra>'
+      });
+    }
+  }
+
+  // Market equilibrium point
+  traces.push({
+    x: [s.marketQ], y: [s.PMB(s.marketQ)],
+    mode: 'markers', name: 'Market Eq.',
+    marker: { size: 12, color: '#E53935', symbol: 'circle' },
+    hovertemplate: 'Market Eq. Q=%{x}, P=$%{y:.1f}<extra></extra>'
+  });
+
+  // Efficient equilibrium point
+  const effY = s.isNegative && s.isProduction ? s.SMC(s.efficientQ) : s.PMC(s.efficientQ);
+  traces.push({
+    x: [s.efficientQ], y: [effY],
+    mode: 'markers', name: 'Efficient Eq.',
+    marker: { size: 13, color: '#2E7D32', symbol: 'star' },
+    hovertemplate: 'Efficient Eq. Q=%{x:.1f}, P=$%{y:.1f}<extra></extra>'
+  });
+
+  const layout = {
+    title: {
+      text: s.name + '<br><span style="font-size:12px;color:#666">' + s.type + '</span>',
+      font: { size: 15, color: '#18453B' }
+    },
+    xaxis: {
+      title: 'Quantity',
+      range: [0, maxQ],
+      fixedrange: true,
+      titlefont: { size: 13 },
+      tickfont:  { size: 11 }
+    },
+    yaxis: {
+      title: 'Price / Cost / Benefit ($)',
+      range: [0, maxP],
+      fixedrange: true,
+      titlefont: { size: 13 },
+      tickfont:  { size: 11 }
+    },
+    showlegend: true,
+    legend: { x: 0.65, y: 0.98, bgcolor: 'rgba(255,255,255,0.85)', borderwidth: 1 },
+    shapes: shapes,
+    margin: { l: 65, r: 20, t: 70, b: 55 },
+    autosize: false,
+    width: 700,
+    height: 460,
+    hovermode: 'closest',
+    plot_bgcolor: '#fafafa',
+    paper_bgcolor: '#ffffff'
+  };
+
+  const config = { responsive: false, displayModeBar: false };
+
+  Plotly.newPlot('externality-graph', traces, layout, config);
+
+  // Update screen-reader description
+  const descEl = document.getElementById('graph-description');
+  const dwl    = calculateDWL(s);
+  const optimal = s.isNegative ? s.optimalTax : s.optimalSubsidy;
+  descEl.textContent =
+    `Graph shows ${s.name}. Market equilibrium quantity: ${s.marketQ.toFixed(1)} units. ` +
+    `Efficient quantity: ${s.efficientQ.toFixed(1)} units. ` +
+    `Deadweight loss: $${dwl.toFixed(0)}. ` +
+    `Optimal ${s.isNegative ? 'tax' : 'subsidy'}: $${(optimal || 0).toFixed(2)} per unit. ` +
+    `The orange shaded area represents deadweight loss from the externality.`;
+}
+
+// ── Metrics ───────────────────────────────────────────────────
+function updateMetrics(s) {
+  const dwl    = calculateDWL(s);
+  const ext    = calculateTotalExternal(s);
+  const label  = s.isNegative ? 'External Cost' : 'External Benefit';
+
+  document.getElementById('stat-market-q').textContent = s.marketQ.toFixed(1);
+  document.getElementById('stat-eff-q').textContent    = s.efficientQ.toFixed(1);
+  document.getElementById('stat-dwl').textContent      = '$' + dwl.toFixed(0);
+  document.getElementById('external-label').textContent = label;
+  document.getElementById('stat-external').textContent  = '$' + ext.toFixed(0);
+
+  updateOutcomeMessage(s, dwl);
+  updatePigouvianFeedback(s);
+}
+
+function updateOutcomeMessage(s, dwl) {
+  const el = document.getElementById('outcome-message');
+
+  if (currentTab === 'coase') {
+    const gains  = dwl;
+    const rights = propertyRights === 'polluter'
+      ? (s.isNegative ? 'The affected party pays the firm to reduce output.'
+                       : 'The firm captures spillover benefits through negotiation.')
+      : (s.isNegative ? 'The firm pays the affected party for permission to create harm.'
+                       : 'The firm receives payment encouraging expanded output.');
+
+    if (transactionCost < gains) {
+      el.innerHTML = `
+        <div class="outcome-box success" role="status">
+          <h4>✅ Coase Bargaining Succeeds!</h4>
+          <p><strong>Transaction costs ($${transactionCost}) &lt; Gains from bargaining ($${gains.toFixed(0)})</strong></p>
+          <p>${rights}</p>
+          <p>Both property rights assignments achieve efficient quantity <strong>${s.efficientQ.toFixed(1)}</strong> — but determine who compensates whom.</p>
+        </div>`;
+      announceChange(`Coase bargaining succeeds. Transaction costs $${transactionCost} are less than gains of $${gains.toFixed(0)}.`);
+    } else {
+      el.innerHTML = `
+        <div class="outcome-box failure" role="alert">
+          <h4>❌ Coase Bargaining Fails!</h4>
+          <p><strong>Transaction costs ($${transactionCost}) ≥ Gains from bargaining ($${gains.toFixed(0)})</strong></p>
+          <p>Negotiation costs exceed the potential efficiency gains. Market failure persists.</p>
+          <p>Quantity stays at <strong>${s.marketQ.toFixed(1)}</strong> instead of efficient <strong>${s.efficientQ.toFixed(1)}</strong>.</p>
+          <p><em>Government intervention may be needed when transaction costs are high.</em></p>
+        </div>`;
+      announceChange(`Coase bargaining fails. Transaction costs $${transactionCost} exceed gains of $${gains.toFixed(0)}.`);
+    }
+  } else {
+    const optimal = (s.isNegative ? s.optimalTax : s.optimalSubsidy) || 0;
+    const diff    = policyLevel - optimal;
+    const type    = s.isNegative ? 'tax' : 'subsidy';
+
+    if (policyLevel === 0) {
+      el.innerHTML = `
+        <div class="outcome-box neutral" role="status">
+          <h4>📊 No Policy Applied</h4>
+          <p>The market is at the <em>private</em> equilibrium (Q = ${s.marketQ.toFixed(1)}). The externality is not corrected.</p>
+          <p>Set a ${type} to reduce the deadweight loss of <strong>$${dwl.toFixed(0)}</strong>.</p>
+          <p><em>Hint: The optimal ${type} equals the marginal external ${s.isNegative ? 'cost' : 'benefit'} at the efficient quantity — $${optimal.toFixed(2)}.</em></p>
+        </div>`;
+    } else if (Math.abs(diff) < 3) {
+      el.innerHTML = `
+        <div class="outcome-box success" role="status">
+          <h4>✅ Optimal ${type.charAt(0).toUpperCase() + type.slice(1)} Achieved!</h4>
+          <p><strong>${type.charAt(0).toUpperCase() + type.slice(1)}: $${policyLevel} ≈ Optimal $${optimal.toFixed(2)}</strong></p>
+          <p>The externality is internalized. Production moves to efficient quantity <strong>${s.efficientQ.toFixed(1)}</strong>.</p>
+          <p>Deadweight loss is eliminated. Total welfare is maximized.</p>
+        </div>`;
+      announceChange(`Optimal ${type} achieved! Deadweight loss eliminated.`);
+    } else if (diff < 0) {
+      el.innerHTML = `
+        <div class="outcome-box neutral" role="status">
+          <h4>📉 ${type.charAt(0).toUpperCase() + type.slice(1)} Too Low</h4>
+          <p><strong>$${policyLevel} &lt; Optimal $${optimal.toFixed(2)}</strong></p>
+          <p>Moves in the right direction but does not fully correct the externality. Some deadweight loss remains.</p>
+          <p><em>Increase the ${type} toward $${optimal.toFixed(2)}.</em></p>
+        </div>`;
+    } else {
+      el.innerHTML = `
+        <div class="outcome-box failure" role="alert">
+          <h4>⚠️ ${type.charAt(0).toUpperCase() + type.slice(1)} Too High</h4>
+          <p><strong>$${policyLevel} &gt; Optimal $${optimal.toFixed(2)}</strong></p>
+          <p>Over-corrects the externality, pushing quantity past the efficient level and creating new deadweight loss.</p>
+          <p><em>Reduce the ${type} to $${optimal.toFixed(2)}.</em></p>
+        </div>`;
+      announceChange(`${type} of $${policyLevel} is above optimal $${optimal.toFixed(2)}. Over-correcting creates new deadweight loss.`);
+    }
+  }
+}
+
+function updatePigouvianFeedback(s) {
+  if (currentTab !== 'pigouvian') return;
+  const fb      = document.getElementById('pigouvian-feedback');
+  const optimal = (s.isNegative ? s.optimalTax : s.optimalSubsidy) || 0;
+  const diff    = Math.abs(policyLevel - optimal);
+  const type    = s.isNegative ? 'tax' : 'subsidy';
+
+  if (policyLevel === 0) {
+    fb.innerHTML = `<div class="feedback-inline fb-hint">💡 Try setting a ${type} equal to the marginal external ${s.isNegative ? 'cost' : 'benefit'} at Q*.</div>`;
+  } else if (diff < 3) {
+    fb.innerHTML = `<div class="feedback-inline fb-ok">✅ You found the optimal ${type}! ($${optimal.toFixed(2)})</div>`;
+  } else if (policyLevel < optimal) {
+    fb.innerHTML = `<div class="feedback-inline fb-warn">Try increasing the ${type} (optimal: $${optimal.toFixed(2)}).</div>`;
+  } else {
+    fb.innerHTML = `<div class="feedback-inline fb-warn">Try decreasing the ${type} (optimal: $${optimal.toFixed(2)}).</div>`;
+  }
+}
+
+// ── Hint text ─────────────────────────────────────────────────
+function updateHint(s) {
+  const el  = document.getElementById('hint-text');
+  const type = s.isNegative ? 'tax' : 'subsidy';
+  if (currentTab === 'coase') {
+    el.textContent = 'Adjust transaction costs and property rights to explore when Coase bargaining succeeds or fails. ' +
+                     'Low transaction costs enable efficient private bargaining.';
+  } else {
+    el.textContent = `Find the optimal ${type} that corrects this ${s.isNegative ? 'negative' : 'positive'} externality. ` +
+                     `The optimal ${type} equals the marginal external ${s.isNegative ? 'cost' : 'benefit'} at the efficient quantity ($${((s.isNegative ? s.optimalTax : s.optimalSubsidy) || 0).toFixed(2)}).`;
+  }
+}
+
+// ── Data table ────────────────────────────────────────────────
+function updateDataTable(s) {
+  const dwl    = calculateDWL(s);
+  const ext    = calculateTotalExternal(s);
+  const optimal = (s.isNegative ? s.optimalTax : s.optimalSubsidy) || 0;
+  const gains  = dwl;
+  const succeed = transactionCost < gains;
+
+  document.getElementById('tbl-scenario').textContent  = s.name;
+  document.getElementById('tbl-type').textContent      = s.type;
+  document.getElementById('tbl-qm').textContent        = s.marketQ.toFixed(1) + ' units';
+  document.getElementById('tbl-qeff').textContent      = s.efficientQ.toFixed(1) + ' units';
+  document.getElementById('tbl-dwl').textContent       = '$' + dwl.toFixed(0);
+  document.getElementById('tbl-external-label').textContent = s.isNegative ? 'External Cost (total)' : 'External Benefit (total)';
+  document.getElementById('tbl-external').textContent  = '$' + ext.toFixed(0);
+  document.getElementById('tbl-optimal').textContent   = '$' + optimal.toFixed(2) + ' per unit';
+  document.getElementById('tbl-gains').textContent     = '$' + gains.toFixed(0);
+  document.getElementById('tbl-tc').textContent        = '$' + transactionCost;
+  document.getElementById('tbl-bargain').textContent   = succeed
+    ? 'Succeeds — efficient outcome reached'
+    : 'Fails — market failure persists';
+}
+
+// ── Keyboard navigation for sliders (finer control with Shift) ──
+document.addEventListener('DOMContentLoaded', function () {
+  const tcSlider = document.getElementById('transaction-cost-slider');
+  tcSlider.addEventListener('keydown', function(e) {
+    if (e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      e.preventDefault();
+      const dir = e.key === 'ArrowRight' ? 1 : -1;
+      const newVal = Math.min(200, Math.max(0, parseInt(this.value) + dir * 2));
+      this.value = newVal;
+      updateTC(newVal);
+    }
+  });
+
+  const policySlider = document.getElementById('policy-slider');
+  policySlider.addEventListener('keydown', function(e) {
+    if (e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      e.preventDefault();
+      const dir = e.key === 'ArrowRight' ? 1 : -1;
+      const newVal = Math.min(100, Math.max(0, parseInt(this.value) + dir));
+      this.value = newVal;
+      updatePolicy(newVal);
+    }
+  });
+
+  // Initial render
+  renderAll();
+});
+</script>
+</body>
+</html>

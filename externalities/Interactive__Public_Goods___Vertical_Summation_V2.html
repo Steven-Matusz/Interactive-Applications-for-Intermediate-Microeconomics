@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Public Goods &amp; Vertical Summation</title>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<style>
+  :root {
+    --msu-green: #18453b;
+    --msu-light: #4a7c59;
+    --accent: #2563eb;
+    --orange: #f97316;
+    --bg: #f8f9fa;
+  }
+
+  /* Skip link */
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--msu-green);
+    color: white;
+    padding: 8px 16px;
+    text-decoration: none;
+    font-weight: 700;
+    z-index: 1000;
+    border-radius: 0 0 6px 0;
+  }
+  .skip-link:focus { top: 0; }
+
+  /* Screen-reader only */
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* Focus ring */
+  *:focus-visible {
+    outline: 3px solid #667eea;
+    outline-offset: 2px;
+  }
+
+  /* Live region */
+  .live-region {
+    position: absolute;
+    left: -10000px;
+    width: 1px; height: 1px;
+    overflow: hidden;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  .main-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    overflow: hidden;
+  }
+
+  .header {
+    background: linear-gradient(135deg, var(--msu-green) 0%, var(--msu-light) 100%);
+    color: white;
+    padding: 28px 30px;
+    text-align: center;
+  }
+  .header h1 { font-size: 28px; margin-bottom: 8px; }
+  .header p { font-size: 15px; opacity: 0.9; }
+
+  /* ── Layout ── */
+  .content-wrapper {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 0;
+    min-height: 640px;
+  }
+
+  .control-panel {
+    background: var(--bg);
+    padding: 28px 24px;
+    border-right: 3px solid #e9ecef;
+    overflow-y: auto;
+    max-height: 900px;
+  }
+
+  .graph-panel {
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* ── Scenario selector ── */
+  .scenario-section { margin-bottom: 22px; }
+  .scenario-section h2 {
+    font-size: 14px;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin-bottom: 10px;
+  }
+  .scenario-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .scenario-btn {
+    padding: 10px 14px;
+    border: 2px solid var(--msu-green);
+    background: white;
+    color: var(--msu-green);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    transition: all 0.2s;
+  }
+  .scenario-btn:hover, .scenario-btn:focus {
+    background: var(--msu-light);
+    color: white;
+  }
+  .scenario-btn[aria-pressed="true"] {
+    background: var(--msu-green);
+    color: white;
+  }
+
+  /* ── Sliders ── */
+  .slider-group {
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+  .slider-group h3 {
+    color: var(--msu-green);
+    font-size: 15px;
+    margin-bottom: 14px;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 8px;
+  }
+  .slider-row { margin-bottom: 14px; }
+  .slider-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+  .slider-label-row label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+  }
+  .slider-value {
+    font-weight: 700;
+    color: var(--msu-green);
+    font-size: 14px;
+    min-width: 40px;
+    text-align: right;
+  }
+  input[type="range"] {
+    width: 100%;
+    height: 8px;
+    border-radius: 5px;
+    background: #d3d3d3;
+    outline: none;
+    cursor: pointer;
+    margin: 4px 0;
+    accent-color: var(--msu-green);
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--msu-green);
+    cursor: pointer;
+    border: 3px solid white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--msu-green);
+    cursor: pointer;
+    border: 3px solid white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+  }
+  input[type="range"]:focus {
+    outline: 3px solid #667eea;
+    outline-offset: 3px;
+  }
+  .slider-range-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #888;
+    margin-top: 2px;
+  }
+
+  /* ── Reset button ── */
+  .reset-btn {
+    width: 100%;
+    padding: 11px;
+    margin-top: 6px;
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .reset-btn:hover, .reset-btn:focus {
+    background: #5a6268;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+
+  /* ── Concept cards ── */
+  .concept-card {
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+  }
+  .concept-card h3 {
+    font-size: 13px;
+    color: var(--msu-green);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-bottom: 8px;
+  }
+  .concept-card p, .concept-card li {
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: #444;
+  }
+  .concept-card ul { padding-left: 16px; }
+
+  /* ── Graph panel ── */
+  .graph-wrapper {
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+    background: white;
+  }
+  .graph-title {
+    background: var(--bg);
+    padding: 10px 16px;
+    font-weight: 700;
+    color: var(--msu-green);
+    font-size: 14px;
+    border-bottom: 2px solid #e9ecef;
+  }
+
+  /* ── Results ── */
+  .results-section {
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .results-section h2 {
+    color: var(--msu-green);
+    font-size: 16px;
+    margin-bottom: 14px;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 8px;
+  }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .metric-card {
+    background: var(--bg);
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+  }
+  .metric-card .metric-label {
+    font-size: 11px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-bottom: 4px;
+  }
+  .metric-card .metric-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--msu-green);
+  }
+  .metric-card.highlight { border-color: var(--msu-green); background: #eef7f3; }
+
+  /* WTP breakdown table */
+  .wtp-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 13px;
+  }
+  .wtp-table caption {
+    text-align: left;
+    font-weight: 700;
+    color: var(--msu-green);
+    padding: 6px 0;
+    font-size: 13px;
+  }
+  .wtp-table th {
+    background: var(--bg);
+    padding: 8px 10px;
+    text-align: center;
+    font-weight: 600;
+    color: #333;
+    border: 1px solid #dee2e6;
+  }
+  .wtp-table td {
+    padding: 7px 10px;
+    border: 1px solid #dee2e6;
+    text-align: center;
+    color: #333;
+  }
+  .wtp-table tr:hover { background: #f0f8f4; }
+  .wtp-table .optimal-row {
+    background: #d4edda;
+    font-weight: 700;
+    color: #155724;
+  }
+  .wtp-table .over-row { color: #721c24; }
+
+  /* Info/alert boxes */
+  .info-box {
+    background: #e8f4f8;
+    border-left: 4px solid var(--accent);
+    padding: 12px 14px;
+    border-radius: 0 8px 8px 0;
+    font-size: 13px;
+    line-height: 1.6;
+    margin-top: 10px;
+    color: #333;
+  }
+  .info-box strong { color: var(--accent); }
+  .warning-box {
+    background: #fff3cd;
+    border-left: 4px solid #e6ac00;
+    padding: 12px 14px;
+    border-radius: 0 8px 8px 0;
+    font-size: 13px;
+    line-height: 1.6;
+    margin-top: 10px;
+    color: #664d03;
+  }
+  .freerider-box {
+    background: #fde8e8;
+    border-left: 4px solid #e53e3e;
+    padding: 12px 14px;
+    border-radius: 0 8px 8px 0;
+    font-size: 13px;
+    line-height: 1.6;
+    margin-top: 10px;
+    color: #742a2a;
+  }
+
+  /* ── Accessible data table (collapsible) ── */
+  details.data-details {
+    margin-top: 16px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  details.data-details summary {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--msu-green);
+    font-size: 13px;
+    background: var(--bg);
+    list-style: none;
+  }
+  details.data-details summary::-webkit-details-marker { display: none; }
+  details.data-details summary::before {
+    content: '▶ ';
+    font-size: 11px;
+  }
+  details.data-details[open] summary::before { content: '▼ '; }
+  details.data-details summary:focus-visible {
+    outline: 3px solid #667eea;
+    outline-offset: 2px;
+  }
+  .data-table-scroll { overflow-x: auto; padding: 0 14px 14px; }
+
+  /* Comparison two-column */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .compare-card {
+    background: var(--bg);
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .compare-card h4 { font-size: 13px; color: var(--msu-green); margin-bottom: 6px; }
+  .compare-card p { font-size: 12px; line-height: 1.5; color: #444; }
+  .compare-card.public-card { border-color: var(--msu-green); }
+  .compare-card.private-card { border-color: var(--orange); }
+  .compare-card.private-card h4 { color: var(--orange); }
+
+  @media (max-width: 1024px) {
+    .content-wrapper { grid-template-columns: 1fr; }
+    .control-panel { border-right: none; border-bottom: 3px solid #e9ecef; max-height: none; }
+    .metrics-grid { grid-template-columns: 1fr 1fr; }
+    .compare-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<div id="live-updates" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+<div class="main-container" role="main">
+  <header class="header">
+    <h1>Public Goods &amp; Vertical Summation</h1>
+    <p>Explore how society determines the efficient quantity of a public good using the Samuelson Rule</p>
+  </header>
+
+  <div id="main-content" class="content-wrapper">
+
+    <!-- ══════════════════ CONTROL PANEL ══════════════════ -->
+    <aside class="control-panel" aria-label="Controls and concepts">
+
+      <!-- Scenario selector -->
+      <section class="scenario-section" aria-labelledby="scenario-heading">
+        <h2 id="scenario-heading">Choose a Scenario</h2>
+        <div class="scenario-buttons" role="group" aria-labelledby="scenario-heading">
+          <button class="scenario-btn" aria-pressed="true"
+            id="sbtn-fireworks" onclick="selectScenario('fireworks', this)">
+            🎆 Fireworks Display
+          </button>
+          <button class="scenario-btn" aria-pressed="false"
+            id="sbtn-park" onclick="selectScenario('park', this)">
+            🌳 Neighborhood Park
+          </button>
+          <button class="scenario-btn" aria-pressed="false"
+            id="sbtn-streetlights" onclick="selectScenario('streetlights', this)">
+            💡 Streetlights
+          </button>
+        </div>
+        <div id="scenario-desc" class="info-box" aria-live="polite" style="margin-top: 12px;"></div>
+      </section>
+
+      <!-- MC Slider -->
+      <div class="slider-group">
+        <h3>⚙️ Cost Parameter</h3>
+        <div class="slider-row">
+          <div class="slider-label-row">
+            <label for="mc-slider">Marginal Cost per unit:</label>
+            <span class="slider-value" id="mc-display" aria-live="polite">$5</span>
+          </div>
+          <input type="range" id="mc-slider" min="2" max="14" step="0.5" value="5"
+            aria-label="Marginal cost per unit in dollars"
+            aria-valuemin="2" aria-valuemax="14" aria-valuenow="5"
+            aria-describedby="mc-hint"
+            oninput="onSliderChange()">
+          <div class="slider-range-labels"><span>$2</span><span>$14</span></div>
+          <p id="mc-hint" class="sr-only">Adjust to change the cost of providing each additional unit of the public good.</p>
+        </div>
+      </div>
+
+      <!-- Individual WTP sliders -->
+      <div class="slider-group">
+        <h3>👥 Individual Preferences (Base WTP)</h3>
+        <p style="font-size:12px;color:#666;margin-bottom:12px;">WTP declines by 50% for each additional unit (diminishing marginal utility).</p>
+
+        <div class="slider-row">
+          <div class="slider-label-row">
+            <label for="alice-slider">Alice's Base WTP:</label>
+            <span class="slider-value" id="alice-display" aria-live="polite">$6</span>
+          </div>
+          <input type="range" id="alice-slider" min="2" max="14" step="0.5" value="6"
+            aria-label="Alice base willingness to pay in dollars"
+            aria-valuemin="2" aria-valuemax="14" aria-valuenow="6"
+            oninput="onSliderChange()">
+          <div class="slider-range-labels"><span>$2</span><span>$14</span></div>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-label-row">
+            <label for="bob-slider">Bob's Base WTP:</label>
+            <span class="slider-value" id="bob-display" aria-live="polite">$4</span>
+          </div>
+          <input type="range" id="bob-slider" min="2" max="14" step="0.5" value="4"
+            aria-label="Bob base willingness to pay in dollars"
+            aria-valuemin="2" aria-valuemax="14" aria-valuenow="4"
+            oninput="onSliderChange()">
+          <div class="slider-range-labels"><span>$2</span><span>$14</span></div>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-label-row">
+            <label for="carol-slider">Carol's Base WTP:</label>
+            <span class="slider-value" id="carol-display" aria-live="polite">$5</span>
+          </div>
+          <input type="range" id="carol-slider" min="2" max="14" step="0.5" value="5"
+            aria-label="Carol base willingness to pay in dollars"
+            aria-valuemin="2" aria-valuemax="14" aria-valuenow="5"
+            oninput="onSliderChange()">
+          <div class="slider-range-labels"><span>$2</span><span>$14</span></div>
+        </div>
+
+        <button class="reset-btn" onclick="resetDefaults()" aria-label="Reset all sliders to default values">
+          ↺ Reset to Defaults
+        </button>
+      </div>
+
+      <!-- Concept: public vs private -->
+      <div class="concept-card" role="region" aria-labelledby="concept-heading">
+        <h3 id="concept-heading">Key Concepts</h3>
+        <div class="compare-grid" role="list">
+          <div class="compare-card public-card" role="listitem">
+            <h4>Public Goods</h4>
+            <p><strong>Non-rivalrous:</strong> everyone consumes the same unit<br>
+            <strong>Non-excludable:</strong> can't prevent free-riding<br>
+            <strong>Summation:</strong> <em>Vertical</em> — add WTP at each quantity</p>
+          </div>
+          <div class="compare-card private-card" role="listitem">
+            <h4>Private Goods</h4>
+            <p><strong>Rivalrous:</strong> each unit goes to one person<br>
+            <strong>Excludable:</strong> non-payers can be blocked<br>
+            <strong>Summation:</strong> <em>Horizontal</em> — add quantities at each price</p>
+          </div>
+        </div>
+        <div class="info-box" style="margin-top: 10px;">
+          <strong>Samuelson Rule:</strong> Provide the public good up to the quantity where the <em>sum</em> of individual WTP equals marginal cost (ΣMB = MC).
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ══════════════════ GRAPH PANEL ══════════════════ -->
+    <section id="graph-section" class="graph-panel" aria-label="Graph and analysis">
+
+      <!-- Graph -->
+      <div class="graph-wrapper" role="img" aria-labelledby="graph-title" aria-describedby="graph-desc">
+        <div class="graph-title" id="graph-title">Vertical Summation &amp; Social Marginal Benefit</div>
+        <div id="demand-graph"></div>
+        <p id="graph-desc" class="sr-only" aria-live="polite"></p>
+      </div>
+
+      <!-- Key metrics -->
+      <section class="results-section" aria-labelledby="results-heading" aria-live="polite" aria-atomic="true">
+        <h2 id="results-heading">📊 Analysis</h2>
+        <div class="metrics-grid" id="metrics-grid">
+          <!-- populated by JS -->
+        </div>
+        <div id="result-narrative"></div>
+      </section>
+
+      <!-- WTP breakdown table -->
+      <section aria-labelledby="table-heading">
+        <details class="data-details">
+          <summary id="table-heading">View WTP Schedule (screen reader &amp; keyboard accessible)</summary>
+          <div class="data-table-scroll">
+            <table class="wtp-table" aria-label="Willingness-to-pay schedule by unit and person">
+              <caption>Willingness-to-Pay by Unit of Public Good</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Unit #</th>
+                  <th scope="col">Alice WTP</th>
+                  <th scope="col">Bob WTP</th>
+                  <th scope="col">Carol WTP</th>
+                  <th scope="col">Social MB (Sum)</th>
+                  <th scope="col">MC</th>
+                  <th scope="col">Provide?</th>
+                </tr>
+              </thead>
+              <tbody id="wtp-table-body"></tbody>
+            </table>
+          </div>
+        </details>
+      </section>
+
+    </section>
+    <!-- /graph panel -->
+  </div>
+</div>
+
+<!-- Screen reader announcer -->
+<div id="sr-announcer" aria-live="assertive" aria-atomic="true" class="sr-only"></div>
+
+<script>
+// ─── Scenarios ────────────────────────────────────────────────────────────────
+const scenarios = {
+  fireworks: {
+    label: '🎆 Fireworks Display',
+    unitLabel: '10-min segment',
+    unitLabelPlural: '10-min segments',
+    desc: '<strong>Setting:</strong> A town is deciding how long to run its July 4th fireworks show. Each 10-minute segment benefits all residents simultaneously — a classic public good.',
+    aliceDefault: 6, bobDefault: 4, carolDefault: 5, mcDefault: 5,
+    aliceNames: ['Alice','Bob','Carol'],
+    maxUnits: 6
+  },
+  park: {
+    label: '🌳 Neighborhood Park',
+    unitLabel: 'acre',
+    unitLabelPlural: 'acres',
+    desc: '<strong>Setting:</strong> Three neighbors are deciding how large a shared park to build. Once built, all three enjoy the park regardless of who contributed.',
+    aliceDefault: 8, bobDefault: 5, carolDefault: 6, mcDefault: 6,
+    maxUnits: 6
+  },
+  streetlights: {
+    label: '💡 Streetlights',
+    unitLabel: 'streetlight',
+    unitLabelPlural: 'streetlights',
+    desc: '<strong>Setting:</strong> Two families at the end of a rural road are deciding how many streetlights to install. Both families benefit from every light.',
+    aliceDefault: 9, bobDefault: 7, carolDefault: 0, mcDefault: 8,
+    maxUnits: 6,
+    twoPersonOnly: true
+  }
+};
+
+let currentScenario = 'fireworks';
+
+function selectScenario(key, btn) {
+  currentScenario = key;
+  // Update aria-pressed
+  document.querySelectorAll('.scenario-btn').forEach(b => b.setAttribute('aria-pressed','false'));
+  btn.setAttribute('aria-pressed','true');
+  // Apply defaults
+  const s = scenarios[key];
+  setValue('alice-slider', s.aliceDefault);
+  setValue('bob-slider',   s.bobDefault);
+  setValue('carol-slider', s.carolDefault);
+  setValue('mc-slider',    s.mcDefault);
+  // Update description
+  document.getElementById('scenario-desc').innerHTML = s.desc;
+  // Update carol visibility
+  const carolRow = document.getElementById('carol-slider').closest('.slider-row');
+  if (s.twoPersonOnly) {
+    carolRow.style.display = 'none';
+  } else {
+    carolRow.style.display = '';
+  }
+  updateAll();
+  announce(`Scenario changed to ${s.label}`);
+}
+
+function setValue(id, val) {
+  const el = document.getElementById(id);
+  el.value = val;
+  el.setAttribute('aria-valuenow', val);
+}
+
+// ─── Calculations ─────────────────────────────────────────────────────────────
+function getParams() {
+  const mc    = parseFloat(document.getElementById('mc-slider').value);
+  const alice = parseFloat(document.getElementById('alice-slider').value);
+  const bob   = parseFloat(document.getElementById('bob-slider').value);
+  const carol = scenarios[currentScenario].twoPersonOnly ? 0 :
+                parseFloat(document.getElementById('carol-slider').value);
+  return { mc, alice, bob, carol };
+}
+
+function calcWTP(base, unit) {
+  // WTP halves each unit
+  return base / Math.pow(2, unit - 1);
+}
+
+function buildSchedule(params) {
+  const { mc, alice, bob, carol } = params;
+  const rows = [];
+  for (let u = 1; u <= 6; u++) {
+    const a = calcWTP(alice, u);
+    const b = calcWTP(bob,   u);
+    const c = calcWTP(carol, u);
+    const soc = a + b + c;
+    rows.push({ unit: u, alice: a, bob: b, carol: c, social: soc, mc });
+  }
+  return rows;
+}
+
+function findOptimal(rows) {
+  let q = 0;
+  for (const r of rows) {
+    if (r.social >= r.mc) q = r.unit;
+    else break;
+  }
+  return q;
+}
+
+// ─── Display helpers ──────────────────────────────────────────────────────────
+function fmt(v) { return '$' + v.toFixed(2); }
+
+function updateSliderDisplays(params) {
+  document.getElementById('mc-display').textContent    = fmt(params.mc);
+  document.getElementById('alice-display').textContent = fmt(params.alice);
+  document.getElementById('bob-display').textContent   = fmt(params.bob);
+  if (!scenarios[currentScenario].twoPersonOnly) {
+    document.getElementById('carol-display').textContent = fmt(params.carol);
+  }
+  document.getElementById('mc-slider').setAttribute('aria-valuenow', params.mc);
+  document.getElementById('alice-slider').setAttribute('aria-valuenow', params.alice);
+  document.getElementById('bob-slider').setAttribute('aria-valuenow', params.bob);
+}
+
+// ─── Graph ────────────────────────────────────────────────────────────────────
+function buildGraph(rows, optimalQ, params) {
+  const s = scenarios[currentScenario];
+  const units = rows.map(r => r.unit);
+  const aliceVals = rows.map(r => r.alice);
+  const bobVals   = rows.map(r => r.bob);
+  const carolVals = rows.map(r => r.carol);
+  const socVals   = rows.map(r => r.social);
+  const mcLine    = rows.map(() => params.mc);
+
+  const traces = [
+    {
+      x: units, y: aliceVals, name: 'Alice',
+      type: 'scatter', mode: 'lines+markers',
+      line: { color: '#2563eb', width: 2 },
+      marker: { size: 8 }
+    },
+    {
+      x: units, y: bobVals, name: 'Bob',
+      type: 'scatter', mode: 'lines+markers',
+      line: { color: '#10b981', width: 2 },
+      marker: { size: 8 }
+    }
+  ];
+
+  if (!s.twoPersonOnly) {
+    traces.push({
+      x: units, y: carolVals, name: 'Carol',
+      type: 'scatter', mode: 'lines+markers',
+      line: { color: '#f59e0b', width: 2 },
+      marker: { size: 8 }
+    });
+  }
+
+  traces.push({
+    x: units, y: socVals,
+    name: 'Social MB (Vertical Sum)',
+    type: 'scatter', mode: 'lines+markers',
+    line: { color: '#18453b', width: 3 },
+    marker: { size: 10, symbol: 'diamond' }
+  });
+
+  traces.push({
+    x: [0.5, 6.5], y: [params.mc, params.mc],
+    name: 'Marginal Cost',
+    type: 'scatter', mode: 'lines',
+    line: { color: '#ef4444', width: 3, dash: 'dash' }
+  });
+
+  if (optimalQ > 0) {
+    traces.push({
+      x: [optimalQ, optimalQ], y: [0, 32],
+      name: `Optimal Q* = ${optimalQ}`,
+      type: 'scatter', mode: 'lines',
+      line: { color: '#8b5cf6', width: 2, dash: 'dot' }
+    });
+  }
+
+  const maxY = Math.max(...socVals, params.mc) * 1.15;
+
+  const layout = {
+    xaxis: {
+      title: { text: s.unitLabelPlural.charAt(0).toUpperCase() + s.unitLabelPlural.slice(1), standoff: 10 },
+      range: [0.4, 6.6],
+      dtick: 1,
+      gridcolor: '#e5e7eb',
+      fixedrange: true
+    },
+    yaxis: {
+      title: { text: 'Willingness to Pay / Cost ($)', standoff: 10 },
+      range: [0, Math.max(32, maxY)],
+      gridcolor: '#e5e7eb',
+      tickprefix: '$',
+      fixedrange: true
+    },
+    showlegend: true,
+    legend: { orientation: 'h', x: 0, y: -0.22, font: { size: 11 } },
+    margin: { l: 60, r: 30, t: 20, b: 80 },
+    plot_bgcolor: 'white',
+    paper_bgcolor: 'white',
+    autosize: false,
+    width: 660,
+    height: 420
+  };
+
+  Plotly.react('demand-graph', traces, layout, {
+    responsive: false,
+    displayModeBar: false,
+    staticPlot: true
+  });
+}
+
+// ─── Results panel ────────────────────────────────────────────────────────────
+function buildResults(rows, optimalQ, params) {
+  const s = scenarios[currentScenario];
+  const totalBenefit = rows.slice(0, optimalQ).reduce((sum, r) => sum + r.social, 0);
+  const totalCost    = optimalQ * params.mc;
+  const netBenefit   = totalBenefit - totalCost;
+
+  const metrics = [
+    { label: 'Optimal Quantity (Q*)', value: optimalQ > 0 ? `${optimalQ} ${s.unitLabelPlural}` : '0', highlight: true },
+    { label: 'Marginal Cost',         value: fmt(params.mc) },
+    { label: 'Social MB at Q*',       value: optimalQ > 0 ? fmt(rows[optimalQ - 1].social) : 'N/A' },
+    { label: 'Net Social Benefit',    value: fmt(netBenefit) }
+  ];
+
+  document.getElementById('metrics-grid').innerHTML = metrics.map(m => `
+    <div class="metric-card ${m.highlight ? 'highlight' : ''}">
+      <div class="metric-label">${m.label}</div>
+      <div class="metric-value">${m.value}</div>
+    </div>
+  `).join('');
+
+  // Narrative
+  let narrative = '';
+  if (optimalQ === 0) {
+    narrative = `<div class="warning-box">
+      <strong>No Provision Justified:</strong> Even the first unit's social marginal benefit
+      (${fmt(rows[0].social)}) falls below the marginal cost (${fmt(params.mc)}).
+      The public good should not be provided.
+    </div>`;
+  } else {
+    const nextQ = rows[optimalQ]; // unit after optimal (0-indexed: optimalQ)
+    const nextMB = nextQ ? fmt(nextQ.social) : 'N/A';
+    narrative = `<div class="info-box">
+      <strong>Samuelson Rule Applied:</strong> Provide ${optimalQ} ${s.unitLabelPlural}.
+      At unit ${optimalQ}, Social MB (${fmt(rows[optimalQ-1].social)}) ≥ MC (${fmt(params.mc)}) ✓<br>
+      ${nextQ ? `At unit ${optimalQ+1}, Social MB (${nextMB}) &lt; MC (${fmt(params.mc)}) ✗ — stop here.` : ''}
+    </div>
+    <div class="freerider-box" style="margin-top:10px;">
+      <strong>🚨 Free-Rider Problem:</strong> Even though the efficient quantity is ${optimalQ},
+      private markets will <em>under-provide</em> this good. Because the good is non-excludable,
+      individuals have incentive to understate their true willingness to pay, hoping others will
+      fund provision. This market failure requires collective action or government intervention.
+    </div>`;
+  }
+  document.getElementById('result-narrative').innerHTML = narrative;
+
+  // Screen reader graph description
+  document.getElementById('graph-desc').textContent =
+    `Line graph showing individual willingness-to-pay curves for Alice, Bob, and Carol, ` +
+    `and their vertical sum as the Social Marginal Benefit curve. ` +
+    `A horizontal dashed red line marks marginal cost at ${fmt(params.mc)}. ` +
+    `The optimal quantity is ${optimalQ} ${s.unitLabelPlural}, where Social MB meets MC.`;
+}
+
+// ─── WTP Table ───────────────────────────────────────────────────────────────
+function buildTable(rows, optimalQ, params) {
+  const s = scenarios[currentScenario];
+  const tbody = document.getElementById('wtp-table-body');
+  tbody.innerHTML = rows.map(r => {
+    const isOptimal = r.unit === optimalQ;
+    const isOver    = r.unit > optimalQ && optimalQ > 0;
+    const provide   = r.social >= r.mc ? '✓ Yes' : '✗ No';
+    const cls = isOptimal ? 'optimal-row' : (isOver ? 'over-row' : '');
+    const carolCell = scenarios[currentScenario].twoPersonOnly ? '' : `<td>${fmt(r.carol)}</td>`;
+    return `<tr class="${cls}">
+      <td>${r.unit}</td>
+      <td>${fmt(r.alice)}</td>
+      <td>${fmt(r.bob)}</td>
+      ${carolCell}
+      <td><strong>${fmt(r.social)}</strong></td>
+      <td>${fmt(r.mc)}</td>
+      <td>${provide}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── Main update ─────────────────────────────────────────────────────────────
+function updateAll() {
+  const params = getParams();
+  updateSliderDisplays(params);
+  const rows    = buildSchedule(params);
+  const optimal = findOptimal(rows);
+  buildGraph(rows, optimal, params);
+  buildResults(rows, optimal, params);
+  buildTable(rows, optimal, params);
+}
+
+function onSliderChange() {
+  updateAll();
+  // Brief announce for screen readers
+  const params  = getParams();
+  const rows    = buildSchedule(params);
+  const optimal = findOptimal(rows);
+  const s       = scenarios[currentScenario];
+  announce(`Parameters updated. Optimal quantity is now ${optimal} ${s.unitLabelPlural}.`);
+}
+
+function announce(msg) {
+  const el = document.getElementById('live-updates');
+  el.textContent = '';
+  requestAnimationFrame(() => { el.textContent = msg; });
+}
+
+function resetDefaults() {
+  const s = scenarios[currentScenario];
+  setValue('alice-slider', s.aliceDefault);
+  setValue('bob-slider',   s.bobDefault);
+  setValue('carol-slider', s.carolDefault);
+  setValue('mc-slider',    s.mcDefault);
+  updateAll();
+  announce('Sliders reset to default values.');
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function () {
+  // Set initial scenario description
+  document.getElementById('scenario-desc').innerHTML = scenarios['fireworks'].desc;
+  updateAll();
+});
+</script>
+</body>
+</html>
