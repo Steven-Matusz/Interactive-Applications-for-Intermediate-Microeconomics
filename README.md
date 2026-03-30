@@ -113,7 +113,7 @@ Department of Economics, Michigan State University
 
 ## License
 
-These materials are shared under a [Creative Commons Attribution-NonCommercial 4.0 International License](LICENSE.md).
+These materials are shared under a [Creative Commons Attribution-NonCommercial 4.0 International License]([LICENSE.md](https://creativecommons.org/licenses/by-nc/4.0/).
 
 You are free to use, adapt, and redistribute these materials for educational purposes, provided you give appropriate credit and do not use them for commercial purposes.
 
