@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Price Controls and Market Surplus - Interactive Explorer</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #18453B 0%, #2d5a4f 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        /* Skip Navigation Link */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: #18453B;
+            color: white;
+            padding: 8px 16px;
+            text-decoration: none;
+            border-radius: 0 0 4px 0;
+            z-index: 100;
+        }
+
+        .skip-link:focus {
+            top: 0;
+        }
+
+        .scenario-selector {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 3px solid #18453B;
+        }
+
+        .scenario-selector h3 {
+            color: #18453B;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .scenario-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .scenario-btn {
+            flex: 1;
+            min-width: 200px;
+            padding: 15px 20px;
+            font-size: 1.1em;
+            border: 3px solid #18453B;
+            background: white;
+            color: #18453B;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .scenario-btn:hover,
+        .scenario-btn:focus {
+            background: #18453B;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(24, 69, 59, 0.3);
+            outline: 3px solid #667eea;
+            outline-offset: 2px;
+        }
+
+        .scenario-btn.active {
+            background: #18453B;
+            color: white;
+        }
+
+        .scenario-info {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-left: 4px solid #18453B;
+            border-radius: 5px;
+        }
+
+        .content-wrapper {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 0;
+            min-height: 600px;
+        }
+
+        .control-panel {
+            background: #f8f9fa;
+            padding: 30px;
+            border-right: 3px solid #e9ecef;
+            overflow-y: auto;
+            max-height: 800px;
+        }
+
+        .graph-panel {
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .price-control {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #e9ecef;
+        }
+
+        .price-control h4 {
+            color: #18453B;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 10px;
+            color: #495057;
+            font-weight: 600;
+        }
+
+        .price-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #d3d3d3;
+            outline: none;
+            margin: 15px 0;
+            cursor: pointer;
+        }
+
+        .price-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #18453B;
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        .price-slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #18453B;
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        .price-slider:focus {
+            outline: 3px solid #667eea;
+            outline-offset: 3px;
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+
+        #current-price {
+            font-weight: bold;
+            color: #18453B;
+            font-size: 1.1em;
+        }
+
+        .reset-btn {
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .reset-btn:hover,
+        .reset-btn:focus {
+            background: #5a6268;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            outline: 3px solid #667eea;
+            outline-offset: 2px;
+        }
+
+        .equilibrium-alert {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .equilibrium-alert.show {
+            display: block;
+        }
+
+        .metrics-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+        }
+
+        .metrics-container h5 {
+            color: #18453B;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .metrics-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .metrics-row.single {
+            display: block;
+        }
+
+        .metric-card {
+            flex: 1;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid;
+        }
+
+        .metric-card.consumer {
+            background: rgba(40, 167, 69, 0.1);
+            border-color: #28a745;
+        }
+
+        .metric-card.producer {
+            background: rgba(255, 193, 7, 0.1);
+            border-color: #ffc107;
+        }
+
+        .metric-card.total {
+            background: rgba(0, 123, 255, 0.1);
+            border-color: #007bff;
+        }
+
+        .metric-card.dwl {
+            background: rgba(220, 53, 69, 0.1);
+            border-color: #dc3545;
+        }
+
+        .metric-label {
+            font-size: 0.9em;
+            color: #495057;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .metric-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #18453B;
+        }
+
+        .market-insight {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .market-insight strong {
+            color: #856404;
+        }
+
+        .concept-box {
+            background: #e7f3ff;
+            border: 2px solid #007bff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .concept-box h5 {
+            color: #004085;
+            margin-bottom: 10px;
+        }
+
+        .graph-wrapper {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            background: white;
+        }
+
+        /* Screen reader only content */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+
+        /* Focus visible styles for keyboard navigation */
+        *:focus-visible {
+            outline: 3px solid #667eea;
+            outline-offset: 2px;
+        }
+
+        /* Data table for accessibility */
+        .data-table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #e9ecef;
+        }
+
+        .data-table caption {
+            padding: 10px;
+            font-weight: bold;
+            color: #18453B;
+            text-align: left;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #18453B;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        /* Live region for announcements */
+        .live-region {
+            position: absolute;
+            left: -10000px;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+        }
+
+        @media (max-width: 1024px) {
+            .content-wrapper {
+                grid-template-columns: 1fr;
+            }
+
+            .control-panel {
+                border-right: none;
+                border-bottom: 3px solid #e9ecef;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Skip Navigation Link for Keyboard Users -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- Live Region for Screen Reader Announcements -->
+    <div id="live-updates" class="live-region" aria-live="polite" aria-atomic="true"></div>
+
+    <div class="container">
+        <header class="header">
+            <h1>Price Controls and Market Surplus</h1>
+            <p>Explore how price ceilings and floors affect market outcomes and economic welfare</p>
+        </header>
+
+        <section class="scenario-selector" aria-label="Market scenario selection">
+            <h3 id="scenario-heading">Choose a Market Scenario:</h3>
+            <div class="scenario-buttons" role="group" aria-labelledby="scenario-heading">
+                <button class="scenario-btn active" 
+                        onclick="selectScenario('rent')"
+                        aria-pressed="true"
+                        aria-describedby="scenario-rent-desc">
+                    🏠 Rent Control
+                </button>
+                <button class="scenario-btn" 
+                        onclick="selectScenario('medicine')"
+                        aria-pressed="false"
+                        aria-describedby="scenario-medicine-desc">
+                    💊 Medicine Cap
+                </button>
+                <button class="scenario-btn" 
+                        onclick="selectScenario('wage')"
+                        aria-pressed="false"
+                        aria-describedby="scenario-wage-desc">
+                    💼 Minimum Wage
+                </button>
+            </div>
+            
+            <!-- Hidden descriptions for screen readers -->
+            <span id="scenario-rent-desc" class="sr-only">Housing rental market with price ceiling control</span>
+            <span id="scenario-medicine-desc" class="sr-only">Pharmaceutical market with price cap regulation</span>
+            <span id="scenario-wage-desc" class="sr-only">Labor market with minimum wage floor</span>
+            
+            <div id="scenario-info" class="scenario-info" aria-live="polite">
+                <strong>Housing Market</strong><br>
+                <strong>Demand:</strong> P = 1,800 - 0.5Q | <strong>Supply:</strong> P = 200 + 0.5Q
+            </div>
+        </section>
+
+        <main id="main-content">
+            <div class="content-wrapper">
+                <!-- Control Panel -->
+                <aside class="control-panel" aria-label="Market controls and metrics">
+                    <div class="price-control">
+                        <h4 id="control-title">🎯 Set Price Ceiling</h4>
+                        
+                        <label for="price-slider" class="form-label" id="price-label">
+                            <strong>Maximum Rent:</strong>
+                        </label>
+                        
+                        <input type="range" 
+                               class="price-slider" 
+                               id="price-slider" 
+                               min="600" 
+                               max="1100" 
+                               step="25" 
+                               value="900"
+                               aria-label="Price control level"
+                               aria-describedby="price-description"
+                               aria-valuemin="600"
+                               aria-valuemax="1100"
+                               aria-valuenow="900"
+                               aria-valuetext="Current price: $900">
+                        
+                        <div id="price-description" class="sr-only">
+                            Adjust this slider to change the government-mandated price control. 
+                            Values below equilibrium create shortages for price ceilings.
+                            Values above equilibrium create surpluses for price floors.
+                            Use arrow keys for fine adjustment.
+                        </div>
+                        
+                        <div class="slider-labels">
+                            <span id="min-price">$600</span>
+                            <span id="current-price">$900</span>
+                            <span id="max-price">$1100</span>
+                        </div>
+                        
+                        <button class="reset-btn" 
+                                onclick="resetToEquilibrium()"
+                                aria-label="Reset price to market equilibrium">
+                            Reset to Equilibrium
+                        </button>
+                    </div>
+
+                    <div id="equilibrium-alert" class="equilibrium-alert" role="status" aria-live="polite">
+                        ✅ <strong>At Equilibrium:</strong> Total surplus maximized!
+                    </div>
+
+                    <div class="metrics-container" aria-label="Market outcome metrics">
+                        <h5>Market Outcomes:</h5>
+                        
+                        <div class="metrics-row">
+                            <div class="metric-card consumer" role="region" aria-label="Consumer surplus">
+                                <div class="metric-label">Consumer Surplus</div>
+                                <div class="metric-value" id="consumer-surplus" aria-live="polite">$0</div>
+                            </div>
+                            <div class="metric-card producer" role="region" aria-label="Producer surplus">
+                                <div class="metric-label">Producer Surplus</div>
+                                <div class="metric-value" id="producer-surplus" aria-live="polite">$0</div>
+                            </div>
+                        </div>
+                        
+                        <div class="metrics-row single">
+                            <div class="metric-card total" role="region" aria-label="Total economic surplus">
+                                <div class="metric-label">Total Surplus</div>
+                                <div class="metric-value" id="total-surplus" aria-live="polite">$0</div>
+                            </div>
+                        </div>
+                        
+                        <div class="metrics-row single">
+                            <div class="metric-card dwl" role="region" aria-label="Deadweight loss from intervention">
+                                <div class="metric-label">Deadweight Loss</div>
+                                <div class="metric-value" id="deadweight-loss" aria-live="polite">$0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Data Table - Accessible Alternative to Graph -->
+                    <table class="data-table" aria-label="Current market data">
+                        <caption>Detailed Market Conditions</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Measure</th>
+                                <th scope="col">Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <th scope="row">Controlled Price</th>
+                                <td id="table-price">$900</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Equilibrium Price</th>
+                                <td id="table-eq-price">$1,000</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Quantity Traded</th>
+                                <td id="table-quantity">0 units</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Equilibrium Quantity</th>
+                                <td id="table-eq-quantity">1,600 units</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Quantity Demanded</th>
+                                <td id="table-qd">0 units</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Quantity Supplied</th>
+                                <td id="table-qs">0 units</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Shortage/Surplus</th>
+                                <td id="table-shortage">None</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="market-insight" role="status" aria-live="polite">
+                        <div id="market-insight-text"></div>
+                    </div>
+
+                    <div class="concept-box">
+                        <h5>💡 Key Concept:</h5>
+                        <p style="margin: 0; font-size: 12px;">
+                            Free markets maximize <strong>total surplus</strong> at equilibrium. 
+                            Price controls create <strong>deadweight loss</strong> by preventing 
+                            mutually beneficial trades.
+                        </p>
+                    </div>
+                </aside>
+
+                <!-- Graph Panel -->
+                <section class="graph-panel" aria-label="Market visualization">
+                    <div class="graph-wrapper">
+                        <div id="market-graph" role="img" aria-label="Supply and demand graph showing market equilibrium and surplus areas"></div>
+                        <!-- Text description of graph state -->
+                        <div id="graph-description" class="sr-only"></div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Market scenarios
+        const scenarios = {
+            rent: {
+                name: 'Housing Market',
+                demandIntercept: 1800,
+                demandSlope: -0.5,
+                supplyIntercept: 200,
+                supplySlope: 0.5,
+                priceMin: 600,
+                priceMax: 1100,
+                priceStep: 25,
+                priceLabel: 'Maximum Rent',
+                priceControlType: 'ceiling',
+                controlTitle: '🎯 Set Price Ceiling',
+                demandLabel: 'P = 1,800 - 0.5Q',
+                supplyLabel: 'P = 200 + 0.5Q',
+                quantityLabel: 'Housing Units',
+                priceUnit: '$',
+                quantityUnit: ' units'
+            },
+            medicine: {
+                name: 'Pharmaceutical Market',
+                demandIntercept: 300,
+                demandSlope: -0.1,
+                supplyIntercept: 0,
+                supplySlope: 0.1,
+                priceMin: 50,
+                priceMax: 250,
+                priceStep: 10,
+                priceLabel: 'Maximum Price per Dose',
+                priceControlType: 'ceiling',
+                controlTitle: '🎯 Set Price Ceiling',
+                demandLabel: 'P = 300 - 0.1Q',
+                supplyLabel: 'P = 0 + 0.1Q',
+                quantityLabel: 'Doses',
+                priceUnit: '$',
+                quantityUnit: ' doses'
+            },
+            wage: {
+                name: 'Labor Market',
+                demandIntercept: 24,
+                demandSlope: -0.004,
+                supplyIntercept: 0,
+                supplySlope: 0.004,
+                priceMin: 8,
+                priceMax: 18,
+                priceStep: 0.50,
+                priceLabel: 'Minimum Wage',
+                priceControlType: 'floor',
+                controlTitle: '🎯 Set Price Floor',
+                demandLabel: 'P = 24 - 0.004Q',
+                supplyLabel: 'P = 0 + 0.004Q',
+                quantityLabel: 'Workers',
+                priceUnit: '$',
+                quantityUnit: ' workers'
+            }
+        };
+
+        let currentScenario = 'rent';
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            selectScenario('rent');
+            
+            // Add keyboard navigation for slider
+            const slider = document.getElementById('price-slider');
+            slider.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                    // Allow fine control with Shift key
+                    if (e.shiftKey) {
+                        e.preventDefault();
+                        const market = scenarios[currentScenario];
+                        const step = market.priceStep / 5; // Finer control
+                        const direction = e.key === 'ArrowRight' ? 1 : -1;
+                        const newValue = parseFloat(this.value) + (step * direction);
+                        this.value = Math.max(market.priceMin, Math.min(market.priceMax, newValue));
+                        this.dispatchEvent(new Event('input'));
+                    }
+                }
+            });
+            
+            slider.addEventListener('input', updateDisplay);
+        });
+
+        function selectScenario(scenarioKey) {
+            currentScenario = scenarioKey;
+            const market = scenarios[scenarioKey];
+
+            // Update scenario buttons
+            document.querySelectorAll('.scenario-btn').forEach((btn, idx) => {
+                const scenarios = ['rent', 'medicine', 'wage'];
+                const isActive = scenarios[idx] === scenarioKey;
+                btn.classList.toggle('active', isActive);
+                btn.setAttribute('aria-pressed', isActive);
+            });
+
+            // Update scenario info
+            document.getElementById('scenario-info').innerHTML = `
+                <strong>${market.name}</strong><br>
+                <strong>Demand:</strong> ${market.demandLabel} | <strong>Supply:</strong> ${market.supplyLabel}
+            `;
+
+            // Update control panel
+            document.getElementById('control-title').textContent = market.controlTitle;
+            document.getElementById('price-label').innerHTML = `<strong>${market.priceLabel}:</strong>`;
+
+            // Update slider
+            const slider = document.getElementById('price-slider');
+            slider.min = market.priceMin;
+            slider.max = market.priceMax;
+            slider.step = market.priceStep;
+            
+            // Set to equilibrium
+            const qe = findEquilibriumQuantity(market);
+            const pe = demandPrice(market, qe);
+            slider.value = pe;
+            
+            slider.setAttribute('aria-valuemin', market.priceMin);
+            slider.setAttribute('aria-valuemax', market.priceMax);
+            slider.setAttribute('aria-valuenow', pe);
+            slider.setAttribute('aria-valuetext', `Current price: ${formatMoney(pe, market)}`);
+
+            // Update price labels
+            document.getElementById('min-price').textContent = formatMoney(market.priceMin, market);
+            document.getElementById('max-price').textContent = formatMoney(market.priceMax, market);
+
+            // Announce scenario change to screen readers
+            announceChange(`Switched to ${market.name} scenario. Equilibrium price is ${formatMoney(pe, market)}.`);
+
+            updateDisplay();
+        }
+
+        function resetToEquilibrium() {
+            const market = scenarios[currentScenario];
+            const qe = findEquilibriumQuantity(market);
+            const pe = demandPrice(market, qe);
+            
+            const slider = document.getElementById('price-slider');
+            slider.value = pe;
+            slider.setAttribute('aria-valuenow', pe);
+            slider.setAttribute('aria-valuetext', `Current price: ${formatMoney(pe, market)} (at equilibrium)`);
+            
+            announceChange(`Reset to equilibrium. Price set to ${formatMoney(pe, market)}, quantity ${Math.round(qe)}${market.quantityUnit}.`);
+            
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            const market = scenarios[currentScenario];
+            const price = parseFloat(document.getElementById('price-slider').value);
+            
+            // Update current price display
+            document.getElementById('current-price').textContent = formatMoney(price, market);
+            
+            // Update slider ARIA
+            const slider = document.getElementById('price-slider');
+            slider.setAttribute('aria-valuenow', price);
+            slider.setAttribute('aria-valuetext', `Current price: ${formatMoney(price, market)}`);
+            
+            // Calculate and display
+            calculateAndDisplay(market, price);
+        }
+
+        function calculateAndDisplay(market, price) {
+            const qe = findEquilibriumQuantity(market);
+            const pe = demandPrice(market, qe);
+            
+            const isPriceCeiling = market.priceControlType === 'ceiling';
+            const isPriceFloor = market.priceControlType === 'floor';
+            
+            const isPriceCeilingBinding = isPriceCeiling && price < pe;
+            const isPriceFloorBinding = isPriceFloor && price > pe;
+            
+            let qActual, consumerSurplus, producerSurplus, totalSurplus, deadweightLoss;
+            let qd, qs, shortage;
+            
+            const atEquilibrium = Math.abs(price - pe) < market.priceStep / 2;
+            
+            if (atEquilibrium) {
+                // At equilibrium
+                qActual = qe;
+                qd = qe;
+                qs = qe;
+                shortage = 0;
+                
+                consumerSurplus = 0.5 * (market.demandIntercept - pe) * qe;
+                producerSurplus = 0.5 * (pe - market.supplyIntercept) * qe;
+                totalSurplus = consumerSurplus + producerSurplus;
+                deadweightLoss = 0;
+                
+                document.getElementById('equilibrium-alert').classList.add('show');
+                document.getElementById('market-insight-text').innerHTML = 
+                    `<strong>At Market Equilibrium:</strong> The market clears with no shortage or surplus. 
+                    Total surplus is maximized at ${formatMoney(totalSurplus, market)}.`;
+                
+            } else if (isPriceCeilingBinding) {
+                // Binding price ceiling
+                qActual = findQuantitySupplied(market, price);
+                qd = findQuantityDemanded(market, price);
+                qs = qActual;
+                shortage = qd - qs;
+                
+                const demandAtQ = demandPrice(market, qActual);
+                
+                consumerSurplus = 0.5 * (market.demandIntercept - demandAtQ) * qActual + 
+                                  (demandAtQ - price) * qActual;
+                producerSurplus = 0.5 * (price - market.supplyIntercept) * qActual;
+                totalSurplus = consumerSurplus + producerSurplus;
+                
+                const maxTotalSurplus = 0.5 * (market.demandIntercept - market.supplyIntercept) * qe;
+                deadweightLoss = maxTotalSurplus - totalSurplus;
+                
+                document.getElementById('equilibrium-alert').classList.remove('show');
+                document.getElementById('market-insight-text').innerHTML = 
+                    `<strong>Binding Price Ceiling:</strong> At ${formatMoney(price, market)}, 
+                    quantity supplied (${Math.round(qs)}${market.quantityUnit}) is less than 
+                    quantity demanded (${Math.round(qd)}${market.quantityUnit}), 
+                    creating a shortage of ${Math.round(shortage)}${market.quantityUnit}.`;
+                
+            } else if (isPriceFloorBinding) {
+                // Binding price floor
+                qActual = findQuantityDemanded(market, price);
+                qd = qActual;
+                qs = findQuantitySupplied(market, price);
+                shortage = -(qs - qd); // Surplus (negative shortage)
+                
+                const supplyAtQ = supplyPrice(market, qActual);
+                
+                consumerSurplus = 0.5 * (market.demandIntercept - price) * qActual;
+                producerSurplus = 0.5 * (supplyAtQ - market.supplyIntercept) * qActual + 
+                                  (price - supplyAtQ) * qActual;
+                totalSurplus = consumerSurplus + producerSurplus;
+                
+                const maxTotalSurplus = 0.5 * (market.demandIntercept - market.supplyIntercept) * qe;
+                deadweightLoss = maxTotalSurplus - totalSurplus;
+                
+                document.getElementById('equilibrium-alert').classList.remove('show');
+                document.getElementById('market-insight-text').innerHTML = 
+                    `<strong>Binding Price Floor:</strong> At ${formatMoney(price, market)}, 
+                    quantity demanded (${Math.round(qd)}${market.quantityUnit}) is less than 
+                    quantity supplied (${Math.round(qs)}${market.quantityUnit}), 
+                    creating a surplus of ${Math.round(Math.abs(shortage))}${market.quantityUnit}.`;
+                
+            } else {
+                // Non-binding control
+                qActual = qe;
+                qd = qe;
+                qs = qe;
+                shortage = 0;
+                
+                consumerSurplus = 0.5 * (market.demandIntercept - pe) * qe;
+                producerSurplus = 0.5 * (pe - market.supplyIntercept) * qe;
+                totalSurplus = consumerSurplus + producerSurplus;
+                deadweightLoss = 0;
+                
+                document.getElementById('equilibrium-alert').classList.add('show');
+                document.getElementById('market-insight-text').innerHTML = 
+                    `<strong>Non-Binding Price Control:</strong> The ${isPriceCeiling ? 'ceiling' : 'floor'} 
+                    at ${formatMoney(price, market)} does not affect the market. 
+                    Trading occurs at equilibrium price ${formatMoney(pe, market)}.`;
+            }
+            
+            // Update metrics display
+            document.getElementById('consumer-surplus').textContent = formatMoney(consumerSurplus, market);
+            document.getElementById('producer-surplus').textContent = formatMoney(producerSurplus, market);
+            document.getElementById('total-surplus').textContent = formatMoney(totalSurplus, market);
+            document.getElementById('deadweight-loss').textContent = formatMoney(deadweightLoss, market);
+            
+            // Update data table
+            document.getElementById('table-price').textContent = formatMoney(price, market);
+            document.getElementById('table-eq-price').textContent = formatMoney(pe, market);
+            document.getElementById('table-quantity').textContent = Math.round(qActual) + market.quantityUnit;
+            document.getElementById('table-eq-quantity').textContent = Math.round(qe) + market.quantityUnit;
+            document.getElementById('table-qd').textContent = Math.round(qd) + market.quantityUnit;
+            document.getElementById('table-qs').textContent = Math.round(qs) + market.quantityUnit;
+            
+            if (Math.abs(shortage) < 0.1) {
+                document.getElementById('table-shortage').textContent = 'None (market clears)';
+            } else if (shortage > 0) {
+                document.getElementById('table-shortage').textContent = `Shortage: ${Math.round(shortage)}${market.quantityUnit}`;
+            } else {
+                document.getElementById('table-shortage').textContent = `Surplus: ${Math.round(Math.abs(shortage))}${market.quantityUnit}`;
+            }
+            
+            // Update graph
+            plotMarket(market, price);
+            
+            // Update graph text description for screen readers
+            updateGraphDescription(market, price, qActual, consumerSurplus, producerSurplus, totalSurplus, deadweightLoss, atEquilibrium);
+            
+            // Announce significant changes
+            if (atEquilibrium) {
+                announceChange(`Market at equilibrium. Total surplus maximized at ${formatMoney(totalSurplus, market)} with no deadweight loss.`);
+            } else if (deadweightLoss > 0) {
+                announceChange(`Price control creates deadweight loss of ${formatMoney(deadweightLoss, market)}. 
+                    Consumer surplus: ${formatMoney(consumerSurplus, market)}, 
+                    Producer surplus: ${formatMoney(producerSurplus, market)}.`);
+            }
+        }
+
+        function plotMarket(market, price) {
+            const qe = findEquilibriumQuantity(market);
+            const pe = demandPrice(market, qe);
+            
+            const maxQ = qe * 1.3;
+            const demandQ = [0, maxQ];
+            const demandP = demandQ.map(q => demandPrice(market, q));
+            
+            const supplyQ = [0, maxQ];
+            const supplyP = supplyQ.map(q => supplyPrice(market, q));
+            
+            const traces = [];
+            
+            // Demand curve
+            traces.push({
+                x: demandQ,
+                y: demandP,
+                mode: 'lines',
+                name: 'Demand',
+                line: { color: '#007bff', width: 3 }
+            });
+            
+            // Supply curve
+            traces.push({
+                x: supplyQ,
+                y: supplyP,
+                mode: 'lines',
+                name: 'Supply',
+                line: { color: '#dc3545', width: 3 }
+            });
+            
+            // Add surplus areas if not at equilibrium
+            const isPriceCeiling = market.priceControlType === 'ceiling';
+            const isPriceFloor = market.priceControlType === 'floor';
+            const isPriceCeilingBinding = isPriceCeiling && price < pe;
+            const isPriceFloorBinding = isPriceFloor && price > pe;
+            const atEquilibrium = Math.abs(price - pe) < market.priceStep / 2;
+            
+            if (atEquilibrium) {
+                // Show equilibrium surpluses
+                traces.push({
+                    x: [0, qe, 0],
+                    y: [market.demandIntercept, pe, pe],
+                    fill: 'toself',
+                    fillcolor: 'rgba(40, 167, 69, 0.4)',
+                    line: { color: 'rgba(40, 167, 69, 0)', width: 0 },
+                    mode: 'lines',
+                    name: 'Consumer Surplus',
+                    showlegend: true,
+                    hoverinfo: 'name'
+                });
+                
+                traces.push({
+                    x: [0, qe, 0],
+                    y: [market.supplyIntercept, pe, pe],
+                    fill: 'toself',
+                    fillcolor: 'rgba(255, 193, 7, 0.4)',
+                    line: { color: 'rgba(255, 193, 7, 0)', width: 0 },
+                    mode: 'lines',
+                    name: 'Producer Surplus',
+                    showlegend: true,
+                    hoverinfo: 'name'
+                });
+                
+            } else if (isPriceCeilingBinding || isPriceFloorBinding) {
+                const qActual = isPriceCeilingBinding ? 
+                    findQuantitySupplied(market, price) : 
+                    findQuantityDemanded(market, price);
+                
+                if (isPriceCeilingBinding) {
+                    const demandAtQ = demandPrice(market, qActual);
+                    
+                    // Consumer surplus (trapezoid)
+                    traces.push({
+                        x: [0, qActual, qActual, 0],
+                        y: [market.demandIntercept, demandAtQ, price, price],
+                        fill: 'toself',
+                        fillcolor: 'rgba(40, 167, 69, 0.4)',
+                        line: { color: 'rgba(40, 167, 69, 0)', width: 0 },
+                        mode: 'lines',
+                        name: 'Consumer Surplus',
+                        showlegend: true,
+                        hoverinfo: 'name'
+                    });
+                    
+                    // Producer surplus
+                    traces.push({
+                        x: [0, qActual, 0],
+                        y: [market.supplyIntercept, price, price],
+                        fill: 'toself',
+                        fillcolor: 'rgba(255, 193, 7, 0.4)',
+                        line: { color: 'rgba(255, 193, 7, 0)', width: 0 },
+                        mode: 'lines',
+                        name: 'Producer Surplus',
+                        showlegend: true,
+                        hoverinfo: 'name'
+                    });
+                    
+                    // Deadweight loss
+                    traces.push({
+                        x: [qActual, qe, qActual],
+                        y: [demandAtQ, pe, price],
+                        fill: 'toself',
+                        fillcolor: 'rgba(220, 53, 69, 0.5)',
+                        line: { color: 'rgba(220, 53, 69, 0)', width: 0 },
+                        mode: 'lines',
+                        name: 'Deadweight Loss',
+                        showlegend: true,
+                        hoverinfo: 'name'
+                    });
+                    
+                } else if (isPriceFloorBinding) {
+                    const supplyAtQ = supplyPrice(market, qActual);
+                    
+                    // Consumer surplus
+                    traces.push({
+                        x: [0, qActual, 0],
+                        y: [market.demandIntercept, price, price],
+                        fill: 'toself',
+                        fillcolor: 'rgba(40, 167, 69, 0.4)',
+                        line: { color: 'rgba(40, 167, 69, 0)', width: 0 },
+                        mode: 'lines',
+                        name: 'Consumer Surplus',
+                        showlegend: true,
+                        hoverinfo: 'name'
+                    });
+                    
+                    // Producer surplus (trapezoid)
+                    traces.push({
+                        x: [0, qActual, qActual, 0],
+                        y: [market.supplyIntercept, supplyAtQ, price, price],
+                        fill: 'toself',
+                        fillcolor: 'rgba(255, 193, 7, 0.4)',
+                        line: { color: 'rgba(255, 193, 7, 0)', width: 0 },
+                        mode: 'lines',
+                        name: 'Producer Surplus',
+                        showlegend: true,
+                        hoverinfo: 'name'
+                    });
+                    
+                    // Deadweight loss
+                    traces.push({
+                        x: [qActual, qe, qActual],
+                        y: [price, pe, supplyAtQ],
+                        fill: 'toself',
+                        fillcolor: 'rgba(220, 53, 69, 0.5)',
+                        line: { color: 'rgba(220, 53, 69, 0)', width: 0 },
+                        mode: 'lines',
+                        name: 'Deadweight Loss',
+                        showlegend: true,
+                        hoverinfo: 'name'
+                    });
+                }
+            }
+            
+            // Price control line
+            traces.push({
+                x: [0, maxQ],
+                y: [price, price],
+                mode: 'lines',
+                name: isPriceCeiling ? 'Price Ceiling' : 'Price Floor',
+                line: { color: '#6c757d', width: 3, dash: 'dash' }
+            });
+            
+            // Equilibrium point
+            traces.push({
+                x: [qe],
+                y: [pe],
+                mode: 'markers',
+                name: 'Equilibrium',
+                marker: { color: '#18453B', size: 12, symbol: 'circle' }
+            });
+            
+            const layout = {
+                title: {
+                    text: market.name,
+                    font: { size: 18, color: '#18453B', family: 'Segoe UI' }
+                },
+                xaxis: {
+                    title: market.quantityLabel,
+                    range: [0, maxQ * 1.05],
+                    gridcolor: '#e9ecef',
+                    showgrid: true
+                },
+                yaxis: {
+                    title: 'Price (' + market.priceUnit + ')',
+                    range: [0, market.demandIntercept * 1.1],
+                    gridcolor: '#e9ecef',
+                    showgrid: true
+                },
+                showlegend: true,
+                legend: {
+                    x: 0.02,
+                    y: 0.98,
+                    bgcolor: 'rgba(255, 255, 255, 0.9)',
+                    bordercolor: '#e9ecef',
+                    borderwidth: 1
+                },
+                margin: { l: 60, r: 40, t: 60, b: 60 },
+                autosize: false,
+                width: 700,
+                height: 500,
+                hovermode: 'closest'
+            };
+            
+            const config = {
+                responsive: false,
+                displayModeBar: false,
+                staticPlot: false
+            };
+            
+            Plotly.newPlot('market-graph', traces, layout, config);
+        }
+
+        function updateGraphDescription(market, price, qActual, cs, ps, ts, dwl, atEquilibrium) {
+            const qe = findEquilibriumQuantity(market);
+            const pe = demandPrice(market, qe);
+            
+            let description = `Supply and demand graph for ${market.name}. `;
+            description += `Equilibrium occurs at price ${formatMoney(pe, market)} and quantity ${Math.round(qe)}${market.quantityUnit}. `;
+            description += `Current price control is set at ${formatMoney(price, market)}. `;
+            
+            if (atEquilibrium) {
+                description += `Market is at equilibrium. `;
+                description += `Consumer surplus: ${formatMoney(cs, market)}. `;
+                description += `Producer surplus: ${formatMoney(ps, market)}. `;
+                description += `Total surplus: ${formatMoney(ts, market)}. `;
+                description += `No deadweight loss.`;
+            } else {
+                description += `Quantity traded: ${Math.round(qActual)}${market.quantityUnit}. `;
+                description += `Consumer surplus: ${formatMoney(cs, market)}. `;
+                description += `Producer surplus: ${formatMoney(ps, market)}. `;
+                description += `Total surplus: ${formatMoney(ts, market)}. `;
+                description += `Deadweight loss from price control: ${formatMoney(dwl, market)}.`;
+            }
+            
+            document.getElementById('graph-description').textContent = description;
+        }
+
+        function announceChange(message) {
+            const liveRegion = document.getElementById('live-updates');
+            // Clear first to ensure announcement fires even if text is same
+            liveRegion.textContent = '';
+            setTimeout(() => {
+                liveRegion.textContent = message;
+            }, 100);
+        }
+
+        // Economic calculation functions
+        function demandPrice(market, q) {
+            return market.demandIntercept + market.demandSlope * q;
+        }
+
+        function supplyPrice(market, q) {
+            return market.supplyIntercept + market.supplySlope * q;
+        }
+
+        function findQuantityDemanded(market, price) {
+            return Math.max(0, (price - market.demandIntercept) / market.demandSlope);
+        }
+
+        function findQuantitySupplied(market, price) {
+            return Math.max(0, (price - market.supplyIntercept) / market.supplySlope);
+        }
+
+        function findEquilibriumQuantity(market) {
+            return (market.demandIntercept - market.supplyIntercept) / 
+                   (market.supplySlope - market.demandSlope);
+        }
+
+        function formatMoney(value, market) {
+            const absValue = Math.abs(value);
+            if (market.priceUnit === '$') {
+                if (absValue >= 1000) {
+                    return '$' + absValue.toLocaleString(undefined, { 
+                        minimumFractionDigits: 0, 
+                        maximumFractionDigits: 0 
+                    });
+                } else {
+                    return '$' + absValue.toFixed(2);
+                }
+            } else {
+                return market.priceUnit + absValue.toFixed(2);
+            }
+        }
+    </script>
+</body>
+</html>
